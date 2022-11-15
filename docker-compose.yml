@@ -1,28 +1,19 @@
-version: '3.1'
-mongo:
-    image: mongo
-    restart: always
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
-
-mongo-express:
-    image: mongo-express
-    restart: always
+version: '3.8'
+services:
+  dev-db:
+    image: postgres:15
     ports:
-      - 8081:8081
+      - 5434:5432
     environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: root
-      ME_CONFIG_MONGODB_ADMINPASSWORD: example
-      ME_CONFIG_MONGODB_URL: mongodb+srv://huy1234:*****@cluster0.pfd53.mongodb.net/nextJs?authSource=admin&replicaSet=atlas-146m6u-shard-0&w=majority&readPreference=primary&appname=MongoDB%20Compass&retryWrites=true&ssl=true
-# services:
-#   myapplication:
-#     image: mongo
-#     environment: 
-#       - MONGODB_CONNSTRING=
-#     ports:
-#       - 8080:8080
-#   mongodb:
-#     image: mongo:5.0
-#     environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: huy123
+      POSTGRES_DB: gomunchi
+  test-db:
+    image: postgres:15
+    ports:
+      - 5435:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: huy123
+      POSTGRES_DB: gomunchi
   

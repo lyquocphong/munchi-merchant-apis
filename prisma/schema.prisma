@@ -6,20 +6,17 @@ generator client {
 }
 
 datasource db {
-  provider = "mongodb"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model Company {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  email     String   @unique
-  name      String?
-  //  role    Role     @default(USER)
+   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
-  address   Address  @unique
-}
+  updatedAt DateTime @updatedAt
 
-type Address {
-  street String
-  number Int
+  email String  @unique
+  hash  String 
+
+  @@map("company")
 }
