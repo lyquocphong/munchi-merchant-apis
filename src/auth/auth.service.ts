@@ -1,68 +1,74 @@
 import {
-  ForbiddenException,
   Injectable,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { AuthCredentials } from 'src/ts';
-import { PrismaService } from '../prisma/prisma.service';
-import * as argon from 'argon2';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 
+
+
+const axios = require('axios');
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService) {}
   async signup(credentials: AuthCredentials) {
-    const hash = await argon.hash(
-      credentials.password,
-    );
+    console.log(credentials.email, credentials.password)
+    const options = {
+      method: 'POST',
+      url: `${process.env.BASE_URL}users`,
+      headers: {
+        accept: 'application/json',
+        'content-type': 'application/json',
+      },
+      data: {
+        country_phone_code: 1,
+        level: 3,
+        busy: false,
+        available: true,
+        enabled: true,
+        security_recaptcha_signup: '1 or 0',
+        email: credentials.email,
+        password: credentials.password,
+      },
+    };
     try {
-      const company =
-        await this.prisma.company.create({
-          data: {
-            email: credentials.email,
-            hash,
-          },
-        });
-      delete company.hash;
-
-      return company;
-    } catch (error) {
-      if (
-        error instanceof
-        PrismaClientKnownRequestError
-      ) {
-        if (error.code === 'P2002') {
-          throw new ForbiddenException(
-            'Credential is taken',
+      axios
+        .request(options)
+        .then(function (response: Response) {
+          console.log(response);
+        })
+        .catch(function (error: any) {
+          console.log(
+            error.response.data.result,
           );
-        }
-      }
+        });
+    } catch (error) {
+      console.log("throw error")
       throw error;
     }
   }
 
   async signin(credentials: AuthCredentials) {
-    const company =
-      await this.prisma.company.findUnique({
-        where: {
-          email: credentials.email,
-        },
+    const options = {
+      method: 'POST',
+      url: `${process.env.BASE_URL}auth`,
+      headers: {
+        accept: 'application/json',
+        'content-type': 'application/json',
+      },
+      data: {
+        email: credentials.email,
+        password: credentials.password,
+        security_recaptcha_auth: '1 or 0',
+      },
+    };
+
+    axios
+      .request(options)
+      .then(function (response: Response) {
+        console.log(response);
+      })
+      .catch(function (error:any) {
+        console.error(error);
       });
-
-    if (!company)
-      throw new ForbiddenException(
-        'Credentials incorrect',
-      );
-
-    const pwdCheck = await argon.verify(
-      company.hash,
-      credentials.password,
-    );
-    if (!pwdCheck)
-      throw new ForbiddenException(
-        'Credentials incorrect',
-      );
-
-    delete company.hash;
-    return company;
+    
   }
 }

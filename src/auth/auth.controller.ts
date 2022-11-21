@@ -12,6 +12,7 @@ export class AuthController {
   constructor(private authService: AuthService) {}
   @Post('signup')
   signup(@Body() credentials: AuthCredentials) {
+    console.log(credentials)
     return this.authService.signup(credentials);
   }
 
