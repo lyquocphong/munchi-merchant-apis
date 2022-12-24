@@ -5,6 +5,10 @@ import {
 } from 'class-validator';
 
 export class AuthCredentials {
+  @IsNotEmpty()
+  name: string;
+  lastname: string;
+  role: string | number
   @IsEmail()
   @IsNotEmpty()
   email: string;
@@ -14,3 +18,6 @@ export class AuthCredentials {
   password: string;
 }
 
+export interface OrderId {
+  orderId: string;
+}

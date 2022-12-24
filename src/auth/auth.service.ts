@@ -1,16 +1,15 @@
-import {
-  Injectable,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Response } from 'express';
 import { AuthCredentials } from 'src/ts';
-
-
 
 const axios = require('axios');
 @Injectable()
 export class AuthService {
   async signup(credentials: AuthCredentials) {
-    console.log(credentials.email, credentials.password)
+    // console.log(
+    //   credentials.email,
+    //   credentials.password,
+    // );
     const options = {
       method: 'POST',
       url: `${process.env.BASE_URL}users`,
@@ -19,31 +18,28 @@ export class AuthService {
         'content-type': 'application/json',
       },
       data: {
-        country_phone_code: 1,
-        level: 3,
-        busy: false,
-        available: true,
-        enabled: true,
-        security_recaptcha_signup: '1 or 0',
+        name: credentials.name,
+        lastname: credentials.lastname,
+        level: credentials.role,
         email: credentials.email,
         password: credentials.password,
       },
     };
-    try {
-      axios
-        .request(options)
-        .then(function (response: Response) {
-          console.log(response);
-        })
-        .catch(function (error: any) {
-          console.log(
-            error.response.data.result,
-          );
-        });
-    } catch (error) {
-      console.log("throw error")
-      throw error;
-    }
+
+    const signUpResponse = await axios
+      .request(options)
+      .then(function (response: any) {
+        // console.log(response);
+        const data = response.data.result;
+        return data;
+      })
+      .catch(function (error: any) {
+        const errorMsg =
+          error.response.data.result;
+        throw Error(errorMsg);
+      });
+
+    return signUpResponse;
   }
 
   async signin(credentials: AuthCredentials) {
@@ -60,15 +56,19 @@ export class AuthService {
         security_recaptcha_auth: '1 or 0',
       },
     };
-
-    axios
+    const signInResponse = await axios
       .request(options)
-      .then(function (response: Response) {
-        console.log(response);
+      .then(function (response: any) {
+        console.log(response.data.result);
+        const data = response.data.result;
+        return 'Sign in successfully';
       })
-      .catch(function (error:any) {
-        console.error(error);
+      .catch((error: any) => {
+        console.log(error);
+        const errorMsg =
+          error.response.data.result;
+        return errorMsg;
       });
-    
+    return signInResponse;
   }
 }

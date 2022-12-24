@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { OrderModule } from 'src/order/order.module';
+import { HttpModule } from '@nestjs/axios';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -13,6 +14,7 @@ import { OrderModule } from 'src/order/order.module';
     AuthModule,
     PrismaModule,
     OrderModule,
+    HttpModule,
   ],
   controllers: [AppController],
   providers: [AppService],

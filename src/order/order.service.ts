@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Body, Injectable } from '@nestjs/common';
+import { OrderId } from 'src/ts';
 
 @Injectable()
 export class OrderService {
@@ -7,9 +8,10 @@ export class OrderService {
 
     const options = {
       method: 'GET',
-      url: 'https://apiv4.ordering.co/v400/en/peperoni/orders',
+      url: 'https://apiv4.ordering.co/v400/en/peperoni/orders?mode=dashboard',
       headers: { accept: 'application/json' },
-      'x-api-key': `XCc6ccCL3ziT4kLV6CmAY0k1kODjLK6aVjXayv0bovIZoV7Rh6D0_SFxaA_vTEOel`,
+      'x-api-key':
+        'U_Uz_WYUD1jbtmAeAKg4q9Jik2PhzPpwTVBJWNctS6aZiCW-LIJG10nPZQKqBkMuj',
     };
 
     const orders = await axios
@@ -17,9 +19,23 @@ export class OrderService {
       .then(function (response) {
         console.log(response.data);
       })
-      .catch(function (error) {
+      .catch(function (error: any) {
         console.error(error.response.data);
       });
     return orders;
+  }
+  async newOrder(@Body() data) {
+    console.log(`this is new order`);
+    return data; 
+  }
+
+  async getOrderbyId(orderId: OrderId) {
+    console.log(`this is get orderId:${orderId}`);
+  }
+
+  async rejectOrder(orderId: OrderId) {
+    console.log(
+      `this is reject orderId:${orderId}`,
+    );
   }
 }
