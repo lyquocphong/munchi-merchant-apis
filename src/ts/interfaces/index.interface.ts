@@ -5,7 +5,7 @@ import {
 } from 'class-validator';
 
 export class AuthCredentials {
-  @IsNotEmpty()
+ 
   name: string;
   lastname: string;
   role: string | number

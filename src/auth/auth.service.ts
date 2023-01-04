@@ -61,7 +61,7 @@ export class AuthService {
       .then(function (response: any) {
         console.log(response.data.result);
         const data = response.data.result;
-        return 'Sign in successfully';
+        return data;
       })
       .catch((error: any) => {
         console.log(error);
