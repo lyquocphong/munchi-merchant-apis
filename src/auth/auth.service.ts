@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Response } from 'express';
 import { AuthCredentials } from 'src/ts';
+import { GetEnvUrl } from 'src/utils/getEnvUrl';
 
 const axios = require('axios');
 @Injectable()
@@ -12,7 +13,7 @@ export class AuthService {
     // );
     const options = {
       method: 'POST',
-      url: `${process.env.BASE_URL}users`,
+      url: GetEnvUrl('users'),
       headers: {
         accept: 'application/json',
         'content-type': 'application/json',
@@ -45,7 +46,7 @@ export class AuthService {
   async signin(credentials: AuthCredentials) {
     const options = {
       method: 'POST',
-      url: `${process.env.BASE_URL}auth`,
+      url: GetEnvUrl('auth'),
       headers: {
         accept: 'application/json',
         'content-type': 'application/json',

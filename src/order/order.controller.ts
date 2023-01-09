@@ -5,13 +5,12 @@ import {
   Get,
   Param,
   Post,
-  Put
+  Put,
+  Request,
 } from '@nestjs/common';
-import { OrderId } from 'src/ts';
+import { OrderData, OrderId } from 'src/ts';
 
 import { OrderService } from './order.service';
-
-
 
 @Controller('order')
 export class OrderController {
@@ -20,37 +19,41 @@ export class OrderController {
     private readonly httpService: HttpService,
   ) {}
   @Get('orders')
-  getAllOrders() {
+  getAllOrders(@Request() req) {
+    const token = req.headers.authorization;
     console.log('All order');
-    return this.orderService.getAllOrders();
+    return this.orderService.getAllOrders(token);
   }
   @Get(':orderId')
   getOrderbyId(
     @Param('orderId') orderId: OrderId,
+    @Request() req,
   ) {
+    const token = req.headers.authorization;
     return this.orderService.getOrderbyId(
       orderId,
+      token,
     );
   }
   @Post('newOrder')
-  newOrder(@Body() data:any) {
+  newOrder(@Body() data: any) {
     console.log(data);
     const order =
       this.orderService.newOrder(data);
-     this.httpService
-       .post(
-         'https://webhook.site/3311e65c-34ae-4ecb-a705-9f2c7fa5eec0',
-         data,
-       )
-       .subscribe({
-         complete: () => {
-           console.log('completed');
-         },
-         error: (err) => {
-           // you can handle error requests here
-           console.log(err);
-         },
-       });
+    this.httpService
+      .post(
+        'https://webhook.site/3311e65c-34ae-4ecb-a705-9f2c7fa5eec0',
+        data,
+      )
+      .subscribe({
+        complete: () => {
+          console.log('completed');
+        },
+        error: (err) => {
+          // you can handle error requests here
+          console.log(err);
+        },
+      });
 
     return order;
   }
@@ -59,5 +62,14 @@ export class OrderController {
     @Param('orderId') orderId: OrderId,
   ) {
     return this.orderService.rejectOrder(orderId);
+  }
+  updateOrder(
+    @Param('orderId') orderId: OrderId,
+    @Body() data: OrderData
+  ) {
+     return this.orderService.updateOrder(
+       orderId,
+       data,
+     );
   }
 }

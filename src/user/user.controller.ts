@@ -1,15 +1,21 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { OrderId } from 'src/ts';
 import { UserService } from './user.service';
 
 @Controller('user')
 export class UserController {
   constructor(private userService: UserService) {}
+  @UseGuards(AuthGuard('jwt'))
+
   @Get(':userId')
-  getUser(@Param('userId') userId: string) {
+  getUser(@Param('userId') userId: OrderId) {
     return this.userService.getUser(userId);
-  }
-  @Get('company')
-  getCompany() {
-    return this.userService.getCompany();
   }
 }

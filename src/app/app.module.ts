@@ -5,7 +5,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { OrderModule } from 'src/order/order.module';
-import { HttpModule } from '@nestjs/axios';
 import { OrderWebhookModule } from 'src/order_webhook/order_webhook.module';
 import { UserModule } from 'src/user/user.module';
 @Module({
@@ -17,7 +16,6 @@ import { UserModule } from 'src/user/user.module';
     PrismaModule,
     OrderModule,
     UserModule,
-    HttpModule,
     OrderWebhookModule
   ],
   controllers: [AppController],

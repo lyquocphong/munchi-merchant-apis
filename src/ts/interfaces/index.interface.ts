@@ -21,3 +21,17 @@ export class AuthCredentials {
 export interface OrderId {
   orderId: string;
 }
+
+
+export interface OrderData {
+  prepaired_in: string;
+  order_status: string;
+}
+
+export interface BusinessId {
+  businessId: string
+}
+
+export interface BusinessStatus extends BusinessId {
+  business_status: boolean
+}

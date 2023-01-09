@@ -1,33 +1,15 @@
-import { HttpService } from '@nestjs/axios';
 import {
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
-import { OrderId } from 'src/ts';
-
-import { GetEnvUrl } from '../utils/getEnvUrl';
+import {
+  BusinessId,
+  BusinessStatus,
+} from 'src/ts';
+import { GetEnvUrl } from 'src/utils/getEnvUrl';
 const axios = require('axios');
 @Injectable()
-export class UserService {
-  async getUser(userId: OrderId) {
-    // console.log(userId);
-    // const options = {
-    //   method: 'GET',
-    //   url: GetEnvUrl('user', userId),
-    //   headers: { accept: 'application/json' },
-    // };
-
-    // const userResponse = axios
-    //   .request(options)
-    //   .then(function (response) {
-    //     console.log(response.data);
-    //   })
-    //   .catch(function (error) {
-    //     console.error(error);
-    //   });
-    // return userResponse;
-    return 'This is get User routes';
-  }
+export class BusinessService {
   getBusiness(token: string) {
     const options = {
       method: 'GET',
@@ -42,8 +24,7 @@ export class UserService {
       .request(options)
       .then(function (response: any) {
         console.log(response.data);
-        const data =
-          response.data.result;
+        const data = response.data.result;
         return data;
       })
       .catch(function (error: any) {
@@ -79,4 +60,12 @@ export class UserService {
       });
     return allBusinessResponse;
   }
+  async getBusinessOnline(
+    businessId: BusinessId,
+    business_status: BusinessStatus,
+  ) {}
+  async getBusinessOffline(
+    businessId: BusinessId,
+    business_status: BusinessStatus,
+  ) {}
 }

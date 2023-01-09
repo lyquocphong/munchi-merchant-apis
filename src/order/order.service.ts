@@ -1,41 +1,84 @@
 import { Body, Injectable } from '@nestjs/common';
-import { OrderId } from 'src/ts';
-
+import { OrderData, OrderId } from 'src/ts';
+import { GetEnvUrl } from 'src/utils/getEnvUrl';
+const axios = require('axios');
 @Injectable()
 export class OrderService {
-  async getAllOrders() {
-    const axios = require('axios');
-
+  async getAllOrders(token: string) {
     const options = {
       method: 'GET',
-      url: 'https://apiv4.ordering.co/v400/en/peperoni/orders?mode=dashboard',
-      headers: { accept: 'application/json' },
-      'x-api-key':
-        'U_Uz_WYUD1jbtmAeAKg4q9Jik2PhzPpwTVBJWNctS6aZiCW-LIJG10nPZQKqBkMuj',
+      url: `${GetEnvUrl(
+        'orders',
+      )}?status=0&mode=dashboard`,
+      headers: {
+        accept: 'application/json',
+        Authorization: `${token}`,
+      },
     };
-
-    const orders = await axios
+    console.log(
+      `${GetEnvUrl(
+        'orders',
+      )}?limit=3&mode=dashboard`,
+    );
+    const ordersResponse = await axios
       .request(options)
-      .then(function (response) {
+      .then(function (response: any) {
         console.log(response.data);
+        const data = response.data;
+        return data;
       })
       .catch(function (error: any) {
         console.error(error.response.data);
       });
-    return orders;
+    return ordersResponse;
   }
   async newOrder(@Body() data) {
     console.log(`this is new order`);
-    return data; 
+    return data;
   }
 
-  async getOrderbyId(orderId: OrderId) {
-    console.log(`this is get orderId:${orderId}`);
+  async getOrderbyId(
+    orderId: OrderId,
+    token: string,
+  ) {
+    const options = {
+      method: 'GET',
+      url: `${GetEnvUrl(
+        'orders',
+        orderId,
+      )}?mode=dashboard`,
+      headers: {
+        accept: 'application/json',
+        Authorization: `${token}`,
+      },
+    };
+
+    const ordersResponse = await axios
+      .request(options)
+      .then(function (response: any) {
+        console.log(response.data);
+        const data = response.data;
+        return data;
+      })
+      .catch(function (error: any) {
+        console.error(error.response.data);
+        const errorMsg = error.response.data;
+        return Error(errorMsg);
+      });
+    return ordersResponse;
   }
 
   async rejectOrder(orderId: OrderId) {
     console.log(
       `this is reject orderId:${orderId}`,
+    );
+  }
+  async updateOrder(
+    orderId: OrderId,
+    data: OrderData,
+  ) {
+    console.log(
+      `this is updated order with prep_time:${orderId} , ${data.prepaired_in}, ${data.order_status}`,
     );
   }
 }
