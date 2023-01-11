@@ -24,6 +24,7 @@ export class OrderController {
     console.log('All order');
     return this.orderService.getAllOrders(token);
   }
+
   @Get(':orderId')
   getOrderbyId(
     @Param('orderId') orderId: OrderId,
@@ -35,6 +36,7 @@ export class OrderController {
       token,
     );
   }
+
   @Post('newOrder')
   newOrder(@Body() data: any) {
     console.log(data);
@@ -57,12 +59,14 @@ export class OrderController {
 
     return order;
   }
+
   @Put('orders/:orderId')
   rejectOrder(
     @Param('orderId') orderId: OrderId,
   ) {
     return this.orderService.rejectOrder(orderId);
   }
+
   updateOrder(
     @Param('orderId') orderId: OrderId,
     @Body() data: OrderData

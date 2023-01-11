@@ -18,10 +18,7 @@ export class AuthCredentials {
   password: string;
 }
 
-export interface OrderId {
-  orderId: string;
-}
-
+export type OrderId = string;
 
 export interface OrderData {
   prepaired_in: string;

@@ -1,7 +1,11 @@
 import { Body, Injectable } from '@nestjs/common';
+import { classToPlain, plainToClass } from 'class-transformer';
 import { OrderData, OrderId } from 'src/ts';
 import { GetEnvUrl } from 'src/utils/getEnvUrl';
-const axios = require('axios');
+import { OrderDto } from './dto/order.dto';
+
+import axios from 'axios';
+
 @Injectable()
 export class OrderService {
   async getAllOrders(token: string) {
@@ -32,6 +36,7 @@ export class OrderService {
       });
     return ordersResponse;
   }
+
   async newOrder(@Body() data) {
     console.log(`this is new order`);
     return data;
@@ -53,19 +58,24 @@ export class OrderService {
       },
     };
 
-    const ordersResponse = await axios
-      .request(options)
-      .then(function (response: any) {
-        console.log(response.data);
-        const data = response.data;
-        return data;
-      })
-      .catch(function (error: any) {
-        console.error(error.response.data);
-        const errorMsg = error.response.data;
-        return Error(errorMsg);
-      });
-    return ordersResponse;
+    try {
+      const response = await axios.request(
+        options,
+      );
+      console.log(response.data);
+      const order = plainToClass(
+        OrderDto,
+        response.data.result,
+      );
+
+      console.log(order);
+
+      return order;
+    } catch (error) {
+      console.error(error.response.data);
+      const errorMsg = error.response.data;
+      return Error(errorMsg);
+    }
   }
 
   async rejectOrder(orderId: OrderId) {
@@ -73,6 +83,7 @@ export class OrderService {
       `this is reject orderId:${orderId}`,
     );
   }
+
   async updateOrder(
     orderId: OrderId,
     data: OrderData,
