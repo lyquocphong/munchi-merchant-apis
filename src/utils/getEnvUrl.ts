@@ -1,6 +1,6 @@
-import { OrderId } from "src/ts";
+import { OrderId } from "src/type";
 
-export function GetEnvUrl(
+export function getEnvUrl(
   routeQuery: string,
   idQuery?: OrderId,
   param?: Array<String>,

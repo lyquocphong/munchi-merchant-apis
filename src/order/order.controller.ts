@@ -8,7 +8,7 @@ import {
   Put,
   Request,
 } from '@nestjs/common';
-import { OrderData, OrderId } from 'src/ts';
+import { OrderData, OrderId } from 'src/type';
 
 import { OrderService } from './order.service';
 
@@ -20,9 +20,9 @@ export class OrderController {
   ) {}
   @Get('orders')
   getAllOrders(@Request() req) {
-    const token = req.headers.authorization;
+    const acessToken = req.headers.authorization;
     console.log('All order');
-    return this.orderService.getAllOrders(token);
+    return this.orderService.getAllOrders(acessToken);
   }
 
   @Get(':orderId')
@@ -30,11 +30,8 @@ export class OrderController {
     @Param('orderId') orderId: OrderId,
     @Request() req,
   ) {
-    const token = req.headers.authorization;
-    return this.orderService.getOrderbyId(
-      orderId,
-      token,
-    );
+    const acessToken = req.headers.authorization;
+    return this.orderService.getOrderbyId(orderId, acessToken);
   }
 
   @Post('newOrder')

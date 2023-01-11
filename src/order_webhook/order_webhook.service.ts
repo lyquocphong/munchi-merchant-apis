@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Response } from 'express';
-import { AuthCredentials } from 'src/ts';
+import { AuthCredentials } from 'src/type';
 
 const axios = require('axios');
 @Injectable()

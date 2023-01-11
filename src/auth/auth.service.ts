@@ -2,18 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Response } from 'express';
-import { AuthCredentials } from 'src/ts';
-import { GetEnvUrl } from 'src/utils/getEnvUrl';
+import { AuthCredentials } from 'src/type';
+import { getEnvUrl } from 'src/utils/getEnvUrl';
 import axios from 'axios';
 import { plainToClass } from 'class-transformer';
 import { AuthDto } from './dto/auth.dto';
 
 @Injectable()
 export class AuthService {
-  constructor(
-    private jwt: JwtService,
-    private config: ConfigService,
-  ) {}
+  constructor(private jwt: JwtService, private config: ConfigService) {}
   async signup(credentials: AuthCredentials) {
     // console.log(
     //   credentials.email,
@@ -21,7 +18,7 @@ export class AuthService {
     // );
     const options = {
       method: 'POST',
-      url: GetEnvUrl('users'),
+      url: getEnvUrl('users'),
       headers: {
         accept: 'application/json',
         'content-type': 'application/json',
@@ -35,10 +32,12 @@ export class AuthService {
       },
     };
     try {
-      const signUpResponse = await axios.request(
-        options,
-      );
-      return signUpResponse;
+      const response = await axios.request(options);
+      const signUpResponseObject = response.data.result;
+      const signUpResponse = plainToClass(AuthDto, signUpResponseObject);
+      const verifyToken = await this.signToken(signUpResponse.id, signUpResponse.email);
+      const finalResponse = Object.assign(signUpResponse, verifyToken);
+      return finalResponse;
     } catch (error) {
       const errorMsg = error.response.data.result;
       throw Error(errorMsg);
@@ -48,7 +47,7 @@ export class AuthService {
   async signin(credentials: AuthCredentials) {
     const options = {
       method: 'POST',
-      url: GetEnvUrl('auth'),
+      url: getEnvUrl('auth'),
       headers: {
         accept: 'application/json',
         'content-type': 'application/json',
@@ -59,43 +58,34 @@ export class AuthService {
         security_recaptcha_auth: '1 or 0',
       },
     };
+    //
     try {
-      const response = await axios.request(
-        options,
-      );
-      const signInResponseOnject = await response.data.json()
-      const signInResponse = plainToClass(
-        AuthDto,
-        signInResponseOnject,
-      );
-     console.log(signInResponse);
-     return signInResponse
-     
+      const response = await axios.request(options);
+      const signInResponseOnject = response.data.result;
+      const signInResponse = plainToClass(AuthDto, signInResponseOnject);
+      const verifyToken = await this.signToken(signInResponse.id, signInResponse.email);
+      const finalResponse = Object.assign(signInResponse, verifyToken);
+      return finalResponse;
     } catch (error) {
       const errorMsg = error.response.data.result;
       throw Error(errorMsg);
     }
   }
-  async signToken(
-    userId: number,
-    email: string,
-  ): Promise<{ access_token: string }> {
+
+  async signToken(userId: number, email: string): Promise<{ verify_token: string }> {
     const payload = {
       sub: userId,
       email,
     };
     const secret = this.config.get('JWT_SECRET');
 
-    const token = await this.jwt.signAsync(
-      payload,
-      {
-        expiresIn: '15m',
-        secret: secret,
-      },
-    );
+    const token = await this.jwt.signAsync(payload, {
+      expiresIn: '15m',
+      secret: secret,
+    });
 
     return {
-      access_token: token,
+      verify_token: token,
     };
   }
 }

@@ -1,29 +1,23 @@
 import { Body, Injectable } from '@nestjs/common';
 import { classToPlain, plainToClass } from 'class-transformer';
-import { OrderData, OrderId } from 'src/ts';
-import { GetEnvUrl } from 'src/utils/getEnvUrl';
+import { OrderData, OrderId } from 'src/type';
+import { getEnvUrl } from 'src/utils/getEnvUrl';
 import { OrderDto } from './dto/order.dto';
 
 import axios from 'axios';
 
 @Injectable()
 export class OrderService {
-  async getAllOrders(token: string) {
+  async getAllOrders(acessToken: string) {
     const options = {
       method: 'GET',
-      url: `${GetEnvUrl(
-        'orders',
-      )}?status=0&mode=dashboard`,
+      url: `${getEnvUrl('orders')}?status=0&mode=dashboard`,
       headers: {
         accept: 'application/json',
-        Authorization: `${token}`,
+        Authorization: `${acessToken}`,
       },
     };
-    console.log(
-      `${GetEnvUrl(
-        'orders',
-      )}?limit=3&mode=dashboard`,
-    );
+   
     const ordersResponse = await axios
       .request(options)
       .then(function (response: any) {
@@ -42,31 +36,20 @@ export class OrderService {
     return data;
   }
 
-  async getOrderbyId(
-    orderId: OrderId,
-    token: string,
-  ) {
+  async getOrderbyId(orderId: OrderId, acessToken: string) {
     const options = {
       method: 'GET',
-      url: `${GetEnvUrl(
-        'orders',
-        orderId,
-      )}?mode=dashboard`,
+      url: `${getEnvUrl('orders', orderId)}?mode=dashboard`,
       headers: {
         accept: 'application/json',
-        Authorization: `${token}`,
+        Authorization: `${acessToken}`,
       },
     };
 
     try {
-      const response = await axios.request(
-        options,
-      );
+      const response = await axios.request(options);
       console.log(response.data);
-      const order = plainToClass(
-        OrderDto,
-        response.data.result,
-      );
+      const order = plainToClass(OrderDto, response.data.result);
 
       console.log(order);
 
@@ -79,15 +62,10 @@ export class OrderService {
   }
 
   async rejectOrder(orderId: OrderId) {
-    console.log(
-      `this is reject orderId:${orderId}`,
-    );
+    console.log(`this is reject orderId:${orderId}`);
   }
 
-  async updateOrder(
-    orderId: OrderId,
-    data: OrderData,
-  ) {
+  async updateOrder(orderId: OrderId, data: OrderData) {
     console.log(
       `this is updated order with prep_time:${orderId} , ${data.prepaired_in}, ${data.order_status}`,
     );

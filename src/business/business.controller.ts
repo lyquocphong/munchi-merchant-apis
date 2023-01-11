@@ -1,50 +1,32 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Post,
-  Request,
-} from '@nestjs/common';
-import { BusinessId, BusinessStatus } from 'src/ts';
+import { Controller, Get, Param, Post, Request } from '@nestjs/common';
+import { BusinessId, BusinessStatus } from 'src/type';
 import { BusinessService } from './business.service.';
 
 @Controller('business')
 export class BusinessController {
-  constructor(
-    private businessService: BusinessService,
-  ) {}
-  @Get('company')
-  getCompany(@Request() req) {
-    const token = req.headers.authorization;
-    return this.businessService.getBusiness(
-      token,
-    );
+  constructor(private businessService: BusinessService) {}
+
+  @Get('')
+  getBusiness(@Request() req) {
+    const acessToken = req.headers.authorization;
+    return this.businessService.getBusiness(acessToken);
   }
-  @Get('allcompany')
-  getAllCompany(@Request() req) {
-    const token = req.headers.authorization;
-    return this.businessService.getAllBusiness(
-      token,
-    );
+  @Get('allbusiness')
+  getAllBusiness(@Request() req) {
+    const acessToken = req.headers.authorization;
+    return this.businessService.getAllBusiness(acessToken);
   }
-  @Post('getBusinessOnline')
-  getBusinessOnline(
-    @Param() businessId: BusinessId,
-    business_status: BusinessStatus,
-  ) {
-    return this.businessService.getBusinessOnline(
-      businessId,
-      business_status,
-    );
+  @Get(':businessId')
+  getBusinessById(@Param('businessId') businessId: BusinessId, @Request() req) {
+    const acessToken = req.headers.authorization;
+    return this.businessService.getBusinessById(businessId, acessToken);
   }
   @Post('getBusinessOnline')
-  getBusinessOffline(
-    @Param() businessId: BusinessId,
-    business_status: BusinessStatus,
-  ) {
-    return this.businessService.getBusinessOffline(
-      businessId,
-      business_status,
-    );
+  getBusinessOnline(@Param() businessId: BusinessId, business_status: BusinessStatus) {
+    return this.businessService.getBusinessOnline(businessId, business_status);
+  }
+  @Post('getBusinessOnline')
+  getBusinessOffline(@Param() businessId: BusinessId, business_status: BusinessStatus) {
+    return this.businessService.getBusinessOffline(businessId, business_status);
   }
 }

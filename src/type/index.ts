@@ -5,10 +5,9 @@ import {
 } from 'class-validator';
 
 export class AuthCredentials {
- 
   name: string;
   lastname: string;
-  role: string | number
+  role: string | number;
   @IsEmail()
   @IsNotEmpty()
   email: string;
@@ -20,15 +19,11 @@ export class AuthCredentials {
 
 export type OrderId = string;
 
+export type BusinessId = string;
+
+export type BusinessStatus = boolean;
+
 export interface OrderData {
   prepaired_in: string;
   order_status: string;
-}
-
-export interface BusinessId {
-  businessId: string
-}
-
-export interface BusinessStatus extends BusinessId {
-  business_status: boolean
 }

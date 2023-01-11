@@ -1,11 +1,20 @@
-import { Exclude } from 'class-transformer';
+import {
+  Exclude,
+  Expose,
+  Type,
+} from 'class-transformer';
+import { SessionDto } from './session.dto';
 
 @Exclude()
 export class AuthDto {
-name:string;
-  email: string;
-  password: string;
-
+  @Expose() id: number;
+  @Expose() name: string;
+  @Expose() lastname: string;
+  @Expose() email: string;
+  @Expose() level: number;
+  @Expose()
+  @Type(() => SessionDto)
+  session: SessionDto[];
 
   constructor(partial: Partial<AuthDto>) {
     Object.assign(this, partial);
