@@ -1,7 +1,4 @@
-import {
-  ForbiddenException,
-  Injectable,
-} from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { OrderId } from 'src/type';
 import { getEnvUrl } from '../utils/getEnvUrl';
 import axios from 'axios';
@@ -11,21 +8,19 @@ import { UserDto } from './dto/user.dto';
 @Injectable()
 export class UserService {
   async getUser(userId: OrderId, acessToken: string) {
-    console.log(userId);
+   
     const options = {
-      method: 'getEnvUrl',
+      method: 'GET',
       url: getEnvUrl('users', userId),
-      headers: { accept: 'application/json', Authorization: `${acessToken}` },
+      headers: { accept: 'application/json', Authorization: `Bearer ${acessToken}` },
     };
-    console.log(getEnvUrl('user', userId));
     try {
       const response = await axios.request(options);
-      const userResponseObject = response.data.result
-      const userResponse = plainToClass(UserDto, userResponseObject)
-      console.log(userResponse)
-      return userResponse
+      const userResponseObject = response.data.result;
+      const userResponse = plainToClass(UserDto, userResponseObject);
+      return userResponse;
     } catch (error) {
-      console.log(error)
+      console.log(error);
     }
   }
 }
