@@ -1,22 +1,28 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
-model Company {
-   id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  email String  @unique
-  hash  String 
-
-  @@map("company")
+model Session {
+  accessToken String @unique
+  tokenType   String
+  expiresIn   Int
+  user User @relation(fields: [userId], references: [id]) 
+  userId Int @unique
 }
+
+model User {
+  id       Int       @id
+  name     String
+  lastname String
+  email    String    @unique
+  level    Int?
+  session Session?
+
+  @@map("user")
+}
+
