@@ -8,15 +8,14 @@ import axios from 'axios';
 import { plainToClass } from 'class-transformer';
 import { AuthDto } from './dto/auth.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { Session } from '@prisma/client';
-import { SessionDto } from './dto/session.dto';
+import { getAccessToken } from 'src/utils/getAcessToken';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private jwt: JwtService,
+    private readonly jwt: JwtService,
     private config: ConfigService,
-    private prisma: PrismaService,
+    private readonly prisma: PrismaService,
   ) {}
   async signup(credentials: AuthCredentials) {
     // console.log(
@@ -41,10 +40,49 @@ export class AuthService {
     try {
       const response = await axios.request(options);
       const signUpResponseObject = response.data.result;
-      const signUpResponse = plainToClass(AuthDto, signUpResponseObject);
-      const verifyToken = await this.signToken(signUpResponse.id, signUpResponse.email);
-      const finalResponse = Object.assign(signUpResponse, verifyToken);
-      return finalResponse;
+      const { access_token, token_type, expires_in } = signUpResponseObject.session;
+      const existingUser = await this.prisma.user.findUnique({
+        where: {
+          id: signUpResponseObject.id,
+        },
+      });
+      if (existingUser) {
+        await this.prisma.user.update({
+          where: {
+            id: signUpResponseObject.id,
+          },
+          data: {
+            session: {
+              update: {
+                accessToken: access_token,
+              },
+            },
+          },
+        });
+        const signInResponse = plainToClass(AuthDto, signUpResponseObject);
+        //check user name co session hay chua
+
+        const verifyToken = await this.signToken(signInResponse.id, signInResponse.email);
+        const finalResponse = Object.assign(signInResponse, verifyToken);
+        return finalResponse;
+      } else {
+        await this.prisma.user.create({
+          data: {
+            id: signUpResponseObject.id,
+            name: signUpResponseObject.name,
+            lastname: signUpResponseObject.lastname,
+            email: signUpResponseObject.email,
+            level: signUpResponseObject.level,
+            session: {
+              create: {
+                accessToken: access_token,
+                expiresIn: expires_in,
+                tokenType: token_type,
+              },
+            },
+          },
+        });
+      }
     } catch (error) {
       const errorMsg = error.response.data.result;
       throw Error(errorMsg);
@@ -69,17 +107,16 @@ export class AuthService {
     try {
       //ordering service
       const response = await axios.request(options);
-
       const signInResponseOnject = response.data.result;
-
       // save database here signInResponse
       const { access_token, token_type, expires_in } = signInResponseOnject.session;
+      getAccessToken(signInResponseOnject.id, expires_in);
       const existingUser = await this.prisma.user.findUnique({
         where: {
           id: signInResponseOnject.id,
         },
       });
-      console.log(existingUser);
+
       if (existingUser) {
         await this.prisma.user.update({
           where: {
@@ -95,6 +132,7 @@ export class AuthService {
         });
         const signInResponse = plainToClass(AuthDto, signInResponseOnject);
         //check user name co session hay chua
+
         const verifyToken = await this.signToken(signInResponse.id, signInResponse.email);
         const finalResponse = Object.assign(signInResponse, verifyToken);
         return finalResponse;
@@ -117,7 +155,8 @@ export class AuthService {
         });
       }
     } catch (error) {
-      const errorMsg = error.response.data.result;
+      console.log(error);
+      const errorMsg = error.response.data;
       throw Error(errorMsg);
     }
   }
@@ -130,7 +169,7 @@ export class AuthService {
     const secret = this.config.get('JWT_SECRET');
 
     const token = await this.jwt.signAsync(payload, {
-      expiresIn: '15m',
+      expiresIn: '4h',
       secret: secret,
     });
 

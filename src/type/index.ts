@@ -25,5 +25,5 @@ export type BusinessStatus = boolean;
 
 export interface OrderData {
   prepaired_in: string;
-  order_status: string;
+  orderStatus: string;
 }

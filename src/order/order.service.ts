@@ -14,7 +14,7 @@ export class OrderService {
       url: `${getEnvUrl('orders')}?status=0&mode=dashboard`,
       headers: {
         accept: 'application/json',
-        Authorization: `${acessToken}`,
+        Authorization: `Bearer ${acessToken}`,
       },
     };
    
@@ -42,7 +42,7 @@ export class OrderService {
       url: `${getEnvUrl('orders', orderId)}?mode=dashboard`,
       headers: {
         accept: 'application/json',
-        Authorization: `${acessToken}`,
+        Authorization: `Bearer ${acessToken}`,
       },
     };
 
@@ -67,7 +67,7 @@ export class OrderService {
 
   async updateOrder(orderId: OrderId, data: OrderData) {
     console.log(
-      `this is updated order with prep_time:${orderId} , ${data.prepaired_in}, ${data.order_status}`,
+      `this is updated order with prep_time:${orderId} , ${data.prepaired_in}, ${data.orderStatus}`,
     );
   }
 }

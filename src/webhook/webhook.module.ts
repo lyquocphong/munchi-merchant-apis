@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { OrderWebhookController } from './order_webhook.controller.';
-import { OrderWebhookService } from './order_webhook.service';
+import { OrderWebhookController } from './webhook.controller.';
+import { OrderWebhookService } from './webhook.service';
 
 
 @Module({

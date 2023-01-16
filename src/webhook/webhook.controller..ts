@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Req } from '@nestjs/common';
 import { Request } from 'express';
-import { OrderWebhookService } from './order_webhook.service';
+import { OrderWebhookService } from './webhook.service';
 
 @Controller('webhook')
 export class OrderWebhookController {
