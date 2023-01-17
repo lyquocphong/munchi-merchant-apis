@@ -1,76 +1,35 @@
 import { HttpService } from '@nestjs/axios';
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  Put,
-  Request,
-} from '@nestjs/common';
-import { OrderData, OrderId } from 'src/type';
+import { Body, Controller, Get, Param, Post, Put, Request, UseGuards } from '@nestjs/common';
+import { JwtGuard } from 'src/auth/guard';
+import { OrderData } from 'src/type';
+import { UtilsService } from 'src/utils/utils.service';
 
 import { OrderService } from './order.service';
-
+@UseGuards(JwtGuard)
 @Controller('order')
 export class OrderController {
-  constructor(
-    private orderService: OrderService,
-    private readonly httpService: HttpService,
-  ) {}
+  constructor(private orderService: OrderService, private utils: UtilsService) {}
   @Get('orders')
-  getAllOrders(@Request() req) {
-    const acessToken = req.headers.authorization;
+  async getAllOrders(@Request() req) {
+    const { id } = req.user;
+    const accessToken = await this.utils.getAccessToken(id);
     console.log('All order');
-    return this.orderService.getAllOrders(acessToken);
+    return this.orderService.getAllOrders(accessToken);
   }
 
   @Get(':orderId')
-  getOrderbyId(
-    @Param('orderId') orderId: OrderId,
-    @Request() req,
-  ) {
-    const acessToken = req.headers.authorization;
-    return this.orderService.getOrderbyId(orderId, acessToken);
-  }
-
-  @Post('newOrder')
-  newOrder(@Body() data: any) {
-    console.log(data);
-    const order =
-      this.orderService.newOrder(data);
-    this.httpService
-      .post(
-        'https://webhook.site/3311e65c-34ae-4ecb-a705-9f2c7fa5eec0',
-        data,
-      )
-      .subscribe({
-        complete: () => {
-          console.log('completed');
-        },
-        error: (err) => {
-          // you can handle error requests here
-          console.log(err);
-        },
-      });
-
-    return order;
+  async getOrderbyId(@Param('orderId') orderId: number, @Request() req: any) {
+    const { id } = req.user;
+    const accessToken = await this.utils.getAccessToken(id);
+    return this.orderService.getOrderbyId(orderId, accessToken);
   }
 
   @Put('orders/:orderId')
-  rejectOrder(
-    @Param('orderId') orderId: OrderId,
-  ) {
+  rejectOrder(@Param('orderId') orderId: number) {
     return this.orderService.rejectOrder(orderId);
   }
 
-  updateOrder(
-    @Param('orderId') orderId: OrderId,
-    @Body() data: OrderData
-  ) {
-     return this.orderService.updateOrder(
-       orderId,
-       data,
-     );
+  updateOrder(@Param('orderId') orderId: number, @Body() data: OrderData) {
+    return this.orderService.updateOrder(orderId, data);
   }
 }

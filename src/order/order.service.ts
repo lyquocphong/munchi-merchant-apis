@@ -1,23 +1,23 @@
 import { Body, Injectable } from '@nestjs/common';
-import { classToPlain, plainToClass } from 'class-transformer';
-import { OrderData, OrderId } from 'src/type';
-import { getEnvUrl } from 'src/utils/getEnvUrl';
+import { plainToClass } from 'class-transformer';
+import { OrderData } from 'src/type';
 import { OrderDto } from './dto/order.dto';
-
+import { UtilsService } from 'src/utils/utils.service';
 import axios from 'axios';
 
 @Injectable()
 export class OrderService {
+  constructor(private utils: UtilsService) {}
   async getAllOrders(acessToken: string) {
     const options = {
       method: 'GET',
-      url: `${getEnvUrl('orders')}?status=0&mode=dashboard`,
+      url: `${this.utils.getEnvUrl('orders')}?status=0&mode=dashboard`,
       headers: {
         accept: 'application/json',
-        Authorization: `${acessToken}`,
+        Authorization: `Bearer ${acessToken}`,
       },
     };
-   
+
     const ordersResponse = await axios
       .request(options)
       .then(function (response: any) {
@@ -36,13 +36,13 @@ export class OrderService {
     return data;
   }
 
-  async getOrderbyId(orderId: OrderId, acessToken: string) {
+  async getOrderbyId(orderId: number, acessToken: string) {
     const options = {
       method: 'GET',
-      url: `${getEnvUrl('orders', orderId)}?mode=dashboard`,
+      url: `${this.utils.getEnvUrl('orders', orderId)}?mode=dashboard`,
       headers: {
         accept: 'application/json',
-        Authorization: `${acessToken}`,
+        Authorization: `Bearer ${acessToken}`,
       },
     };
 
@@ -61,13 +61,13 @@ export class OrderService {
     }
   }
 
-  async rejectOrder(orderId: OrderId) {
+  async rejectOrder(orderId: number) {
     console.log(`this is reject orderId:${orderId}`);
   }
 
-  async updateOrder(orderId: OrderId, data: OrderData) {
+  async updateOrder(orderId: number, data: OrderData) {
     console.log(
-      `this is updated order with prep_time:${orderId} , ${data.prepaired_in}, ${data.order_status}`,
+      `this is updated order with prep_time:${orderId} , ${data.prepaired_in}, ${data.orderStatus}`,
     );
   }
 }
