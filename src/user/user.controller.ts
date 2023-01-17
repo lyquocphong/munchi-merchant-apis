@@ -11,11 +11,6 @@ export class UserController {
   @Get(':userId')
   async getUser(@Param('userId') userId: OrderId, @Request() req) {
     const { id } = req.user;
-    const sessionData = await this.prisma.session.findUnique({
-      where: {
-        userId: id,
-      },
-    });
-    return this.userService.getUser(id, sessionData.accessToken);
+    return this.userService.getUser(id);
   }
 }

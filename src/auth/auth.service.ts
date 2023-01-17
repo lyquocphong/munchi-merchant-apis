@@ -1,14 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { Response } from 'express';
+
 import { AuthCredentials } from 'src/type';
-import { getEnvUrl } from 'src/utils/getEnvUrl';
-import axios from 'axios';
+
 import { plainToClass } from 'class-transformer';
 import { AuthDto } from './dto/auth.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { getAccessToken } from 'src/utils/getAcessToken';
+import { UtilsService } from 'src/utils/utils.service';
+import axios from 'axios';
 
 @Injectable()
 export class AuthService {
@@ -16,6 +16,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private config: ConfigService,
     private readonly prisma: PrismaService,
+    private utils: UtilsService,
   ) {}
   async signup(credentials: AuthCredentials) {
     // console.log(
@@ -24,7 +25,7 @@ export class AuthService {
     // );
     const options = {
       method: 'POST',
-      url: getEnvUrl('users'),
+      url: this.utils.getEnvUrl('users'),
       headers: {
         accept: 'application/json',
         'content-type': 'application/json',
@@ -85,14 +86,14 @@ export class AuthService {
       }
     } catch (error) {
       const errorMsg = error.response.data.result;
-      throw Error(errorMsg);
+      throw new ForbiddenException(errorMsg);
     }
   }
 
   async signin(credentials: AuthCredentials) {
     const options = {
       method: 'POST',
-      url: getEnvUrl('auth'),
+      url: this.utils.getEnvUrl('auth'),
       headers: {
         accept: 'application/json',
         'content-type': 'application/json',
@@ -110,7 +111,7 @@ export class AuthService {
       const signInResponseOnject = response.data.result;
       // save database here signInResponse
       const { access_token, token_type, expires_in } = signInResponseOnject.session;
-      getAccessToken(signInResponseOnject.id, expires_in);
+
       const existingUser = await this.prisma.user.findUnique({
         where: {
           id: signInResponseOnject.id,
@@ -155,9 +156,8 @@ export class AuthService {
         });
       }
     } catch (error) {
-      console.log(error);
-      const errorMsg = error.response.data;
-      throw Error(errorMsg);
+      const errorMsg = error.response.data.result;
+      throw new ForbiddenException(errorMsg);
     }
   }
 

@@ -8,6 +8,7 @@ import { OrderModule } from 'src/order/order.module';
 import { OrderWebhookModule } from 'src/webhook/webhook.module';
 import { UserModule } from 'src/user/user.module';
 import { BusinessModule } from 'src/business/business.module';
+import { UtilsModule } from 'src/utils/utils.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -18,7 +19,7 @@ import { BusinessModule } from 'src/business/business.module';
     PrismaModule,
     OrderModule,
     UserModule,
-    OrderWebhookModule
+    OrderWebhookModule,
   ],
   controllers: [AppController],
   providers: [AppService],
