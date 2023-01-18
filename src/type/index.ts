@@ -1,8 +1,4 @@
-import {
-  IsEmail,
-  IsNotEmpty,
-  IsString,
-} from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 
 export class AuthCredentials {
   name: string;
@@ -20,9 +16,9 @@ export class AuthCredentials {
 export type OrderId = string;
 
 export type FilterQuery = {
-  businessId: number,
-  status: number
-}
+  businessId: number;
+  status: number;
+};
 
 export interface OrderData {
   prepaired_in: string;

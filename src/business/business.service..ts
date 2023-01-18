@@ -51,11 +51,12 @@ export class BusinessService {
     }
   }
 
-  async getBusinessOnline(businessId: number, businessStatus: boolean, accessToken: string) {
+  async getBusinessOnline(businessId: number, accessToken: string) {
+
     const options = {
-      method: 'PUT',
-      url: `${this.utils.getEnvUrl('business', businessId)}?mode=dashboard`,
-      data: { enabled: businessStatus },
+      method: 'POST',
+      url: `${this.utils.getEnvUrl('business', businessId)}`,
+      data: { enabled: true },
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
@@ -66,18 +67,18 @@ export class BusinessService {
       const businessResponseObject = response.data.result;
       const businessResponse = plainToClass(BusinessDto, businessResponseObject);
       console.log(businessResponse);
-      return `Business Online , data: {${businessResponse}}`;
+      return `Business Online`;
     } catch (error) {
       const errorMsg = error.response.data.result;
       throw Error(errorMsg);
     }
   }
 
-  async getBusinessOffline(businessId: number, businessStatus: boolean, accessToken: string) {
+  async getBusinessOffline(businessId: number, accessToken: string) {
     const options = {
-      method: 'PUT',
-      url: `${this.utils.getEnvUrl('business', businessId)}?mode=dashboard`,
-      data: { enabled: businessStatus },
+      method: 'POST',
+      url: `${this.utils.getEnvUrl('business', businessId)}`,
+      data: { enabled: false },
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
@@ -88,7 +89,7 @@ export class BusinessService {
       const businessResponseObject = response.data.result;
       const businessResponse = plainToClass(BusinessDto, businessResponseObject);
       console.log(businessResponse);
-      return `Business Offline , data: {${businessResponse}}`;
+      return `Business Offline`;
     } catch (error) {
       const errorMsg = error.response.data.result;
       throw Error(errorMsg);

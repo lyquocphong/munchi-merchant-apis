@@ -9,7 +9,6 @@ import { BusinessService } from './business.service.';
 export class BusinessController {
   constructor(
     private businessService: BusinessService,
-    private prisma: PrismaService,
     private utils: UtilsService,
   ) {}
   @Get('allbusiness')
@@ -24,24 +23,23 @@ export class BusinessController {
     const accessToken = await this.utils.getAccessToken(id);
     return this.businessService.getBusinessById(businessId, accessToken);
   }
-  @Put('getBusinessOnline')
+  @Post(':businessId/getBusinessOnline')
   async getBusinessOnline(
     @Request() req: any,
-    @Body() businessId: number,
-    businessStatus: boolean,
+    @Param('businessId') businessId: number
   ) {
     const { id } = req.user;
     const accessToken = await this.utils.getAccessToken(id);
-    return this.businessService.getBusinessOnline(businessId, businessStatus, accessToken);
+   console.log(businessId)
+    return this.businessService.getBusinessOnline(businessId, accessToken);
   }
-  @Put('getBusinessOffline')
+  @Post(':businessId/getBusinessOffline')
   async getBusinessOffline(
     @Request() req: any,
-    @Body() businessId: number,
-    businessStatus: boolean,
+    @Param('businessId') businessId: number
   ) {
     const { id } = req.user;
     const accessToken = await this.utils.getAccessToken(id);
-    return this.businessService.getBusinessOffline(businessId, businessStatus, accessToken);
+    return this.businessService.getBusinessOffline(businessId, accessToken);
   }
 }
