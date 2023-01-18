@@ -19,7 +19,10 @@ export class AuthCredentials {
 
 export type OrderId = string;
 
-
+export type FilterQuery = {
+  businessId: number,
+  status: number
+}
 
 export interface OrderData {
   prepaired_in: string;
