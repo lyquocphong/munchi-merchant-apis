@@ -18,9 +18,10 @@ export class OrderService {
       },
     };
     try {
-      const ordersResponse = await axios.request(options);
-      console.log(ordersResponse);
-      return ordersResponse;
+      const response = await axios.request(options);
+      const order = plainToClass(OrderDto, response.data.result);
+      console.log(order);
+      return order;
     } catch (error) {
       console.error(error.response.data);
       const errorMsg = error.response.data;
@@ -28,14 +29,12 @@ export class OrderService {
     }
   }
 
-  async getFilteredOrders(accessToken: string, filterQuery: FilterQuery,paramsQuery:string) {
+  async getFilteredOrders(accessToken: string, filterQuery: FilterQuery, paramsQuery: string) {
     const options = {
       method: 'GET',
       url: `${this.utils.getEnvUrl('orders')}?mode=dashboard&where={"status":${
         filterQuery.status
-      },"business_id":${
-        filterQuery.businessId
-      }}&params=${paramsQuery}`,
+      },"business_id":${filterQuery.businessId}}&params=${paramsQuery}`,
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
@@ -43,8 +42,9 @@ export class OrderService {
     };
     try {
       const response = await axios.request(options);
-      const data = response.data.result
-      return data
+      const order = plainToClass(OrderDto, response.data.result);
+      console.log(order);
+      return order;
     } catch (error) {
       console.log(error.response.data);
       const errorMsg = error.response.data;
@@ -75,30 +75,32 @@ export class OrderService {
     }
   }
 
-  async updateOrder(orderId: number, orderData: OrderData) {
-    console.log(
-      `this is updated order with prep_time:${orderId} , ${orderData.prepaired_in}, ${orderData.orderStatus}`,
-    );
+  async updateOrder(orderId: number, orderData: OrderData, acessToken: string) {
     const options = {
       method: 'PUT',
-      url: `${this.utils.getEnvUrl('orders', orderId)}?mode=dashboard`,
-      headers: { accept: 'application/json', 'content-type': 'application/json' },
-      data: { status: orderData.orderStatus, delivery_datetime: orderData.prepaired_in },
+      url: `${this.utils.getEnvUrl('orders', orderId)}`,
+      headers: { accept: 'application/json', Authorization: `Bearer ${acessToken}` },
+      data: { status: orderData.orderStatus, prepared_in: orderData.prepared_in },
     };
     try {
       const response = await axios.request(options);
       console.log(response.data);
+      console.log(response.data);
+      const order = plainToClass(OrderDto, response.data.result);
+      console.log(order);
+      return order;
     } catch (error) {
+      console.log(error.response.data);
       const errorMsg = error.response.data;
       return Error(errorMsg);
     }
   }
-  async removeOrder(orderId: number) {
+  async removeOrder(orderId: number, acessToken: string) {
     console.log(`this is remove orderId:${orderId}`);
     const options = {
       method: 'DELETE',
       url: `${this.utils.getEnvUrl('orders', orderId)}`,
-      headers: { accept: 'application/json' },
+      headers: { accept: 'application/json', Authorization: `Bearer ${acessToken}` },
     };
     try {
       const response = await axios.request(options);

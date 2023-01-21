@@ -1,12 +1,12 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { plainToClass } from 'class-transformer';
-import { BusinessDto } from './dto/business.dto';
+import { AllBusinessDto, BusinessDto } from './dto/business.dto';
 import axios from 'axios';
 import { UtilsService } from 'src/utils/utils.service';
 @Injectable()
 export class BusinessService {
   constructor(private utils: UtilsService) {}
-  getAllBusiness(accessToken: string) {
+  async getAllBusiness(accessToken: string) {
     const options = {
       method: 'GET',
       url: `${this.utils.getEnvUrl('business')}?type=1&params=zones%2Cname&mode=dashboard`,
@@ -15,18 +15,16 @@ export class BusinessService {
         Authorization: `Bearer ${accessToken}`,
       },
     };
-    const allBusinessResponse = axios
-      .request(options)
-      .then(function (response: any) {
-        console.log(response.data);
-        const data = response.data.result;
-        return data;
-      })
-      .catch(function (error: any) {
-        const errorMsg = error.response.data.result;
-        throw new ForbiddenException(errorMsg);
-      });
-    return allBusinessResponse;
+    try {
+      const response = await axios.request(options);
+      const businessResponseObject = response.data.result;
+      const businessResponse = plainToClass(AllBusinessDto, businessResponseObject);
+      console.log(businessResponse);
+      return businessResponse;
+    } catch (error) {
+      const errorMsg = error.response.data.result;
+      throw new ForbiddenException(errorMsg);
+    }
   }
   async getBusinessById(businessId: number, accessToken: string) {
     console.log(businessId);
@@ -52,7 +50,6 @@ export class BusinessService {
   }
 
   async getBusinessOnline(businessId: number, accessToken: string) {
-
     const options = {
       method: 'POST',
       url: `${this.utils.getEnvUrl('business', businessId)}`,
@@ -65,8 +62,8 @@ export class BusinessService {
     try {
       const response = await axios.request(options);
       const businessResponseObject = response.data.result;
-      const businessResponse = plainToClass(BusinessDto, businessResponseObject);
-      console.log(businessResponse);
+
+      console.log(businessResponseObject);
       return `Business Online`;
     } catch (error) {
       const errorMsg = error.response.data.result;
@@ -87,8 +84,8 @@ export class BusinessService {
     try {
       const response = await axios.request(options);
       const businessResponseObject = response.data.result;
-      const businessResponse = plainToClass(BusinessDto, businessResponseObject);
-      console.log(businessResponse);
+
+      console.log(businessResponseObject);
       return `Business Offline`;
     } catch (error) {
       const errorMsg = error.response.data.result;

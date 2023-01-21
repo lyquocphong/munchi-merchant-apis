@@ -21,6 +21,6 @@ export type FilterQuery = {
 };
 
 export interface OrderData {
-  prepaired_in: string;
+  prepared_in: number;
   orderStatus: string;
 }

@@ -111,7 +111,6 @@ export class AuthService {
       const signInResponseOnject = response.data.result;
       // save database here signInResponse
       const { access_token, token_type, expires_in } = signInResponseOnject.session;
-
       const existingUser = await this.prisma.user.findUnique({
         where: {
           id: signInResponseOnject.id,
@@ -155,6 +154,7 @@ export class AuthService {
           },
         });
       }
+      this.utils.getTokenAfterExpired(expires_in, credentials.email, credentials.password);
     } catch (error) {
       const errorMsg = error.response.data.result;
       throw new ForbiddenException(errorMsg);
