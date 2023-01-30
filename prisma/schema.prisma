@@ -20,6 +20,7 @@ model User {
   name     String
   lastname String
   email    String    @unique
+  hash     String
   level    Int?
   session Session?
 
@@ -29,4 +30,6 @@ model User {
 model Business {
   id Int @id
   publicId String 
+  name String
+  @@map("business")
 }

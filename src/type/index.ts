@@ -1,9 +1,9 @@
 import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 
 export class AuthCredentials {
-  name: string;
-  lastname: string;
-  role: string | number;
+  name?: string;
+  lastname?: string;
+  role?: string | number;
   @IsEmail()
   @IsNotEmpty()
   email: string;
@@ -13,7 +13,7 @@ export class AuthCredentials {
   password: string;
 }
 
-export type OrderId = string;
+export type OrderId = number;
 
 export type FilterQuery = {
   businessId: number;
