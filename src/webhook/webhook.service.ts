@@ -5,8 +5,9 @@ import { AuthCredentials } from 'src/type';
 const axios = require('axios');
 @Injectable()
 export class OrderWebhookService {
-  newOrder() {
-    return 'webhook order';
+  newOrder(data) {
+    console.log(`this is new order`);
+    return data;
   }
   newOrderReciever(request) {
     console.log(request)

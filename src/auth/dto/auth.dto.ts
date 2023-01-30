@@ -9,7 +9,7 @@ import { SessionDto } from './session.dto';
 export class AuthDto {
   @Expose() id: number;
   @Expose() name: string;
-  @Expose() lastname: string;
+  @Expose({name:'lastname'}) lastName: string;
   @Expose() email: string;
   @Expose() level: number;
   @Expose()

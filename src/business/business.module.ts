@@ -1,13 +1,14 @@
 import { Module } from '@nestjs/common';
+import { OrderingIoModule } from 'src/ordering.io/ordering.io.module';
 import { UtilsModule } from 'src/utils/utils.module';
 import { UtilsService } from 'src/utils/utils.service';
 
 import { BusinessController } from './business.controller';
-import { BusinessService } from './business.service.';
+
 
 @Module({
-  imports: [UtilsModule],
+  imports: [UtilsModule, OrderingIoModule],
   controllers: [BusinessController],
-  providers: [BusinessService],
+  // providers: [BusinessService],
 })
 export class BusinessModule {}

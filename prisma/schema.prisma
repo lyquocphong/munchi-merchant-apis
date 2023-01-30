@@ -26,3 +26,7 @@ model User {
   @@map("user")
 }
 
+model Business {
+  id Int @id
+  publicId String 
+}

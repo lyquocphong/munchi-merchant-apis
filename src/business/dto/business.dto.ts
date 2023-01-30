@@ -17,3 +17,13 @@ export class BusinessDto {
     Object.assign(this, partial);
   }
 }
+
+@Exclude()
+export class AllBusinessDto {
+  @Expose() id: number;
+  @Expose() name: string;
+  @Expose() timezone: string;
+  constructor(partial: Partial<AllBusinessDto>) {
+    Object.assign(this, partial);
+  }
+}
