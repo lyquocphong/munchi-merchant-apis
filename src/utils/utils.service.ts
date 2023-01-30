@@ -20,12 +20,14 @@ export class UtilsService {
     });
     return sessionData.accessToken;
   }
+  //sessionId
+  //get expire token bang userId 
   async getTokenAfterExpired(expireIn: number, email: string, password: string) {
     const expiredAt = moment().add(expireIn, 'milliseconds').format('X');
     console.log(expiredAt);
-    const today = moment().format('X');
-    console.log(today);
-    if (expiredAt < today) {
+    const now = moment().format('X');
+    console.log(now);
+    if (expiredAt < now) {
       const options = {
         method: 'POST',
         url: this.getEnvUrl('auth'),

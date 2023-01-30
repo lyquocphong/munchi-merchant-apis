@@ -1,26 +1,26 @@
 import { Body, Controller, Delete, Get, Param, Put, Request, UseGuards } from '@nestjs/common';
 import { JwtGuard } from 'src/auth/guard';
+import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
 import { FilterQuery, OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
 
-import { OrderService } from './order.service';
 @UseGuards(JwtGuard)
 @Controller('orders')
 export class OrderController {
-  constructor(private orderService: OrderService, private utils: UtilsService) {}
+  constructor(private orderingIo: OrderingIoService, private utils: UtilsService) {}
   @Get('allOrders')
   async getAllOrders(@Request() req: any) {
     const { id } = req.user;
     const accessToken = await this.utils.getAccessToken(id);
     console.log('All order');
-    return this.orderService.getAllOrders(accessToken);
+    return this.orderingIo.getAllOrders(accessToken);
   }
   @Get('filteredOrders')
   async getFilteredOrders(@Request() req, @Body() filterQuery: FilterQuery) {
     const { id } = req.user;
     const accessToken = await this.utils.getAccessToken(id);
 
-    const paramArray = [
+    const paramsQuery = [
       'id',
       'paymethod_id',
       'business_id',
@@ -31,17 +31,14 @@ export class OrderController {
       'prepared_in',
       'products',
       'summary',
-    ];
-    const paramsQuery = paramArray.join();
-    console.log(paramsQuery);
-    // console.log(filterQuery)
-    return this.orderService.getFilteredOrders(accessToken, filterQuery, paramsQuery);
+    ].join();
+    return this.orderingIo.getFilteredOrders(accessToken, filterQuery, paramsQuery);
   }
   @Get(':orderId')
   async getOrderbyId(@Param('orderId') orderId: number, @Request() req: any) {
     const { id } = req.user;
     const accessToken = await this.utils.getAccessToken(id);
-    return this.orderService.getOrderbyId(orderId, accessToken);
+    return this.orderingIo.getOrderbyId(orderId, accessToken);
   }
 
   @Put(':orderId')
@@ -52,13 +49,13 @@ export class OrderController {
   ) {
     const { id } = req.user;
     const accessToken = await this.utils.getAccessToken(id);
-    return this.orderService.updateOrder(orderId, orderData, accessToken);
+    return this.orderingIo.updateOrder(orderId, orderData, accessToken);
   }
 
   @Delete(':orderId')
   async removeOrder(@Param('orderId') orderId: number, @Request() req: any) {
     const { id } = req.user;
     const accessToken = await this.utils.getAccessToken(id);
-    return this.orderService.removeOrder(orderId, accessToken);
+    return this.orderingIo.removeOrder(orderId, accessToken);
   }
 }
