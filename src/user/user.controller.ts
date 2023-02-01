@@ -1,16 +1,17 @@
 import { Controller, Get, Param, Request, UseGuards } from '@nestjs/common';
 import { JwtGuard } from 'src/auth/guard';
 import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
-import { PrismaService } from 'src/prisma/prisma.service';
 import { OrderId } from 'src/type';
+import { UtilsService } from 'src/utils/utils.service';
 
 @Controller('user')
 export class UserController {
-  constructor(private orderingIo: OrderingIoService, private prisma: PrismaService) {}
+  constructor(private orderingIo: OrderingIoService, private utils: UtilsService) {}
   @UseGuards(JwtGuard)
   @Get(':userId')
-  async getUser(@Param('userId') userId: OrderId, @Request() req) {
+  async getUser(@Param('userId') userId: OrderId, @Request() req: any) {
     const { id } = req.user;
-    return this.orderingIo.getUser(id);
+    const accessToken = await this.utils.getAccessToken(id);
+    return this.orderingIo.getUser(userId, accessToken);
   }
 }

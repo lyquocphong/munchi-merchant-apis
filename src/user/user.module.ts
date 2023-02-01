@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
 import { UserController } from './user.controller';
-import { UserService } from './user.service';
-import { HttpModule } from '@nestjs/axios';
 import { UtilsModule } from 'src/utils/utils.module';
+import { OrderingIoModule } from 'src/ordering.io/ordering.io.module';
 @Module({
-  imports: [UtilsModule],
+  imports: [UtilsModule,OrderingIoModule],
   controllers: [UserController],
-  providers: [UserService],
+ 
 })
 export class UserModule {}
