@@ -31,7 +31,7 @@ async function bootstrap() {
       whitelist: true,
     }),
   );
-  await app.listen(5000);
+  await app.listen(process.env.PORT);
   if (module.hot) {
     module.hot.accept();
     module.hot.dispose(() => app.close());
