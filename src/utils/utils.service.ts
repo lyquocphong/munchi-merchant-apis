@@ -8,9 +8,12 @@ import { forwardRef } from '@nestjs/common/utils';
 import { Inject } from '@nestjs/common/decorators';
 import Cryptr from 'cryptr';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { v4 as uuidv4 } from 'uuid';
 @Injectable()
 export class UtilsService {
   constructor(
+    private readonly jwt: JwtService,
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => OrderingIoService))
     private orderingIo: OrderingIoService,
@@ -23,14 +26,12 @@ export class UtilsService {
     return envUrl;
   }
   async getAccessToken(userId: number) {
-    const cryptr = new Cryptr(this.config.get('HASH_SECRET'));
     const sessionData = await this.prisma.session.findUnique({
       where: {
         userId: userId,
       },
     });
     const expiredAt = moment().add(sessionData.expiresIn, 'milliseconds').format('X');
-
     const now = moment().format('X');
     const userData = await this.prisma.user.findUnique({
       where: {
@@ -39,7 +40,7 @@ export class UtilsService {
     });
 
     if (expiredAt < now) {
-      const decryptedPassword = cryptr.decrypt(userData.hash);
+      const decryptedPassword = this.getPassword(userData.hash, false);
       const email = userData.email;
       const options = {
         method: 'POST',
@@ -57,28 +58,9 @@ export class UtilsService {
       try {
         const response = await axios.request(options);
         const signInResponseObject = response.data.result;
-        const { access_token, token_type, expires_in } = signInResponseObject.session;
-        const existingUser = await this.prisma.user.findUnique({
-          where: {
-            id: signInResponseObject.id,
-          },
-        });
-        if (existingUser) {
-          await this.prisma.user.update({
-            where: {
-              id: signInResponseObject.id,
-            },
-            data: {
-              session: {
-                update: {
-                  accessToken: access_token,
-                  expiresIn: expires_in,
-                },
-              },
-            },
-          });
-          return access_token;
-        }
+        const { access_token } = signInResponseObject.session;
+        const token = await this.getSession(signInResponseObject.id, access_token);
+        return token;
       } catch (error) {
         const errorMsg = error.response.data.result;
         throw new ForbiddenException(errorMsg);
@@ -86,5 +68,121 @@ export class UtilsService {
     }
 
     return sessionData.accessToken;
+  }
+  async getSession(userId: number, accessToken: string) {
+    const existingUser = await this.getUser(userId, null); //get User infomation
+    if (existingUser) {
+      //update token if user existed
+      const updatedSession = await this.prisma.session.update({
+        where: {
+          userId: userId,
+        },
+        data: {
+          accessToken: accessToken,
+        },
+      });
+      return updatedSession.accessToken;
+    }
+    return existingUser.session[0].accessToken;
+  }
+  async getUser(userId: number, publicUserId: string) {
+    if (userId === null) {
+      const userByPublicUserId = await this.prisma.user.findUnique({
+        where: {
+          publicId: publicUserId,
+        },
+        include: {
+          session: true,
+        },
+      });
+      return userByPublicUserId;
+    } else {
+      const userByUserId = await this.prisma.user.findUnique({
+        where: {
+          id: userId,
+        },
+        include: {
+          session: true,
+        },
+      });
+      return userByUserId;
+    }
+  }
+
+ async getUpdatedPublicId(publicUserId: string) {
+    const newPublicUserId = this.getPublicId()
+    const user = await this.prisma.user.update({
+      where: {
+        publicId: publicUserId
+      },
+      data: {
+        publicId: newPublicUserId
+      }
+    })
+    console.log(user)
+    return 'Signed out successfully'
+  }
+
+  getPublicId() {
+    const publicId = uuidv4();
+    return publicId;
+  }
+  async createUser(data: any) {
+    const encryptedPassword = this.getPassword(data.password, true);
+    const { access_token, token_type, expires_in } = data.session;
+    const user = await this.prisma.user.create({
+      data: {
+        id: data.id,
+        name: data.name,
+        lastname: data.lastname,
+        email: data.email,
+        hash: encryptedPassword,
+        level: data.level,
+        publicId: this.getPublicId(),
+        session: {
+          create: {
+            accessToken: access_token,
+            expiresIn: expires_in,
+            tokenType: token_type,
+          },
+        },
+      },
+    });
+    return user;
+  }
+
+  getPassword(password: string, needCrypt: boolean) {
+    const cryptr = new Cryptr(this.config.get('HASH_SECRET'));
+    let passwordAfter: string;
+    if (needCrypt) {
+      passwordAfter = cryptr.encrypt(password);
+    } else {
+      passwordAfter = cryptr.decrypt(password);
+    }
+    return passwordAfter;
+  }
+
+  getError(error: any) {
+    if (error.response) {
+      const errorMsg = error.response.data;
+      throw new ForbiddenException(errorMsg);
+    } else {
+      console.log(error);
+    }
+  }
+
+  async signToken(userId: number, email: string): Promise<{ verifyToken: string }> {
+    const payload = {
+      sub: userId,
+      email,
+    };
+    const secret = this.config.get('JWT_SECRET');
+    const token = await this.jwt.signAsync(payload, {
+      expiresIn: '4h',
+      secret: secret,
+    });
+    return {
+      verifyToken: token,
+    };
   }
 }

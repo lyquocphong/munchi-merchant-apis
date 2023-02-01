@@ -5,7 +5,7 @@ import { UtilsModule } from 'src/utils/utils.module';
 import { OrderingIoService } from './ordering.io.service';
 
 @Module({
-  imports: [UtilsModule, JwtModule.register({})],
+  imports: [UtilsModule],
   providers: [OrderingIoService, JwtStrategy],
   exports: [OrderingIoService],
 })

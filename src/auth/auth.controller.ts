@@ -17,4 +17,9 @@ export class AuthController {
   signin(@Body() credentials: AuthCredentials) {
     return this.orderingIo.signIn(credentials);
   }
+
+   @Post('signout')
+  signout(@Body('publicUserId') publicUserId: string) {
+    return this.orderingIo.signOut(publicUserId);
+  }
 }

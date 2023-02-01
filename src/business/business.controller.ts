@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
 import { JwtGuard } from 'src/auth/guard';
 import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
 
@@ -9,10 +9,10 @@ import { UtilsService } from 'src/utils/utils.service';
 export class BusinessController {
   constructor(private utils: UtilsService, private orderingIo: OrderingIoService) {}
   @Get('allbusiness')
-  async getAllBusiness(@Request() req) {
+  async getAllBusiness(@Request() req: any, @Body('publicUserId') publicUserId: string ) {
     const { id } = req.user;
     const accessToken = await this.utils.getAccessToken(id);
-    return this.orderingIo.getAllBusiness(accessToken);
+    return this.orderingIo.getAllBusiness(accessToken, publicUserId);
   }
   @Get(':businessId')
   async getBusinessById(@Param('businessId') businessId: number, @Request() req) {
