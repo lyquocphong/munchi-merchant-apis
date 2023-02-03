@@ -1,25 +1,21 @@
+import { Injectable } from '@nestjs/common';
 import axios from 'axios';
-import Cryptr from 'cryptr';
-import { ForbiddenException, Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
 import { plainToClass } from 'class-transformer';
+import console from 'console';
 import { AuthDto } from 'src/auth/dto/auth.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { AuthCredentials, FilterQuery, OrderData } from 'src/type';
-import { UtilsService } from 'src/utils/utils.service';
+import { BusinessService } from 'src/business/business.service';
 import { AllBusinessDto, BusinessDto } from 'src/business/dto/business.dto';
 import { OrderDto } from 'src/order/dto/order.dto';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { AuthCredentials, FilterQuery, OrderData } from 'src/type';
 import { UserDto } from 'src/user/dto/user.dto';
-import { Inject } from '@nestjs/common/decorators';
-import { forwardRef } from '@nestjs/common/utils';
-import { v4 as uuidv4 } from 'uuid';
+import { UtilsService } from 'src/utils/utils.service';
 @Injectable()
 export class OrderingIoService {
   constructor(
     private readonly prisma: PrismaService,
-    @Inject(forwardRef(() => UtilsService))
     private utils: UtilsService,
+    private business: BusinessService,
   ) {}
   // Auth service
   async signIn(credentials: AuthCredentials) {
@@ -36,18 +32,16 @@ export class OrderingIoService {
         security_recaptcha_auth: '0',
       },
     };
-
     try {
       const response = await axios.request(options);
       const signInResponseObject = response.data.result;
       const { access_token } = signInResponseObject.session;
-      const updateSession = await this.utils.getSession(signInResponseObject.id, access_token);
       const existingUser = await this.utils.getUser(signInResponseObject.id, null);
       if (!existingUser) {
-        const user = this.utils.createUser(signInResponseObject!);
-        console.log(user);
+        await this.utils.createUser(signInResponseObject, credentials.password);
+      } else {
+        await this.utils.getSession(signInResponseObject.id, access_token);
       }
-
       const signInResponse = plainToClass(AuthDto, signInResponseObject);
       const verifyToken = await this.utils.signToken(signInResponse.id, signInResponse.email);
       const finalResponse = Object.assign(signInResponse, verifyToken);
@@ -77,10 +71,11 @@ export class OrderingIoService {
       const response = await axios.request(options);
       const signUpResponseObject = response.data.result;
       const { access_token } = signUpResponseObject.session;
-      const updatedSession = this.utils.getSession(signUpResponseObject.id, access_token);
       const existingUser = await this.utils.getUser(signUpResponseObject.id, null);
       if (!existingUser) {
-        this.utils.createUser(signUpResponseObject);
+        await this.utils.createUser(signUpResponseObject, credentials.password);
+      } else {
+        await this.utils.getSession(signUpResponseObject.id, access_token);
       }
       const signUnResponse = plainToClass(AuthDto, signUpResponseObject);
       const verifyToken = await this.utils.signToken(signUnResponse.id, signUnResponse.email);
@@ -91,7 +86,7 @@ export class OrderingIoService {
     }
   }
   async signOut(publicUserId: string) {
-    return  this.utils.getUpdatedPublicId(publicUserId)
+    return this.utils.getUpdatedPublicId(publicUserId);
   }
 
   //business services
@@ -108,25 +103,17 @@ export class OrderingIoService {
       const response = await axios.request(options);
       const businessResponseObject = response.data.result;
       const user = await this.utils.getUser(null, publicUserId);
-      const existingBusiness = await this.prisma.business.findMany();
-      if (!existingBusiness) {
-        const newBusiness = businessResponseObject.map(async (business: any) => {
-          const publicBusinessId = this.utils.getPublicId();
-          await this.prisma.business.create({
-            data: {
-              id: business.id,
-              name: business.name,
-              publicId: publicBusinessId,
-              userId: user.id,
-            },
-          });
-        });
-        const businessResponse = plainToClass(AllBusinessDto, newBusiness);
-        return businessResponse;
-      } else {
-        const businessResponse = plainToClass(AllBusinessDto, existingBusiness);
-        return businessResponse;
-      }
+      businessResponseObject.map(async (business: any) => {
+        const existedBusiness = await this.business.getBusiness(business.id);
+        if (existedBusiness.length === 0) {
+          console.log('do not existed yet');
+          //create Business
+          const newBusiness = await this.business.addBusiness(business, user.userId);
+          return newBusiness;
+        }
+      });
+      // const businessResponse = plainToClass(AllBusinessDto, businessResponseObject);
+      return user.business;
     } catch (error) {
       this.utils.getError(error);
     }
@@ -254,7 +241,7 @@ export class OrderingIoService {
     };
     try {
       const response = await axios.request(options);
-      const order = plainToClass(OrderDto, response.data.result);  
+      const order = plainToClass(OrderDto, response.data.result);
       return order;
     } catch (error) {
       this.utils.getError(error);

@@ -9,7 +9,6 @@ export class AuthController {
 
   @Post('signup')
   signup(@Body() credentials: AuthCredentials) {
-    console.log(credentials);
     return this.orderingIo.signUp(credentials);
   }
 
