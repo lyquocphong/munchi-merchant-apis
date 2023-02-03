@@ -9,9 +9,9 @@ import { UtilsService } from 'src/utils/utils.service';
 export class BusinessController {
   constructor(private utils: UtilsService, private orderingIo: OrderingIoService) {}
   @Get('allbusiness')
-  async getAllBusiness(@Request() req: any, @Body('publicUserId') publicUserId: string ) {
-    const { id } = req.user;
-    const accessToken = await this.utils.getAccessToken(id);
+  async getAllBusiness(@Request() req: any, @Body('publicUserId') publicUserId: string) {
+    const { userId } = req.user;
+    const accessToken = await this.utils.getAccessToken(userId);
     return this.orderingIo.getAllBusiness(accessToken, publicUserId);
   }
   @Get(':businessId')

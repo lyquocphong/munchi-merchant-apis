@@ -35,7 +35,7 @@ export class UtilsService {
     const now = moment().format('X');
     const userData = await this.prisma.user.findUnique({
       where: {
-        id: userId,
+        userId: userId,
       },
     });
 
@@ -70,9 +70,8 @@ export class UtilsService {
     return sessionData.accessToken;
   }
   async getSession(userId: number, accessToken: string) {
-    const existingUser = await this.getUser(userId, null); //get User infomation
-    if (existingUser) {
-      //update token if user existed
+    //get User infomation
+    try {
       const updatedSession = await this.prisma.session.update({
         where: {
           userId: userId,
@@ -81,9 +80,11 @@ export class UtilsService {
           accessToken: accessToken,
         },
       });
+      console.log(updatedSession);
       return updatedSession.accessToken;
+    } catch (error) {
+      console.log(error);
     }
-    return existingUser.session[0].accessToken;
   }
   async getUser(userId: number, publicUserId: string) {
     if (userId === null) {
@@ -93,46 +94,58 @@ export class UtilsService {
         },
         include: {
           session: true,
+          business: {
+            select: {
+              name: true,
+              publicId:true
+            }
+          }
         },
       });
       return userByPublicUserId;
     } else {
       const userByUserId = await this.prisma.user.findUnique({
         where: {
-          id: userId,
+          userId: userId,
         },
         include: {
           session: true,
+           business: {
+            select: {
+              name: true,
+              publicId:true
+            }
+          }
         },
       });
       return userByUserId;
     }
   }
 
- async getUpdatedPublicId(publicUserId: string) {
-    const newPublicUserId = this.getPublicId()
+  async getUpdatedPublicId(publicUserId: string) {
+    const newPublicUserId = this.getPublicId();
     const user = await this.prisma.user.update({
       where: {
-        publicId: publicUserId
+        publicId: publicUserId,
       },
       data: {
-        publicId: newPublicUserId
-      }
-    })
-    console.log(user)
-    return 'Signed out successfully'
+        publicId: newPublicUserId,
+      },
+    });
+    console.log(user);
+    return 'Signed out successfully';
   }
 
   getPublicId() {
     const publicId = uuidv4();
     return publicId;
   }
-  async createUser(data: any) {
-    const encryptedPassword = this.getPassword(data.password, true);
+  async createUser(data: any, password: string) {
+    const encryptedPassword = this.getPassword(password, true);
     const { access_token, token_type, expires_in } = data.session;
     const user = await this.prisma.user.create({
       data: {
-        id: data.id,
+        userId: data.id,
         name: data.name,
         lastname: data.lastname,
         email: data.email,

@@ -11,12 +11,13 @@ model Session {
   accessToken String @unique
   tokenType   String
   expiresIn   Int
-  user User @relation(fields: [userId], references: [id]) 
+  user User @relation(fields: [userId], references: [userId]) 
   userId Int @unique
 }
 
 model User {
-  id       Int       @id
+  id       Int  @id  @default(autoincrement())
+  userId   Int @unique
   name     String
   lastname String
   email    String    @unique
@@ -29,10 +30,11 @@ model User {
 }
 
 model Business {
-  id Int @id 
+  id Int @id @default(autoincrement())
+  businessId Int @unique
   publicId String  @unique
   name String
-  user User @relation(fields: [userId], references: [id]) 
+  user User @relation(fields: [userId], references: [userId]) 
   userId Int 
   @@map("business")
 }

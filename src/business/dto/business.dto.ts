@@ -21,7 +21,7 @@ export class BusinessDto {
 @Exclude()
 export class AllBusinessDto {
   // @Expose() id: number;
-  @Expose() publicId: string;
+  @Expose({name:'id'}) businessId: string;
   @Expose() name: string;
   // @Expose() timezone: string;
   constructor(partial: Partial<AllBusinessDto>) {
