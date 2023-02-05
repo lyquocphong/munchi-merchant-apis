@@ -1,36 +1,32 @@
-FROM debian:bullseye as builder
+FROM node:18.7.0-alpine3.16 AS development
 
-ARG NODE_VERSION=16.14.2
+WORKDIR /usr/src/app
 
-RUN apt-get update; apt install -y curl python-is-python3 pkg-config build-essential
-RUN curl https://get.volta.sh | bash
-ENV VOLTA_HOME /root/.volta
-ENV PATH /root/.volta/bin:$PATH
-RUN volta install node@${NODE_VERSION}
+COPY package*.json ./
 
-#######################################################################
+RUN npm install glob rimraf
 
-RUN mkdir /app
-WORKDIR /app
-
-# NPM will not install any package listed in "devDependencies" when NODE_ENV is set to "production",
-# to install all modules: "npm install --production=false".
-# Ref: https://docs.npmjs.com/cli/v9/commands/npm-install#description
-
-ENV NODE_ENV production
+RUN npm install --only=development
 
 COPY . .
 
-RUN npm install && npm run build
-FROM debian:bullseye
+RUN npm run build
 
-LABEL fly_launch_runtime="nodejs"
+FROM node:18.7.0-alpine3.16 as production
 
-COPY --from=builder /root/.volta /root/.volta
-COPY --from=builder /app /app
+ARG NODE_ENV=production
+ENV NODE_ENV=${NODE_ENV}
 
-WORKDIR /app
-ENV NODE_ENV production
-ENV PATH /root/.volta/bin:$PATH
+WORKDIR /usr/src/app
 
-CMD [ "npm", "run", "start" ]
+COPY package*.json ./
+
+RUN npm install --only=production
+
+COPY . .
+
+COPY --from=development /usr/src/app/dist ./dist
+
+RUN npx prisma generate
+
+CMD ["node", "dist/main"]

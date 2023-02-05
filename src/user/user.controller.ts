@@ -9,9 +9,9 @@ export class UserController {
   constructor(private orderingIo: OrderingIoService, private utils: UtilsService) {}
   @UseGuards(JwtGuard)
   @Get(':userId')
-  async getUser(@Param('userId') userId: OrderId, @Request() req: any) {
-    const { id } = req.user;
-    const accessToken = await this.utils.getAccessToken(id);
-    return this.orderingIo.getUser(userId, accessToken);
+  async getUser(@Param('userId') userIdParam: OrderId, @Request() req: any) {
+    const { userId } = req.user;
+    const accessToken = await this.utils.getAccessToken(userId);
+    return this.orderingIo.getUser(userIdParam, accessToken);
   }
 }
