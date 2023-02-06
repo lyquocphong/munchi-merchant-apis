@@ -18,7 +18,7 @@ model Session {
 model User {
   id       Int  @id  @default(autoincrement())
   userId   Int @unique
-  name     String
+  firstName String
   lastname String
   email    String    @unique
   hash     String

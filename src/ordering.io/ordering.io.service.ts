@@ -60,7 +60,7 @@ export class OrderingIoService {
         'content-type': 'application/json',
       },
       data: {
-        name: credentials.name,
+        firstName: credentials.firstName,
         lastname: credentials.lastname,
         level: credentials.role,
         email: credentials.email,
@@ -106,7 +106,6 @@ export class OrderingIoService {
       businessResponseObject.map(async (business: any) => {
         const existedBusiness = await this.business.getBusiness(business.id);
         if (existedBusiness.length === 0) {
-          console.log('do not existed yet');
           //create Business
           const newBusiness = await this.business.addBusiness(business, user.userId);
           return newBusiness;
@@ -169,7 +168,6 @@ export class OrderingIoService {
     try {
       const response = await axios.request(options);
       const businessResponseObject = response.data.result;
-      console.log(businessResponseObject);
       return `Business Offline`;
     } catch (error) {
       this.utils.getError(error);

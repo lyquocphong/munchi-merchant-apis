@@ -80,10 +80,9 @@ export class UtilsService {
           accessToken: accessToken,
         },
       });
-      console.log(updatedSession);
       return updatedSession.accessToken;
     } catch (error) {
-      console.log(error);
+      this.getError(error);
     }
   }
   async getUser(userId: number, publicUserId: string) {
@@ -97,9 +96,9 @@ export class UtilsService {
           business: {
             select: {
               name: true,
-              publicId:true
-            }
-          }
+              publicId: true,
+            },
+          },
         },
       });
       return userByPublicUserId;
@@ -110,12 +109,12 @@ export class UtilsService {
         },
         include: {
           session: true,
-           business: {
+          business: {
             select: {
               name: true,
-              publicId:true
-            }
-          }
+              publicId: true,
+            },
+          },
         },
       });
       return userByUserId;
@@ -132,7 +131,6 @@ export class UtilsService {
         publicId: newPublicUserId,
       },
     });
-    console.log(user);
     return 'Signed out successfully';
   }
 
@@ -146,7 +144,7 @@ export class UtilsService {
     const user = await this.prisma.user.create({
       data: {
         userId: data.id,
-        name: data.name,
+        firstName: data.name,
         lastname: data.lastname,
         email: data.email,
         hash: encryptedPassword,

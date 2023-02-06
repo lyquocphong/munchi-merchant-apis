@@ -39,3 +39,6 @@ HASH_SECRET="munchiMerchantSecret"
     interval = "15s"
     restart_limit = 0
     timeout = "2s"
+[mounts]
+source="munchi_data"
+destination="/data"

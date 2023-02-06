@@ -24,7 +24,6 @@ export class BusinessController {
   async getBusinessOnline(@Request() req: any, @Param('businessId') businessId: number) {
     const { userId } = req.user;
     const accessToken = await this.utils.getAccessToken(userId);
-    console.log(businessId);
     return this.orderingIo.getBusinessOnline(businessId, accessToken);
   }
   @Post(':businessId/getBusinessOffline')

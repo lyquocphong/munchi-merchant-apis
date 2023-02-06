@@ -12,7 +12,6 @@ export class OrderController {
   async getAllOrders(@Request() req: any) {
     const { userId } = req.user;
     const accessToken = await this.utils.getAccessToken(userId);
-    console.log('All order');
     return this.orderingIo.getAllOrders(accessToken);
   }
   @Get('filteredOrders')
