@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import axios from 'axios';
 import { plainToClass } from 'class-transformer';
 import console from 'console';
-import { AuthDto } from 'src/auth/dto/auth.dto';
+import { AuthResponse } from 'src/auth/dto/auth.dto';
 import { BusinessService } from 'src/business/business.service';
 import { AllBusinessDto, BusinessDto } from 'src/business/dto/business.dto';
 import { OrderDto } from 'src/order/dto/order.dto';
@@ -38,12 +38,28 @@ export class OrderingIoService {
       const { access_token } = signInResponseObject.session;
       const existingUser = await this.utils.getUser(signInResponseObject.id, null);
       if (!existingUser) {
-        await this.utils.createUser(signInResponseObject, credentials.password);
+        const verifyToken = await this.utils.signToken(existingUser.userId, existingUser.email);
+        const newUserObject = await this.utils.createUser(
+          signInResponseObject,
+          credentials.password,
+        );
+        const newUserResponse = Object.assign(newUserObject, verifyToken);
+        return newUserResponse;
       } else {
         await this.utils.getSession(signInResponseObject.id, access_token);
       }
-      const signInResponse = plainToClass(AuthDto, signInResponseObject);
-      const verifyToken = await this.utils.signToken(signInResponse.id, signInResponse.email);
+      const signInResponse = new AuthResponse(
+        signInResponseObject.email,
+        signInResponseObject.name,
+        signInResponseObject.lastname,
+        signInResponseObject.level,
+        existingUser.publicId,
+        existingUser.session,
+      );
+      const verifyToken = await this.utils.signToken(
+        signInResponseObject.id,
+        signInResponseObject.email,
+      );
       const finalResponse = Object.assign(signInResponse, verifyToken);
       return finalResponse;
     } catch (error) {
@@ -60,7 +76,7 @@ export class OrderingIoService {
         'content-type': 'application/json',
       },
       data: {
-        name: credentials.name,
+        firstName: credentials.firstName,
         lastname: credentials.lastname,
         level: credentials.role,
         email: credentials.email,
@@ -72,14 +88,31 @@ export class OrderingIoService {
       const signUpResponseObject = response.data.result;
       const { access_token } = signUpResponseObject.session;
       const existingUser = await this.utils.getUser(signUpResponseObject.id, null);
+
       if (!existingUser) {
-        await this.utils.createUser(signUpResponseObject, credentials.password);
+        const verifyToken = await this.utils.signToken(existingUser.userId, existingUser.email);
+        const newUserObject = await this.utils.createUser(
+          signUpResponseObject,
+          credentials.password,
+        );
+        const newUserResponse = Object.assign(newUserObject, verifyToken);
+        return newUserResponse;
       } else {
         await this.utils.getSession(signUpResponseObject.id, access_token);
       }
-      const signUnResponse = plainToClass(AuthDto, signUpResponseObject);
-      const verifyToken = await this.utils.signToken(signUnResponse.id, signUnResponse.email);
-      const finalResponse = Object.assign(signUnResponse, verifyToken);
+      const signInResponse = new AuthResponse(
+        signUpResponseObject.email,
+        signUpResponseObject.name,
+        signUpResponseObject.lastname,
+        signUpResponseObject.level,
+        existingUser.publicId,
+        existingUser.session,
+      );
+      const verifyToken = await this.utils.signToken(
+        signUpResponseObject.id,
+        signUpResponseObject.email,
+      );
+      const finalResponse = Object.assign(signInResponse, verifyToken);
       return finalResponse;
     } catch (error) {
       this.utils.getError(error);
@@ -106,7 +139,6 @@ export class OrderingIoService {
       businessResponseObject.map(async (business: any) => {
         const existedBusiness = await this.business.getBusiness(business.id);
         if (existedBusiness.length === 0) {
-          console.log('do not existed yet');
           //create Business
           const newBusiness = await this.business.addBusiness(business, user.userId);
           return newBusiness;
@@ -169,7 +201,6 @@ export class OrderingIoService {
     try {
       const response = await axios.request(options);
       const businessResponseObject = response.data.result;
-      console.log(businessResponseObject);
       return `Business Offline`;
     } catch (error) {
       this.utils.getError(error);

@@ -80,10 +80,9 @@ export class UtilsService {
           accessToken: accessToken,
         },
       });
-      console.log(updatedSession);
       return updatedSession.accessToken;
     } catch (error) {
-      console.log(error);
+      this.getError(error);
     }
   }
   async getUser(userId: number, publicUserId: string) {
@@ -93,13 +92,19 @@ export class UtilsService {
           publicId: publicUserId,
         },
         include: {
-          session: true,
+          session: {
+            select: {
+              accessToken: true,
+              expiresIn: true,
+              tokenType: true,
+            },
+          },
           business: {
             select: {
               name: true,
-              publicId:true
-            }
-          }
+              publicId: true,
+            },
+          },
         },
       });
       return userByPublicUserId;
@@ -109,13 +114,19 @@ export class UtilsService {
           userId: userId,
         },
         include: {
-          session: true,
-           business: {
+          session: {
+            select: {
+              accessToken: true,
+              expiresIn: true,
+              tokenType: true,
+            },
+          },
+          business: {
             select: {
               name: true,
-              publicId:true
-            }
-          }
+              publicId: true,
+            },
+          },
         },
       });
       return userByUserId;
@@ -132,7 +143,6 @@ export class UtilsService {
         publicId: newPublicUserId,
       },
     });
-    console.log(user);
     return 'Signed out successfully';
   }
 
@@ -146,7 +156,7 @@ export class UtilsService {
     const user = await this.prisma.user.create({
       data: {
         userId: data.id,
-        name: data.name,
+        firstName: data.name,
         lastname: data.lastname,
         email: data.email,
         hash: encryptedPassword,
@@ -157,6 +167,20 @@ export class UtilsService {
             accessToken: access_token,
             expiresIn: expires_in,
             tokenType: token_type,
+          },
+        },
+      },
+      select: {
+        firstName: true,
+        lastname: true,
+        email: true,
+        publicId: true,
+        level: true,
+        session: {
+          select: {
+            accessToken: true,
+            expiresIn: true,
+            tokenType: true,
           },
         },
       },

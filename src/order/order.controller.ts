@@ -10,15 +10,14 @@ export class OrderController {
   constructor(private orderingIo: OrderingIoService, private utils: UtilsService) {}
   @Get('allOrders')
   async getAllOrders(@Request() req: any) {
-    const { id } = req.user;
-    const accessToken = await this.utils.getAccessToken(id);
-    console.log('All order');
+    const { userId } = req.user;
+    const accessToken = await this.utils.getAccessToken(userId);
     return this.orderingIo.getAllOrders(accessToken);
   }
   @Get('filteredOrders')
   async getFilteredOrders(@Request() req, @Body() filterQuery: FilterQuery) {
-    const { id } = req.user;
-    const accessToken = await this.utils.getAccessToken(id);
+    const { userId } = req.user;
+    const accessToken = await this.utils.getAccessToken(userId);
 
     const paramsQuery = [
       'id',
@@ -36,8 +35,8 @@ export class OrderController {
   }
   @Get(':orderId')
   async getOrderbyId(@Param('orderId') orderId: number, @Request() req: any) {
-    const { id } = req.user;
-    const accessToken = await this.utils.getAccessToken(id);
+    const { userId } = req.user;
+    const accessToken = await this.utils.getAccessToken(userId);
     return this.orderingIo.getOrderbyId(orderId, accessToken);
   }
 
@@ -47,15 +46,15 @@ export class OrderController {
     @Body() orderData: OrderData,
     @Request() req: any,
   ) {
-    const { id } = req.user;
-    const accessToken = await this.utils.getAccessToken(id);
+    const { userId } = req.user;
+    const accessToken = await this.utils.getAccessToken(userId);
     return this.orderingIo.updateOrder(orderId, orderData, accessToken);
   }
 
   @Delete(':orderId')
   async removeOrder(@Param('orderId') orderId: number, @Request() req: any) {
-    const { id } = req.user;
-    const accessToken = await this.utils.getAccessToken(id);
+    const { userId } = req.user;
+    const accessToken = await this.utils.getAccessToken(userId);
     return this.orderingIo.removeOrder(orderId, accessToken);
   }
 }

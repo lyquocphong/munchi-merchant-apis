@@ -16,21 +16,20 @@ export class BusinessController {
   }
   @Get(':businessId')
   async getBusinessById(@Param('businessId') businessId: number, @Request() req) {
-    const { id } = req.user;
-    const accessToken = await this.utils.getAccessToken(id);
+    const { userId } = req.user;
+    const accessToken = await this.utils.getAccessToken(userId);
     return this.orderingIo.getBusinessById(businessId, accessToken);
   }
   @Post(':businessId/getBusinessOnline')
   async getBusinessOnline(@Request() req: any, @Param('businessId') businessId: number) {
-    const { id } = req.user;
-    const accessToken = await this.utils.getAccessToken(id);
-    console.log(businessId);
+    const { userId } = req.user;
+    const accessToken = await this.utils.getAccessToken(userId);
     return this.orderingIo.getBusinessOnline(businessId, accessToken);
   }
   @Post(':businessId/getBusinessOffline')
   async getBusinessOffline(@Request() req: any, @Param('businessId') businessId: number) {
-    const { id } = req.user;
-    const accessToken = await this.utils.getAccessToken(id);
+    const { userId } = req.user;
+    const accessToken = await this.utils.getAccessToken(userId);
     return this.orderingIo.getBusinessOffline(businessId, accessToken);
   }
 }
