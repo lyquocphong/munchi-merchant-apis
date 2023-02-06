@@ -92,7 +92,13 @@ export class UtilsService {
           publicId: publicUserId,
         },
         include: {
-          session: true,
+          session: {
+            select: {
+              accessToken: true,
+              expiresIn: true,
+              tokenType: true,
+            },
+          },
           business: {
             select: {
               name: true,
@@ -108,7 +114,13 @@ export class UtilsService {
           userId: userId,
         },
         include: {
-          session: true,
+          session: {
+            select: {
+              accessToken: true,
+              expiresIn: true,
+              tokenType: true,
+            },
+          },
           business: {
             select: {
               name: true,
@@ -155,6 +167,20 @@ export class UtilsService {
             accessToken: access_token,
             expiresIn: expires_in,
             tokenType: token_type,
+          },
+        },
+      },
+      select: {
+        firstName: true,
+        lastname: true,
+        email: true,
+        publicId: true,
+        level: true,
+        session: {
+          select: {
+            accessToken: true,
+            expiresIn: true,
+            tokenType: true,
           },
         },
       },

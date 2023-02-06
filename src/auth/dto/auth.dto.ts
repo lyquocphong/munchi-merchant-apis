@@ -1,22 +1,29 @@
-import {
-  Exclude,
-  Expose,
-  Type,
-} from 'class-transformer';
-import { SessionDto } from './session.dto';
+type Session = {
+  accessToken: string;
+  tokenType: string;
+  expiresIn: number;
+};
 
-@Exclude()
-export class AuthDto {
-  @Expose() id: number;
-  @Expose({name:'name'}) firstName: string;
-  @Expose({name:'lastname'}) lastName: string;
-  @Expose() email: string;
-  @Expose() level: number;
-  @Expose()
-  @Type(() => SessionDto)
-  session: SessionDto[];
-
-  constructor(partial: Partial<AuthDto>) {
-    Object.assign(this, partial);
+export class AuthResponse {
+  email: string;
+  firstName: string;
+  lastName: string;
+  level: number;
+  publicId: string;
+  session: Session[];
+  constructor(
+    email: string,
+    firstName: string,
+    lastName: string,
+    level: number,
+    publicId: string,
+    session: Session[],
+  ) {
+    this.email = email;
+    this.firstName = firstName;
+    this.lastName = lastName;
+    this.level = level;
+    this.publicId = publicId;
+    this.session = session;
   }
 }
