@@ -24,3 +24,12 @@ export interface OrderData {
   prepared_in: number;
   orderStatus: string;
 }
+
+export type UserData = {
+  email,
+ firstName:string,
+  lastName:string,
+  level:number,
+publicId:string,
+ session,
+};

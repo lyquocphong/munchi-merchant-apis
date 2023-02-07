@@ -2,20 +2,20 @@ import { Injectable } from '@nestjs/common';
 import axios from 'axios';
 import { plainToClass } from 'class-transformer';
 import console from 'console';
-import { AuthResponse } from 'src/auth/dto/auth.dto';
 import { BusinessService } from 'src/business/business.service';
 import { AllBusinessDto, BusinessDto } from 'src/business/dto/business.dto';
 import { OrderDto } from 'src/order/dto/order.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AuthCredentials, FilterQuery, OrderData } from 'src/type';
 import { UserDto } from 'src/user/dto/user.dto';
+import { UserService } from 'src/user/user.service';
 import { UtilsService } from 'src/utils/utils.service';
 @Injectable()
 export class OrderingIoService {
   constructor(
-    private readonly prisma: PrismaService,
     private utils: UtilsService,
     private business: BusinessService,
+    private user: UserService,
   ) {}
   // Auth service
   async signIn(credentials: AuthCredentials) {
@@ -36,32 +36,17 @@ export class OrderingIoService {
       const response = await axios.request(options);
       const signInResponseObject = response.data.result;
       const { access_token } = signInResponseObject.session;
-      const existingUser = await this.utils.getUser(signInResponseObject.id, null);
-      if (!existingUser) {
-        const verifyToken = await this.utils.signToken(existingUser.userId, existingUser.email);
-        const newUserObject = await this.utils.createUser(
+      const existingUser = await this.user.checkExistUser(signInResponseObject.id);
+      if (existingUser === null || !existingUser) {
+        const newUserResponse = await this.utils.createUser(
           signInResponseObject,
           credentials.password,
         );
-        const newUserResponse = Object.assign(newUserObject, verifyToken);
         return newUserResponse;
-      } else {
+      } else if (existingUser) {
         await this.utils.getSession(signInResponseObject.id, access_token);
+        return existingUser;
       }
-      const signInResponse = new AuthResponse(
-        signInResponseObject.email,
-        signInResponseObject.name,
-        signInResponseObject.lastname,
-        signInResponseObject.level,
-        existingUser.publicId,
-        existingUser.session,
-      );
-      const verifyToken = await this.utils.signToken(
-        signInResponseObject.id,
-        signInResponseObject.email,
-      );
-      const finalResponse = Object.assign(signInResponse, verifyToken);
-      return finalResponse;
     } catch (error) {
       this.utils.getError(error);
     }
@@ -88,32 +73,16 @@ export class OrderingIoService {
       const signUpResponseObject = response.data.result;
       const { access_token } = signUpResponseObject.session;
       const existingUser = await this.utils.getUser(signUpResponseObject.id, null);
-
-      if (!existingUser) {
-        const verifyToken = await this.utils.signToken(existingUser.userId, existingUser.email);
-        const newUserObject = await this.utils.createUser(
+      if (existingUser === null || !existingUser) {
+        const newUserResponse = await this.utils.createUser(
           signUpResponseObject,
           credentials.password,
         );
-        const newUserResponse = Object.assign(newUserObject, verifyToken);
         return newUserResponse;
-      } else {
+      } else if (existingUser) {
         await this.utils.getSession(signUpResponseObject.id, access_token);
+        return existingUser;
       }
-      const signInResponse = new AuthResponse(
-        signUpResponseObject.email,
-        signUpResponseObject.name,
-        signUpResponseObject.lastname,
-        signUpResponseObject.level,
-        existingUser.publicId,
-        existingUser.session,
-      );
-      const verifyToken = await this.utils.signToken(
-        signUpResponseObject.id,
-        signUpResponseObject.email,
-      );
-      const finalResponse = Object.assign(signInResponse, verifyToken);
-      return finalResponse;
     } catch (error) {
       this.utils.getError(error);
     }
@@ -135,17 +104,29 @@ export class OrderingIoService {
     try {
       const response = await axios.request(options);
       const businessResponseObject = response.data.result;
-      const user = await this.utils.getUser(null, publicUserId);
-      businessResponseObject.map(async (business: any) => {
-        const existedBusiness = await this.business.getBusiness(business.id);
-        if (existedBusiness.length === 0) {
-          //create Business
-          const newBusiness = await this.business.addBusiness(business, user.userId);
-          return newBusiness;
-        }
-      });
-      // const businessResponse = plainToClass(AllBusinessDto, businessResponseObject);
-      return user.business;
+      const user = await this.user.getUserInternally(null, publicUserId);
+      const existedBusiness = await this.business.getBusiness(null, user.userId);
+      if (existedBusiness.length < businessResponseObject.length) {
+        businessResponseObject.map(async (business: any) => {
+          const updatedBusiness = await this.business.updateBusiness(business.id, user.userId);
+          return updatedBusiness;
+        });
+      }
+      if (!existedBusiness || existedBusiness.length === 0) {
+        businessResponseObject.map(async (business: any) => {
+          const existedBusiness = await this.business.getBusiness(business.id, user.userId);
+          if (existedBusiness.length > 0 || existedBusiness !== null) {
+            //create Business
+            const updatedBusiness = await this.business.updateBusiness(business.id, user.userId);
+            return updatedBusiness;
+          } else {
+            const newBusiness = await this.business.addBusiness(business, user.userId);
+            return newBusiness;
+          }
+        });
+      } else if (existedBusiness || existedBusiness.length > 0) {
+        return existedBusiness;
+      }
     } catch (error) {
       this.utils.getError(error);
     }

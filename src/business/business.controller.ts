@@ -8,7 +8,7 @@ import { UtilsService } from 'src/utils/utils.service';
 @Controller('business')
 export class BusinessController {
   constructor(private utils: UtilsService, private orderingIo: OrderingIoService) {}
-  @Get('allbusiness')
+  @Post('allbusiness')
   async getAllBusiness(@Request() req: any, @Body('publicUserId') publicUserId: string) {
     const { userId } = req.user;
     const accessToken = await this.utils.getAccessToken(userId);

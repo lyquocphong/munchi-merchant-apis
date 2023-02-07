@@ -4,13 +4,14 @@ type Session = {
   expiresIn: number;
 };
 
-export class AuthResponse {
+export class UserResponse {
   email: string;
   firstName: string;
   lastName: string;
   level: number;
   publicId: string;
   session: Session[];
+  verifyToken: string;
   constructor(
     email: string,
     firstName: string,
@@ -18,6 +19,7 @@ export class AuthResponse {
     level: number,
     publicId: string,
     session: Session[],
+    verifyToken: string,
   ) {
     this.email = email;
     this.firstName = firstName;
@@ -25,5 +27,6 @@ export class AuthResponse {
     this.level = level;
     this.publicId = publicId;
     this.session = session;
+    this.verifyToken = verifyToken
   }
 }

@@ -10,6 +10,7 @@ import Cryptr from 'cryptr';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { v4 as uuidv4 } from 'uuid';
+import { UserResponse } from 'src/auth/dto/auth.dto';
 @Injectable()
 export class UtilsService {
   constructor(
@@ -91,45 +92,86 @@ export class UtilsService {
         where: {
           publicId: publicUserId,
         },
-        include: {
+        select:{
+          userId:true,
+          email: true,
+          firstName: true,
+          lastname:true,
+          publicId:true,
+          level:true,
+          business: {
+            select:{
+              publicId: true,
+              name:true
+            }
+          },
           session: {
             select: {
               accessToken: true,
               expiresIn: true,
               tokenType: true,
             },
+           
           },
-          business: {
-            select: {
-              name: true,
-              publicId: true,
-            },
-          },
-        },
+        }
+
       });
-      return userByPublicUserId;
+      const verifyToken = await this.signToken(
+        userByPublicUserId.userId,
+        userByPublicUserId.email,
+      );
+      const userResponseByPublicUserId = new UserResponse(
+        userByPublicUserId.email,
+        userByPublicUserId.firstName,
+        userByPublicUserId.lastname,
+        userByPublicUserId.level,
+        userByPublicUserId.publicId,
+        userByPublicUserId.session,
+        verifyToken.verifyToken
+      )
+      return userResponseByPublicUserId;
     } else {
       const userByUserId = await this.prisma.user.findUnique({
         where: {
           userId: userId,
         },
-        include: {
+        select:{
+          userId:true,
+          email: true,
+          firstName: true,
+          lastname:true,
+          publicId:true,
+          level:true,
+          business: {
+            select:{
+              publicId: true,
+              name:true
+            }
+          },
           session: {
             select: {
               accessToken: true,
               expiresIn: true,
               tokenType: true,
             },
+           
           },
-          business: {
-            select: {
-              name: true,
-              publicId: true,
-            },
-          },
-        },
+        }
       });
-      return userByUserId;
+      const verifyToken = await this.signToken(
+        userByUserId.userId,
+        userByUserId.email,
+      );
+      const userResponseByPublicUserId = new UserResponse(
+        userByUserId.email,
+        userByUserId.firstName,
+        userByUserId.lastname,
+        userByUserId.level,
+        userByUserId.publicId,
+        userByUserId.session,
+        verifyToken.verifyToken
+      )
+      return userResponseByPublicUserId;
     }
   }
 
@@ -153,7 +195,11 @@ export class UtilsService {
   async createUser(data: any, password: string) {
     const encryptedPassword = this.getPassword(password, true);
     const { access_token, token_type, expires_in } = data.session;
-    const user = await this.prisma.user.create({
+    const verifyToken = await this.signToken(
+      data.userId,
+      data.email,
+    );
+    const newUser = await this.prisma.user.create({
       data: {
         userId: data.id,
         firstName: data.name,
@@ -185,7 +231,16 @@ export class UtilsService {
         },
       },
     });
-    return user;
+    const userResponse= new UserResponse(
+      newUser.email,
+      newUser.firstName,
+      newUser.lastname,
+      newUser.level,
+      newUser.publicId,
+      newUser.session,
+      verifyToken.verifyToken
+    )
+    return userResponse;
   }
 
   getPassword(password: string, needCrypt: boolean) {

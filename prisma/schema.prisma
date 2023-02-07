@@ -11,7 +11,7 @@ model Session {
   accessToken String @unique
   tokenType   String
   expiresIn   Int
-  user User @relation(fields: [userId], references: [userId]) 
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade ) 
   userId Int @unique
 }
 
@@ -34,7 +34,7 @@ model Business {
   businessId Int @unique
   publicId String  @unique
   name String
-  user User @relation(fields: [userId], references: [userId]) 
+  user User @relation(fields: [userId], references: [userId] , onDelete: Cascade) 
   userId Int 
   @@map("business")
 }
