@@ -6,7 +6,7 @@ import { BusinessService } from 'src/business/business.service';
 import { AllBusinessDto, BusinessDto } from 'src/business/dto/business.dto';
 import { OrderDto } from 'src/order/dto/order.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { AuthCredentials, FilterQuery, OrderData } from 'src/type';
+import { AuthCredentials, BusinessAttributes, FilterQuery, OrderData } from 'src/type';
 import { UserDto } from 'src/user/dto/user.dto';
 import { UserService } from 'src/user/user.service';
 import { UtilsService } from 'src/utils/utils.service';
@@ -105,6 +105,7 @@ export class OrderingIoService {
       const response = await axios.request(options);
       const businessResponseObject = response.data.result;
       const user = await this.user.getUserInternally(null, publicUserId);
+
       const existedBusiness = await this.business.getBusiness(null, user.userId);
       if (existedBusiness.length < businessResponseObject.length) {
         businessResponseObject.map(async (business: any) => {
@@ -151,10 +152,35 @@ export class OrderingIoService {
     }
   }
 
-  async getBusinessOnline(businessId: number, accessToken: string) {
+  async editBusiness(accessToken: string, publicBusinessId: string, status: any) {
+    console.log(publicBusinessId, 'this is service IO');
+    const business = await this.business.getBusinessByPublicId(publicBusinessId);
+    console.log(status);
+    // // const data = JSON.parse(status)
+    // console.log(data)
     const options = {
       method: 'POST',
-      url: `${this.utils.getEnvUrl('business', businessId)}`,
+      url: `${this.utils.getEnvUrl('business', business.businessId)}`,
+      data: { enabled: status },
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+    };
+    try {
+      const response = await axios.request(options);
+      const businessResponseObject = response.data.result;
+      // console.log(response);
+      return `Business Online`;
+    } catch (error) {
+      this.utils.getError(error);
+    }
+  }
+  async activateBusiness(accessToken: string, publicBusinessId: string) {
+    const business = await this.business.getBusinessByPublicId(publicBusinessId);
+    const options = {
+      method: 'POST',
+      url: `${this.utils.getEnvUrl('business', business.businessId)}`,
       data: { enabled: true },
       headers: {
         accept: 'application/json',
@@ -164,15 +190,18 @@ export class OrderingIoService {
     try {
       const response = await axios.request(options);
       const businessResponseObject = response.data.result;
-      return `Business Online`;
+      const businessResponse = plainToClass(BusinessDto, businessResponseObject);
+      // console.log(response);
+      return businessResponse;
     } catch (error) {
       this.utils.getError(error);
     }
   }
-  async getBusinessOffline(businessId: number, accessToken: string) {
+  async deactivateBusiness(accessToken: string, publicBusinessId: string) {
+    const business = await this.business.getBusinessByPublicId(publicBusinessId);
     const options = {
       method: 'POST',
-      url: `${this.utils.getEnvUrl('business', businessId)}`,
+      url: `${this.utils.getEnvUrl('business', business.businessId)}`,
       data: { enabled: false },
       headers: {
         accept: 'application/json',
@@ -182,12 +211,13 @@ export class OrderingIoService {
     try {
       const response = await axios.request(options);
       const businessResponseObject = response.data.result;
-      return `Business Offline`;
+      const businessResponse = plainToClass(BusinessDto, businessResponseObject);
+      // console.log(response);
+      return businessResponse;
     } catch (error) {
       this.utils.getError(error);
     }
   }
-
   //Order service
   async getAllOrders(acessToken: string) {
     const options = {
@@ -207,12 +237,10 @@ export class OrderingIoService {
     }
   }
 
-  async getFilteredOrders(accessToken: string, filterQuery: FilterQuery, paramsQuery: string) {
+  async getFilteredOrders(accessToken: string, query: string, paramsQuery: string[]) {
     const options = {
       method: 'GET',
-      url: `${this.utils.getEnvUrl('orders')}?mode=dashboard&where={"status":${
-        filterQuery.status
-      },"business_id":${filterQuery.businessId}}&params=${paramsQuery}`,
+      url: `${this.utils.getEnvUrl('orders')}?mode=dashboard&where=${query}&params=${paramsQuery}`,
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
@@ -249,7 +277,7 @@ export class OrderingIoService {
       method: 'PUT',
       url: `${this.utils.getEnvUrl('orders', orderId)}`,
       headers: { accept: 'application/json', Authorization: `Bearer ${acessToken}` },
-      data: { status: orderData.orderStatus, prepared_in: orderData.prepared_in },
+      data: { status: orderData.orderStatus, preparedIn: orderData.preparedIn },
     };
     try {
       const response = await axios.request(options);

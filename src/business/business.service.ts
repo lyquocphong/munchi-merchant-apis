@@ -38,7 +38,7 @@ export class BusinessService {
           userId: newUserId,
         },
       });
-    return updateBusiness
+      return updateBusiness;
     }
   }
   async addBusiness(businsessData: any, userId: number) {
@@ -88,5 +88,13 @@ export class BusinessService {
       });
       return businessByBusinessId;
     }
+  }
+  async getBusinessByPublicId(publicBusinessId: string) {
+    const business = await this.prisma.business.findUnique({
+      where: {
+        publicId: publicBusinessId,
+      },
+    });
+    return business;
   }
 }

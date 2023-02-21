@@ -11,7 +11,7 @@ model Session {
   accessToken String @unique
   tokenType   String
   expiresIn   Int
-  user User @relation(fields: [userId], references: [userId], onDelete: Cascade ) 
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade, onUpdate:Cascade ) 
   userId Int @unique
 }
 

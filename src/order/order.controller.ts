@@ -1,7 +1,8 @@
 import { Body, Controller, Delete, Get, Param, Put, Request, UseGuards } from '@nestjs/common';
+import { Query } from '@nestjs/common/decorators';
 import { JwtGuard } from 'src/auth/guard';
 import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
-import { FilterQuery, OrderData } from 'src/type';
+import { OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
 
 @UseGuards(JwtGuard)
@@ -15,23 +16,14 @@ export class OrderController {
     return this.orderingIo.getAllOrders(accessToken);
   }
   @Get('filteredOrders')
-  async getFilteredOrders(@Request() req, @Body() filterQuery: FilterQuery) {
+  async getFilteredOrders(
+    @Request() req: any,
+    @Query('query') query: string,
+    @Query('paramsQuery') paramsQuery: string[],
+  ) {
     const { userId } = req.user;
     const accessToken = await this.utils.getAccessToken(userId);
-
-    const paramsQuery = [
-      'id',
-      'paymethod_id',
-      'business_id',
-      'customer_id',
-      'status',
-      'delivery_type',
-      'delivery_datetime',
-      'prepared_in',
-      'products',
-      'summary',
-    ].join();
-    return this.orderingIo.getFilteredOrders(accessToken, filterQuery, paramsQuery);
+    return this.orderingIo.getFilteredOrders(accessToken, query, paramsQuery);
   }
   @Get(':orderId')
   async getOrderbyId(@Param('orderId') orderId: number, @Request() req: any) {

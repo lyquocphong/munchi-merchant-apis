@@ -17,19 +17,18 @@ export type OrderId = number;
 
 export type FilterQuery = {
   businessId: number;
-  status: number;
+  status: number | number[];
 };
 
 export interface OrderData {
-  prepared_in: number;
+  preparedIn: number;
   orderStatus: string;
 }
 
-export type UserData = {
-  email,
- firstName:string,
-  lastName:string,
-  level:number,
-publicId:string,
- session,
+export type BusinessAttributes = {
+  name: string;
+  email: string;
+  slug: string;
+  city_id: number;
+  enabled: boolean;
 };

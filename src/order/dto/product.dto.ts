@@ -1,8 +1,4 @@
-import {
-  Exclude,
-  Expose,
-  Type,
-} from 'class-transformer';
+import { Exclude, Expose, Type } from 'class-transformer';
 
 @Exclude()
 export class ProductDto {
@@ -13,10 +9,13 @@ export class ProductDto {
   name: number;
 
   @Expose()
+  quantity: number;
+
+  @Expose()
   price: number;
 
   @Expose()
-  comment: number;
+  comment: string;
 
   constructor(partial: Partial<ProductDto>) {
     Object.assign(this, partial);
