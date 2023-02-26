@@ -12,7 +12,7 @@ async function bootstrap() {
     .setTitle('Api documentation')
     .setDescription('The API description of munchi-apis')
     .setVersion('1.0')
-    .addTag('Munchi-apis')
+   
     .build();
     const options: SwaggerDocumentOptions =  {
       deepScanRoutes: true,
