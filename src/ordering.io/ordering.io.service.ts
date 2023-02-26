@@ -133,10 +133,13 @@ export class OrderingIoService {
     }
   }
 
-  async getBusinessById(businessId: number, accessToken: string) {
+  async getBusinessById(publicBusinessId: string, accessToken: string) {
+    console.log(publicBusinessId);
+    const business = await this.business.getBusinessByPublicId(publicBusinessId);
+    console.log(business);
     const options = {
       method: 'GET',
-      url: `${this.utils.getEnvUrl('business', businessId)}?mode=dashboard`,
+      url: `${this.utils.getEnvUrl('business', business.businessId)}?mode=dashboard`,
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
@@ -237,10 +240,18 @@ export class OrderingIoService {
     }
   }
 
-  async getFilteredOrders(accessToken: string, query: string, paramsQuery: string[]) {
+  async getFilteredOrders(
+    accessToken: string,
+    query: string,
+    paramsQuery: string[],
+    publicBusinessId: string,
+  ) {
+    const business = await this.business.getBusinessByPublicId(publicBusinessId);
     const options = {
       method: 'GET',
-      url: `${this.utils.getEnvUrl('orders')}?mode=dashboard&where=${query}&params=${paramsQuery}`,
+      url: `${this.utils.getEnvUrl('orders')}?mode=dashboard&where={"business_id":${
+        business.businessId
+      }}&params=${paramsQuery}`,
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
@@ -277,7 +288,7 @@ export class OrderingIoService {
       method: 'PUT',
       url: `${this.utils.getEnvUrl('orders', orderId)}`,
       headers: { accept: 'application/json', Authorization: `Bearer ${acessToken}` },
-      data: { status: orderData.orderStatus, preparedIn: orderData.preparedIn },
+      data: { status: orderData.orderStatus, prepared_in: orderData.preparedIn },
     };
     try {
       const response = await axios.request(options);
