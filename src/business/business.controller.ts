@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiCreatedResponse,
   ApiProperty,
   ApiResponse,
@@ -15,11 +16,13 @@ import { AllBusinessDto, BusinessDto } from './dto/business.dto';
 
 @UseGuards(JwtGuard)
 @Controller('business')
+@ApiBearerAuth('JWT-auth')
 @ApiBadRequestResponse({
   description: 'Something wrong happened',
 })
 export class BusinessController {
   constructor(private utils: UtilsService, private orderingIo: OrderingIoService) {}
+  
   @ApiCreatedResponse({
     description: 'Get all businesses',
     type: AllBusinessDto,
@@ -38,10 +41,7 @@ export class BusinessController {
     type: BusinessDto,
   })
   @Post('findBusiness')
-  async getBusinessById(
-    @Request() req: any,
-    @Body('publicBusinessId') publicBusinessId: string,
-  ) {
+  async getBusinessById(@Request() req: any, @Body('publicBusinessId') publicBusinessId: string) {
     const { userId } = req.user;
     const accessToken = await this.utils.getAccessToken(userId);
     return this.orderingIo.getBusinessById(publicBusinessId, accessToken);
