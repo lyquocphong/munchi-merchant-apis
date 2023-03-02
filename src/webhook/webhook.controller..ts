@@ -16,9 +16,8 @@ export class OrderWebhookController {
     private readonly httpService: HttpService,
     private utils: UtilsService,
   ) {}
-
-  @Post('new')
-  newOrderReciever(@Req() request: Request) {
-    return this.OrderWebhookService.newOrderReciever(request);
-  }
+    @Post('newOrder')
+    recieveNewOrder (@Body() order:any){
+      return this.OrderWebhookService.newOrder(order)
+    }
 }
