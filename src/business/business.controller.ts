@@ -22,7 +22,7 @@ import { AllBusinessDto, BusinessDto } from './dto/business.dto';
 })
 export class BusinessController {
   constructor(private utils: UtilsService, private orderingIo: OrderingIoService) {}
-  
+
   @ApiCreatedResponse({
     description: 'Get all businesses',
     type: AllBusinessDto,
@@ -40,8 +40,8 @@ export class BusinessController {
     description: 'Get a specific business',
     type: BusinessDto,
   })
-  @Post('findBusiness')
-  async getBusinessById(@Request() req: any, @Body('publicBusinessId') publicBusinessId: string) {
+  @Get(':businessId')
+  async getBusinessById(@Request() req: any, @Param('businessId') publicBusinessId: string) {
     const { userId } = req.user;
     const accessToken = await this.utils.getAccessToken(userId);
     return this.orderingIo.getBusinessById(publicBusinessId, accessToken);

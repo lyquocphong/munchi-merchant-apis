@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Business } from '@prisma/client';
 import axios from 'axios';
 import { plainToClass } from 'class-transformer';
 import console from 'console';
@@ -37,8 +38,9 @@ export class OrderingIoService {
       const signInResponseObject = response.data.result;
       const { access_token } = signInResponseObject.session;
       const existingUser = await this.user.checkExistUser(signInResponseObject.id);
+      console.log(existingUser);
       if (existingUser === null || !existingUser) {
-        const newUserResponse = await this.utils.createUser(
+        const newUserResponse = await this.user.createUser(
           signInResponseObject,
           credentials.password,
         );
@@ -72,9 +74,9 @@ export class OrderingIoService {
       const response = await axios.request(options);
       const signUpResponseObject = response.data.result;
       const { access_token } = signUpResponseObject.session;
-      const existingUser = await this.utils.getUser(signUpResponseObject.id, null);
+      const existingUser = await this.user.getUser(signUpResponseObject.id, null);
       if (existingUser === null || !existingUser) {
-        const newUserResponse = await this.utils.createUser(
+        const newUserResponse = await this.user.createUser(
           signUpResponseObject,
           credentials.password,
         );
@@ -105,38 +107,24 @@ export class OrderingIoService {
       const response = await axios.request(options);
       const businessResponseObject = response.data.result;
       const user = await this.user.getUserInternally(null, publicUserId);
-
-      const existedBusiness = await this.business.getBusiness(null, user.userId);
-      if (existedBusiness.length < businessResponseObject.length) {
-        businessResponseObject.map(async (business: any) => {
-          const updatedBusiness = await this.business.updateBusiness(business.id, user.userId);
-          return updatedBusiness;
-        });
-      }
-      if (!existedBusiness || existedBusiness.length === 0) {
-        businessResponseObject.map(async (business: any) => {
-          const existedBusiness = await this.business.getBusiness(business.id, user.userId);
-          if (existedBusiness.length > 0 || existedBusiness !== null) {
-            //create Business
-            const updatedBusiness = await this.business.updateBusiness(business.id, user.userId);
-            return updatedBusiness;
-          } else {
-            const newBusiness = await this.business.addBusiness(business, user.userId);
-            return newBusiness;
-          }
-        });
-      } else if (existedBusiness || existedBusiness.length > 0) {
-        return existedBusiness;
-      }
+      if (user === null) throw new ForbiddenException('Something wrong happend');
+      businessResponseObject.map(async (business: Business) => {
+        const existedBusiness = await this.business.getBusinessById(business.id);
+        if (existedBusiness) {
+          return user.business;
+        } else {
+          const newBusiness = await this.business.addBusiness(business.id, user.userId);
+          return newBusiness;
+        }
+      });
+      return this.business.getAllBusiness(user.userId);
     } catch (error) {
       this.utils.getError(error);
     }
   }
 
   async getBusinessById(publicBusinessId: string, accessToken: string) {
-    console.log(publicBusinessId);
     const business = await this.business.getBusinessByPublicId(publicBusinessId);
-    console.log(business);
     const options = {
       method: 'GET',
       url: `${this.utils.getEnvUrl('business', business.businessId)}?mode=dashboard`,

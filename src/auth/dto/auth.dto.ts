@@ -8,6 +8,7 @@ type Session = {
 };
 
 export class UserResponse {
+  userId: number;
   email: string;
   firstName: string;
   lastName: string;
@@ -16,6 +17,7 @@ export class UserResponse {
   session: Session[];
   verifyToken: string;
   constructor(
+    userId: number,
     email: string,
     firstName: string,
     lastName: string,
@@ -24,6 +26,7 @@ export class UserResponse {
     session: Session[],
     verifyToken: string,
   ) {
+    this.userId = userId;
     this.email = email;
     this.firstName = firstName;
     this.lastName = lastName;
