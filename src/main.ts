@@ -9,7 +9,6 @@ declare const module: any;
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.useWebSocketAdapter(new WsAdapter(app));
   const config = new DocumentBuilder()
     .setTitle('Api documentation')
     .setDescription('The API description of munchi-apis')
