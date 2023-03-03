@@ -38,7 +38,6 @@ export class OrderingIoService {
       const signInResponseObject = response.data.result;
       const { access_token } = signInResponseObject.session;
       const existingUser = await this.user.checkExistUser(signInResponseObject.id);
-      console.log(existingUser);
       if (existingUser === null || !existingUser) {
         const newUserResponse = await this.user.createUser(
           signInResponseObject,

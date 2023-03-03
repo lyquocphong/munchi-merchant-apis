@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
+import { AuthService } from 'src/auth/auth.service';
 import { UserResponse } from 'src/auth/dto/auth.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UtilsService } from 'src/utils/utils.service';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly utils: UtilsService, private prisma: PrismaService) {}
+  constructor(private readonly utils: UtilsService,private readonly auth: AuthService ,private prisma: PrismaService) {}
 
   getUserInternally = async (userId: number, publicUserId: string) => {
     if (userId === null) {
@@ -86,6 +87,7 @@ export class UserService {
         userByPublicUserId.email,
       );
       const userResponseByPublicUserId = new UserResponse(
+        userByPublicUserId.userId,
         userByPublicUserId.email,
         userByPublicUserId.firstName,
         userByPublicUserId.lastname,
@@ -124,6 +126,7 @@ export class UserService {
       });
       const verifyToken = await this.utils.signToken(userByUserId.userId, userByUserId.email);
       const userResponseByPublicUserId = new UserResponse(
+        userByUserId.userId,
         userByUserId.email,
         userByUserId.firstName,
         userByUserId.lastname,
@@ -157,6 +160,7 @@ export class UserService {
         },
       },
       select: {
+        userId: true,
         firstName: true,
         lastname: true,
         email: true,
@@ -172,6 +176,7 @@ export class UserService {
       },
     });
     const userResponse = new UserResponse(
+      newUser.userId,
       newUser.email,
       newUser.firstName,
       newUser.lastname,
