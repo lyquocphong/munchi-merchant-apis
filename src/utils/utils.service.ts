@@ -60,8 +60,8 @@ export class UtilsService {
         const response = await axios.request(options);
         const signInResponseObject = response.data.result;
         const { access_token } = signInResponseObject.session;
-        const token = await this.getSession(signInResponseObject.id, access_token);
-        return token;
+        const token = await this.updateAccessToken(signInResponseObject.id, access_token);
+        return token; 
       } catch (error) {
         const errorMsg = error.response.data.result;
         throw new ForbiddenException(errorMsg);
@@ -70,7 +70,7 @@ export class UtilsService {
 
     return sessionData.accessToken;
   }
-  async getSession(userId: number, accessToken: string) {
+  async updateAccessToken(userId: number, accessToken: string) {
     //get User infomation
     try {
       const updatedSession = await this.prisma.session.update({
@@ -104,7 +104,7 @@ export class UtilsService {
     const publicId = uuidv4();
     return publicId;
   }
-  
+
   getPassword(password: string, needCrypt: boolean) {
     const cryptr = new Cryptr(this.config.get('HASH_SECRET'));
     let passwordAfter: string;
