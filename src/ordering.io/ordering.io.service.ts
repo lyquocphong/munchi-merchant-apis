@@ -3,6 +3,8 @@ import { Business } from '@prisma/client';
 import axios from 'axios';
 import { plainToClass } from 'class-transformer';
 import console from 'console';
+import { AuthService } from 'src/auth/auth.service';
+import { AuthReponseDto, UserResponse } from 'src/auth/dto/auth.dto';
 import { BusinessService } from 'src/business/business.service';
 import { AllBusinessDto, BusinessDto } from 'src/business/dto/business.dto';
 import { OrderDto } from 'src/order/dto/order.dto';
@@ -17,6 +19,7 @@ export class OrderingIoService {
     private utils: UtilsService,
     private business: BusinessService,
     private user: UserService,
+    private auth: AuthService,
   ) {}
   // Auth service
   async signIn(credentials: AuthCredentials) {
@@ -36,18 +39,33 @@ export class OrderingIoService {
     try {
       const response = await axios.request(options);
       const signInResponseObject = response.data.result;
+      const tokens = await this.auth.getTokens(signInResponseObject.id, signInResponseObject.email);
+      const user = await this.user.getUserByUserId(signInResponseObject.id);
       const { access_token } = signInResponseObject.session;
-      const existingUser = await this.user.checkExistUser(signInResponseObject.id);
-      if (existingUser === null || !existingUser) {
-        const newUserResponse = await this.user.createUser(
+      if (!user) {
+        const newUser = await this.user.saveUser(
           signInResponseObject,
+          tokens,
           credentials.password,
         );
-        return newUserResponse;
-      } else if (existingUser) {
-        await this.utils.getSession(signInResponseObject.id, access_token);
-        return existingUser;
+        return newUser;
       }
+      await this.auth.updateRefreshToken(
+        signInResponseObject.id,
+        tokens.refreshToken,
+        access_token,
+      );
+      console.log(tokens);
+      return new UserResponse(
+        user.email,
+        user.firstName,
+        user.lastname,
+        user.level,
+        user.publicId,
+        user.session,
+        tokens.verifyToken,
+        tokens.refreshToken,
+      );
     } catch (error) {
       this.utils.getError(error);
     }
@@ -56,7 +74,7 @@ export class OrderingIoService {
   async signUp(credentials: AuthCredentials) {
     const options = {
       method: 'POST',
-      url: this.utils.getEnvUrl('users'),
+      url: this.utils.getEnvUrl('auth'),
       headers: {
         accept: 'application/json',
         'content-type': 'application/json',
@@ -71,19 +89,34 @@ export class OrderingIoService {
     };
     try {
       const response = await axios.request(options);
-      const signUpResponseObject = response.data.result;
-      const { access_token } = signUpResponseObject.session;
-      const existingUser = await this.user.getUser(signUpResponseObject.id, null);
-      if (existingUser === null || !existingUser) {
-        const newUserResponse = await this.user.createUser(
-          signUpResponseObject,
+      const signInResponseObject = response.data.result;
+      const tokens = await this.auth.getTokens(signInResponseObject.id, signInResponseObject.email);
+      const user = await this.user.getUserByUserId(signInResponseObject.id);
+      const { access_token } = signInResponseObject.session;
+      if (!user) {
+        const newUser = await this.user.saveUser(
+          signInResponseObject,
+          tokens,
           credentials.password,
         );
-        return newUserResponse;
-      } else if (existingUser) {
-        await this.utils.getSession(signUpResponseObject.id, access_token);
-        return existingUser;
+        return newUser;
       }
+      await this.auth.updateRefreshToken(
+        signInResponseObject.id,
+        tokens.refreshToken,
+        access_token,
+      );
+      console.log(tokens);
+      return new UserResponse(
+        user.email,
+        user.firstName,
+        user.lastname,
+        user.level,
+        user.publicId,
+        user.session,
+        tokens.verifyToken,
+        tokens.refreshToken,
+      );
     } catch (error) {
       this.utils.getError(error);
     }
@@ -143,7 +176,6 @@ export class OrderingIoService {
   }
 
   async editBusiness(accessToken: string, publicBusinessId: string, status: any) {
-    console.log(publicBusinessId, 'this is service IO');
     const business = await this.business.getBusinessByPublicId(publicBusinessId);
     console.log(status);
     // // const data = JSON.parse(status)
@@ -234,9 +266,10 @@ export class OrderingIoService {
     publicBusinessId: string,
   ) {
     const business = await this.business.getBusinessByPublicId(publicBusinessId);
+
     const options = {
       method: 'GET',
-      url: `${this.utils.getEnvUrl('orders')}?mode=dashboard&where={"business_id":${
+      url: `${this.utils.getEnvUrl('orders')}?mode=dashboard&where={${query},"business_id":${
         business.businessId
       }}&params=${paramsQuery}`,
       headers: {
