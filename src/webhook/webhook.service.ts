@@ -17,7 +17,7 @@ import { BusinessService } from 'src/business/business.service';
 @WebSocketGateway({ cors: { origin: 'http://localhost:3000' } })
 @Injectable()
 export class WebhookService {
-  constructor( private business: BusinessService) {}
+  constructor(private business: BusinessService) {}
   @WebSocketServer() server: Server;
   onModuleInit() {
     const ioServer = this.server;
@@ -26,18 +26,12 @@ export class WebhookService {
       console.log(socket.rooms);
       socket.on('join', (room) => {
         socket.join(room);
-        console.log(socket.rooms, 'line 38');
-        console.log(room, 'Joining this shitty room');
       });
-      console.log(socket.rooms, 'line 42');
     });
   }
- async newOrder(order:any) {
-    console.log(order.businessId)
-    const business = await this.business.getBusinessById(order.businessId)
-    console.log(business)
-    this.server
-      .to(business.publicId)
-      .emit('receive-order', order);
+  async newOrder(order: any) {
+    const business = await this.business.getBusinessById(order.businessId);
+
+    this.server.to(business.publicId).emit('receive-order', order);
   }
 }
