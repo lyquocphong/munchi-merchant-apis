@@ -1,12 +1,14 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Request } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiCreatedResponse } from '@nestjs/swagger';
 import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
 import { AuthCredentials } from 'src/type';
+import { AuthService } from './auth.service';
 import { AuthReponseDto } from './dto/auth.dto';
+import { RefreshJwt } from './guard/refreshJwt.guard';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private orderingIo: OrderingIoService) {}
+  constructor(private orderingIo: OrderingIoService, private auth: AuthService) {}
   @ApiCreatedResponse({
     description: 'Sign up new user',
     type: AuthReponseDto,
@@ -35,5 +37,12 @@ export class AuthController {
   @Post('signout')
   signout(@Body('publicUserId') publicUserId: string) {
     return this.orderingIo.signOut(publicUserId);
+  }
+  @UseGuards(RefreshJwt)
+  @Get('refreshToken')
+  getRefreshTokens(@Request() req: any) {
+    const userId = req.user['sub'];
+    const refreshToken = req.user['refreshToken'];
+    return this.auth.refreshTokens(userId,refreshToken);
   }
 }
