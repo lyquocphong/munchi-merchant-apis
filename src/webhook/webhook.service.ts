@@ -23,9 +23,10 @@ export class WebhookService {
     const ioServer = this.server;
     ioServer.on('connection', async (socket) => {
       console.log(`${socket.id} connected`);
-      console.log(socket.rooms);
+     
       socket.on('join', (room) => {
         socket.join(room);
+        console.log(socket.rooms);
       });
     });
   }

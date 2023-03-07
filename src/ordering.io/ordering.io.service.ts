@@ -55,7 +55,6 @@ export class OrderingIoService {
         tokens.refreshToken,
         access_token,
       );
-      console.log(tokens);
       return new UserResponse(
         user.email,
         user.firstName,
@@ -106,7 +105,6 @@ export class OrderingIoService {
         tokens.refreshToken,
         access_token,
       );
-      console.log(tokens);
       return new UserResponse(
         user.email,
         user.firstName,
@@ -138,14 +136,14 @@ export class OrderingIoService {
     try {
       const response = await axios.request(options);
       const businessResponseObject = response.data.result;
-      const user = await this.user.getUserInternally(null, publicUserId);
-      if (user === null) throw new ForbiddenException('Something wrong happend');
+      const user = await this.user.getUserByPublicId(publicUserId);
+      if (!user) throw new ForbiddenException('Something wrong happend');
       businessResponseObject.map(async (business: Business) => {
         const existedBusiness = await this.business.getBusinessById(business.id);
         if (existedBusiness) {
           return user.business;
         } else {
-          const newBusiness = await this.business.addBusiness(business.id, user.userId);
+          const newBusiness = await this.business.addBusiness(business, user.userId);
           return newBusiness;
         }
       });
@@ -266,7 +264,6 @@ export class OrderingIoService {
     publicBusinessId: string,
   ) {
     const business = await this.business.getBusinessByPublicId(publicBusinessId);
-
     const options = {
       method: 'GET',
       url: `${this.utils.getEnvUrl('orders')}?mode=dashboard&where={${query},"business_id":${
