@@ -19,41 +19,51 @@ export class AuthService {
   ) {}
   async refreshTokens(userId: number, refreshToken: string) {
     const user = await this.user.getUserByUserId(userId);
-    console.log(user);
     if (!user || !user.refreshToken) throw new ForbiddenException('Access Denied');
     const refreshTokenMatches = await argon2.verify(user.refreshToken, refreshToken);
     if (!refreshTokenMatches) throw new ForbiddenException('Access Denied');
     const userByPublicId = await this.user.getUserByPublicId(user.publicId);
     const token = await this.getTokens(userByPublicId.userId, user.email);
-    await this.updateRefreshToken(
-      userByPublicId.userId,
-      token.verifyToken,
-      user.session.accessToken,
-    );
+    await this.updateRefreshToken(userByPublicId.userId, token.refreshToken, null);
     return token;
   }
 
   async updateRefreshToken(userId: number, refreshToken: string, accessToken: string) {
-    console.log(refreshToken);
     const hashedRefreshToken = await this.hashData(refreshToken);
-    try {
-      await this.prisma.user.update({
-        where: {
-          userId: userId,
-        },
-        data: {
-          refreshToken: hashedRefreshToken,
-          session: {
-            update: {
-              accessToken: accessToken,
+    if (!accessToken) {
+      try {
+        await this.prisma.user.update({
+          where: {
+            userId: userId,
+          },
+          data: {
+            refreshToken: hashedRefreshToken,
+          },
+        });
+      } catch (error) {
+        this.utils.getError(error);
+      }
+    } else {
+      try {
+        await this.prisma.user.update({
+          where: {
+            userId: userId,
+          },
+          data: {
+            refreshToken: hashedRefreshToken,
+            session: {
+              update: {
+                accessToken: accessToken,
+              },
             },
           },
-        },
-      });
-    } catch (error) {
-      this.utils.getError(error);
+        });
+      } catch (error) {
+        this.utils.getError(error);
+      }
     }
   }
+
   hashData(data: string) {
     return argon2.hash(data);
   }
@@ -68,7 +78,7 @@ export class AuthService {
     const secret = this.config.get('JWT_SECRET');
     const refreshSecret = this.config.get('JWT_REFRESH_SECRET');
     const verifyToken = await this.jwt.signAsync(payload, {
-      expiresIn: '4h',
+      expiresIn: '1d',
       secret: secret,
     });
     const refreshToken = await this.jwt.signAsync(payload, {
