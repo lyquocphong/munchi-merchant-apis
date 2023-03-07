@@ -1,7 +1,8 @@
 import { Controller, Get, Param, Request, UseGuards } from '@nestjs/common';
 import { Delete } from '@nestjs/common/decorators';
 import { ApiBearerAuth, ApiCreatedResponse } from '@nestjs/swagger';
-import { JwtGuard } from 'src/auth/guard';
+import { JwtGuard } from 'src/auth/guard/jwt.guard';
+
 import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
 import { OrderId } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';

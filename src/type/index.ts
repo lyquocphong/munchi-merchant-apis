@@ -53,3 +53,8 @@ export type BusinessAttributes = {
   city_id: number;
   enabled: boolean;
 };
+
+export type AuthTokens = {
+  verifyToken: string;
+  refreshToken: string;
+};

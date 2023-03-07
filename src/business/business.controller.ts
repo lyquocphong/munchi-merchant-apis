@@ -7,7 +7,8 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { JwtGuard } from 'src/auth/guard';
+import { JwtGuard } from 'src/auth/guard/jwt.guard';
+;
 import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
 import { BusinessAttributes } from 'src/type';
 
@@ -58,7 +59,7 @@ export class BusinessController {
   ) {
     const { userId } = req.user;
     const accessToken = await this.utils.getAccessToken(userId);
-    console.log(status);
+   
     return this.orderingIo.editBusiness(accessToken, publicBusinessId, status);
   }
   @ApiCreatedResponse({

@@ -3,15 +3,15 @@ import { Module } from '@nestjs/common';
 import { BusinessModule } from 'src/business/business.module';
 import { OrderModule } from 'src/order/order.module';
 import { UserModule } from 'src/user/user.module';
-import { OrderWebhookController } from './webhook.controller.';
-import { OrderWebhookService } from './webhook.service';
+import { WebhookController } from './webhook.controller.';
+import { WebhookService } from './webhook.service';
 
 
 @Module({
   imports: [BusinessModule],
-  controllers: [OrderWebhookController],
-   providers: [OrderWebhookService],
-   exports: [OrderWebhookService]
+  controllers: [WebhookController],
+   providers: [WebhookService],
+   exports: [WebhookService]
   
 })
 export class OrderWebhookModule {}
