@@ -8,9 +8,9 @@ export class BusinessService {
   async addBusiness(businsessData: any, userId: number) {
     const newBusinesses = await this.prisma.business.create({
       data: {
-        publicId: this.utils.getPublicId(),
         businessId: businsessData.id,
         name: businsessData.name,
+        publicId: this.utils.getPublicId(),
         userId: userId,
       },
     });
