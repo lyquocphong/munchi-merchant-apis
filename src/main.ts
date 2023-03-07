@@ -1,6 +1,5 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { WsAdapter } from '@nestjs/platform-ws';
 import { DocumentBuilder } from '@nestjs/swagger';
 import { SwaggerDocumentOptions, SwaggerModule } from '@nestjs/swagger/dist';
 

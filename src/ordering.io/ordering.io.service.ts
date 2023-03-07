@@ -1,15 +1,13 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
-import { Business } from '@prisma/client';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import axios from 'axios';
 import { plainToClass } from 'class-transformer';
 import console from 'console';
 import { AuthService } from 'src/auth/auth.service';
-import { AuthReponseDto, UserResponse } from 'src/auth/dto/auth.dto';
+import { UserResponse } from 'src/auth/dto/auth.dto';
 import { BusinessService } from 'src/business/business.service';
-import { AllBusinessDto, BusinessDto } from 'src/business/dto/business.dto';
+import { BusinessDto } from 'src/business/dto/business.dto';
 import { OrderDto } from 'src/order/dto/order.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { AuthCredentials, BusinessAttributes, FilterQuery, OrderData } from 'src/type';
+import { AuthCredentials, OrderData } from 'src/type';
 import { UserDto } from 'src/user/dto/user.dto';
 import { UserService } from 'src/user/user.service';
 import { UtilsService } from 'src/utils/utils.service';
@@ -138,7 +136,7 @@ export class OrderingIoService {
       const businessResponseObject = response.data.result;
       const user = await this.user.getUserByPublicId(publicUserId);
       if (!user) throw new ForbiddenException('Something wrong happend');
-      businessResponseObject.map(async (business: Business) => {
+      businessResponseObject.map(async (business: any) => {
         const existedBusiness = await this.business.getBusinessById(business.id);
         if (existedBusiness) {
           return user.business;
