@@ -1,4 +1,4 @@
-import { Exclude, Expose, Type } from 'class-transformer';
+import { Exclude, Expose } from 'class-transformer';
 
 @Exclude()
 export class CustomerDto {
@@ -10,9 +10,6 @@ export class CustomerDto {
   email: number;
   @Expose()
   address: number;
-  @Expose({ name: 'orders_count' })
-  ordersCount: number;
-
   constructor(partial: Partial<CustomerDto>) {
     Object.assign(this, partial);
   }
