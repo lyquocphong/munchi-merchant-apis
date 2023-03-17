@@ -6,12 +6,10 @@ import { UserModule } from 'src/user/user.module';
 import { WebhookController } from './webhook.controller.';
 import { WebhookService } from './webhook.service';
 
-
 @Module({
-  imports: [BusinessModule],
+  imports: [BusinessModule, UserModule],
   controllers: [WebhookController],
-   providers: [WebhookService],
-   exports: [WebhookService]
-  
+  providers: [WebhookService],
+  exports: [WebhookService],
 })
 export class OrderWebhookModule {}
