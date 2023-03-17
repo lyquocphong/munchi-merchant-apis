@@ -7,9 +7,14 @@ export class SummaryDto {
 
   @Expose()
   total: number;
-
   @Expose()
-  delivery_price: number;
+  discount: number;
+
+  @Expose({ name: 'delivery_price' })
+  deliveryPrice: number;
+
+  @Expose({ name: 'service_fee' })
+  service_fee: number;
 
   constructor(partial: Partial<SummaryDto>) {
     Object.assign(this, partial);
