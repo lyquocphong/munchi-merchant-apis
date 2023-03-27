@@ -12,19 +12,26 @@ async function bootstrap() {
     .setTitle('Api documentation')
     .setDescription('The API description of munchi-apis')
     .setVersion('1.0')
-    .addTag('Munchi-apis')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'JWT-auth',
+    )
     .build();
-    const options: SwaggerDocumentOptions =  {
-      deepScanRoutes: true,
-      operationIdFactory: (
-        controllerKey: string,
-        methodKey: string
-      ) => methodKey
-    };
-  const document = SwaggerModule.createDocument(app, config,options);
+  const options: SwaggerDocumentOptions = {
+    deepScanRoutes: true,
+    operationIdFactory: (controllerKey: string, methodKey: string) => methodKey,
+  };
+  const document = SwaggerModule.createDocument(app, config, options);
   SwaggerModule.setup('api', app, document);
   app.enableCors({
-    origin: [`${process.env.CLIENT_URL_DEVELOPEMENT}`],
+    credentials: true,
   });
   app.useGlobalPipes(
     new ValidationPipe({

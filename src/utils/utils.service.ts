@@ -10,6 +10,7 @@ import Cryptr from 'cryptr';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { v4 as uuidv4 } from 'uuid';
+import { UserResponse } from 'src/auth/dto/auth.dto';
 @Injectable()
 export class UtilsService {
   constructor(
@@ -19,10 +20,10 @@ export class UtilsService {
     private orderingIo: OrderingIoService,
     private config: ConfigService,
   ) {}
-  getEnvUrl(routeQuery: string, id?: string | number, param?: Array<String>): string {
-    let envUrl = `${process.env.BASE_URL}/${routeQuery}`;
-    if (id === null || id === undefined) return envUrl;
-    else envUrl = `${process.env.BASE_URL}/${routeQuery}/${id}`;
+  getEnvUrl(path: string, idParam?: string | number, queryParams?: Array<String>): string {
+    let envUrl = `${process.env.BASE_URL}/${path}`;
+    if (idParam === null || idParam === undefined) return envUrl;
+    else envUrl = `${process.env.BASE_URL}/${path}/${idParam}`;
     return envUrl;
   }
   async getAccessToken(userId: number) {
@@ -59,8 +60,8 @@ export class UtilsService {
         const response = await axios.request(options);
         const signInResponseObject = response.data.result;
         const { access_token } = signInResponseObject.session;
-        const token = await this.getSession(signInResponseObject.id, access_token);
-        return token;
+        const token = await this.updateAccessToken(signInResponseObject.id, access_token);
+        return token; 
       } catch (error) {
         const errorMsg = error.response.data.result;
         throw new ForbiddenException(errorMsg);
@@ -69,7 +70,7 @@ export class UtilsService {
 
     return sessionData.accessToken;
   }
-  async getSession(userId: number, accessToken: string) {
+  async updateAccessToken(userId: number, accessToken: string) {
     //get User infomation
     try {
       const updatedSession = await this.prisma.session.update({
@@ -83,53 +84,6 @@ export class UtilsService {
       return updatedSession.accessToken;
     } catch (error) {
       this.getError(error);
-    }
-  }
-  async getUser(userId: number, publicUserId: string) {
-    if (userId === null) {
-      const userByPublicUserId = await this.prisma.user.findUnique({
-        where: {
-          publicId: publicUserId,
-        },
-        include: {
-          session: {
-            select: {
-              accessToken: true,
-              expiresIn: true,
-              tokenType: true,
-            },
-          },
-          business: {
-            select: {
-              name: true,
-              publicId: true,
-            },
-          },
-        },
-      });
-      return userByPublicUserId;
-    } else {
-      const userByUserId = await this.prisma.user.findUnique({
-        where: {
-          userId: userId,
-        },
-        include: {
-          session: {
-            select: {
-              accessToken: true,
-              expiresIn: true,
-              tokenType: true,
-            },
-          },
-          business: {
-            select: {
-              name: true,
-              publicId: true,
-            },
-          },
-        },
-      });
-      return userByUserId;
     }
   }
 
@@ -149,43 +103,6 @@ export class UtilsService {
   getPublicId() {
     const publicId = uuidv4();
     return publicId;
-  }
-  async createUser(data: any, password: string) {
-    const encryptedPassword = this.getPassword(password, true);
-    const { access_token, token_type, expires_in } = data.session;
-    const user = await this.prisma.user.create({
-      data: {
-        userId: data.id,
-        firstName: data.name,
-        lastname: data.lastname,
-        email: data.email,
-        hash: encryptedPassword,
-        level: data.level,
-        publicId: this.getPublicId(),
-        session: {
-          create: {
-            accessToken: access_token,
-            expiresIn: expires_in,
-            tokenType: token_type,
-          },
-        },
-      },
-      select: {
-        firstName: true,
-        lastname: true,
-        email: true,
-        publicId: true,
-        level: true,
-        session: {
-          select: {
-            accessToken: true,
-            expiresIn: true,
-            tokenType: true,
-          },
-        },
-      },
-    });
-    return user;
   }
 
   getPassword(password: string, needCrypt: boolean) {

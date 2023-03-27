@@ -1,5 +1,6 @@
 import { Exclude, Expose, Transform, Type } from 'class-transformer';
 import moment, { Moment } from 'moment';
+import { CustomerDto } from './customer.dto';
 import { ProductDto } from './product.dto';
 import { SummaryDto } from './summary.dto';
 
@@ -26,6 +27,9 @@ export class OrderDto {
   @Expose({ name: 'prepared_in' })
   preparedIn: number;
 
+  @Expose({ name: 'created_at' })
+  createdAt: string;
+
   @Expose()
   @Type(() => SummaryDto)
   summary: SummaryDto[];
@@ -33,6 +37,10 @@ export class OrderDto {
   @Expose()
   @Type(() => ProductDto)
   products: ProductDto[];
+
+  @Expose()
+  @Type(() => CustomerDto)
+  customer: ProductDto[];
 
   constructor(partial: Partial<OrderDto>) {
     Object.assign(this, partial);

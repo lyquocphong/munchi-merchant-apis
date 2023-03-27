@@ -1,35 +1,90 @@
 import { Body, Controller, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
-import { JwtGuard } from 'src/auth/guard';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiProperty,
+  ApiResponse,
+} from '@nestjs/swagger';
+import { Exclude } from 'class-transformer';
+import { JwtGuard } from 'src/auth/guard/jwt.guard';
+;
 import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
+import { BusinessAttributes } from 'src/type';
 
 import { UtilsService } from 'src/utils/utils.service';
+import { AllBusinessDto, BusinessDto } from './dto/business.dto';
 
 @UseGuards(JwtGuard)
 @Controller('business')
+@ApiBearerAuth('JWT-auth')
+@ApiBadRequestResponse({
+  description: 'Something wrong happened',
+})
 export class BusinessController {
   constructor(private utils: UtilsService, private orderingIo: OrderingIoService) {}
-  @Get('allbusiness')
+
+  @ApiCreatedResponse({
+    description: 'Get all businesses',
+    type: AllBusinessDto,
+  })
+  @Post('allbusiness')
   async getAllBusiness(@Request() req: any, @Body('publicUserId') publicUserId: string) {
     const { userId } = req.user;
+    if (!publicUserId) {
+      return 'No publicUserId';
+    }
     const accessToken = await this.utils.getAccessToken(userId);
     return this.orderingIo.getAllBusiness(accessToken, publicUserId);
   }
+  @ApiCreatedResponse({
+    description: 'Get a specific business',
+    type: BusinessDto,
+  })
   @Get(':businessId')
-  async getBusinessById(@Param('businessId') businessId: number, @Request() req) {
+  async getBusinessById(@Request() req: any, @Param('businessId') publicBusinessId: string) {
     const { userId } = req.user;
     const accessToken = await this.utils.getAccessToken(userId);
-    return this.orderingIo.getBusinessById(businessId, accessToken);
+    return this.orderingIo.getBusinessById(publicBusinessId, accessToken);
   }
-  @Post(':businessId/getBusinessOnline')
-  async getBusinessOnline(@Request() req: any, @Param('businessId') businessId: number) {
+  @ApiCreatedResponse({
+    description: 'Edit a specific business',
+    type: BusinessDto,
+  })
+  @Post('editBusiness')
+  async editBusiness(
+    @Request() req: any,
+    @Body('publicBusinessId') publicBusinessId: string,
+    @Body('status') status: boolean,
+  ) {
     const { userId } = req.user;
     const accessToken = await this.utils.getAccessToken(userId);
-    return this.orderingIo.getBusinessOnline(businessId, accessToken);
+   
+    return this.orderingIo.editBusiness(accessToken, publicBusinessId, status);
   }
-  @Post(':businessId/getBusinessOffline')
-  async getBusinessOffline(@Request() req: any, @Param('businessId') businessId: number) {
+  @ApiCreatedResponse({
+    description: 'Activate business',
+    type: BusinessDto,
+  })
+  @Post('editBusiness/activate')
+  async activateBusiness(@Request() req: any, @Body('publicBusinessId') publicBusinessId: string) {
     const { userId } = req.user;
     const accessToken = await this.utils.getAccessToken(userId);
-    return this.orderingIo.getBusinessOffline(businessId, accessToken);
+
+    return this.orderingIo.activateBusiness(accessToken, publicBusinessId);
+  }
+  @ApiCreatedResponse({
+    description: 'Deactivate business',
+    type: BusinessDto,
+  })
+  @Post('editBusiness/deactivate')
+  async deactivateBusiness(
+    @Request() req: any,
+    @Body('publicBusinessId') publicBusinessId: string,
+  ) {
+    const { userId } = req.user;
+    const accessToken = await this.utils.getAccessToken(userId);
+
+    return this.orderingIo.deactivateBusiness(accessToken, publicBusinessId);
   }
 }

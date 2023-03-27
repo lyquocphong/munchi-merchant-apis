@@ -4,7 +4,7 @@ CREATE TABLE "Session" (
     "tokenType" TEXT NOT NULL,
     "expiresIn" INTEGER NOT NULL,
     "userId" INTEGER NOT NULL,
-    CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user" ("userId") ON DELETE RESTRICT ON UPDATE CASCADE
+    CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user" ("userId") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -16,7 +16,8 @@ CREATE TABLE "user" (
     "email" TEXT NOT NULL,
     "hash" TEXT NOT NULL,
     "level" INTEGER,
-    "publicId" TEXT NOT NULL
+    "publicId" TEXT NOT NULL,
+    "refreshToken" TEXT NOT NULL
 );
 
 -- CreateTable
@@ -26,7 +27,7 @@ CREATE TABLE "business" (
     "publicId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "userId" INTEGER NOT NULL,
-    CONSTRAINT "business_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user" ("userId") ON DELETE RESTRICT ON UPDATE CASCADE
+    CONSTRAINT "business_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user" ("userId") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateIndex
@@ -43,6 +44,9 @@ CREATE UNIQUE INDEX "user_email_key" ON "user"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "user_publicId_key" ON "user"("publicId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "user_refreshToken_key" ON "user"("refreshToken");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "business_businessId_key" ON "business"("businessId");
