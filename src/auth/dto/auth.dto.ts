@@ -77,19 +77,17 @@ export class AuthReponseDto {
   @Expose()
   verifyToken: string;
   @ApiProperty({
+    description: 'The refresh token',
+    example: 'refreshToken',
+  })
+  @Expose()
+  refreshToken: string;
+  @ApiProperty({
     description: 'The session of user',
     example: {
       accessToken: 'accesssToken',
       tokenType: 'bearer',
       expiresIn: '4000000',
-    },
-  })
-  @Expose()
-  refreshToken: string;
-  @ApiProperty({
-    description: 'The refresh token',
-    example: {
-      refreshToken: 'refreshToken',
     },
   })
   @Expose()

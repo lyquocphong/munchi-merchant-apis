@@ -12,6 +12,9 @@ export class OptionDto {
   image: number;
 
   @Expose()
+  price: number;
+
+  @Expose()
   @Type(() => SubOptionDto)
   suboptions: SubOptionDto[];
 
