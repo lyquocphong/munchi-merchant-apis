@@ -52,6 +52,7 @@ export class UserService {
         email: true,
         publicId: true,
         level: true,
+        userId:true,
         session: {
           select: {
             accessToken: true,

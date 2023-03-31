@@ -1,13 +1,11 @@
-import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
-import { SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets/decorators';
-import { Server, Socket } from 'socket.io';
-import { IoAdapter } from '@nestjs/platform-socket.io';
-import { plainToClass } from 'class-transformer';
-import { BusinessService } from 'src/business/business.service';
-import { OrderDto } from 'src/order/dto/order.dto';
-import { UserService } from 'src/user/user.service';
-import * as io from 'socket.io-client';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets/decorators';
+import { Server, Socket } from 'socket.io';
+import * as io from 'socket.io-client';
+import { BusinessService } from 'src/business/business.service';
+import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
+import { UserService } from 'src/user/user.service';
 
 @WebSocketGateway({ cors: { origin: { origin: '*' } } })
 @Injectable()
@@ -18,6 +16,7 @@ export class WebhookService implements OnModuleInit {
   constructor(
     private business: BusinessService,
     private user: UserService,
+    private ordering: OrderingIoService,
     private config: ConfigService,
   ) {
     this.project = this.config.get('PROJECT_NAME');
@@ -27,11 +26,25 @@ export class WebhookService implements OnModuleInit {
     const ioServer = this.server;
     ioServer.on('connection', async (socket) => {
       console.log(socket.id, 'connected');
-
-      const user = await this.user.getUserByPublicId(socket.handshake.auth.publicUserId);
+      console.log('starting to login');
+      const authReponse = await this.ordering.signIn({
+        email: `${this.config.get('ADMIN_EMAIL')}`,
+        password: `${this.config.get('ADMIN_PASSWORD')}`,
+      });
+      //login with
+      if (!socket.handshake.auth.publicBusinessId) {
+        return 'Something wrong happened';
+      }
+      const business = await this.business.getBusinessByPublicId(
+        socket.handshake.auth.publicBusinessId,
+      );
+      const user = await this.user.getUserByUserId(business.userId);
+      if (!user || !business) {
+        return 'Something wrong happened';
+      }
       this.socketIoClient = io.connect(`${this.config.get('SOCKET_URL')}`, {
         query: {
-          token: user.session.accessToken,
+          token: authReponse.session.accessToken,
           project: this.project,
         },
         transports: ['websocket'],
@@ -41,20 +54,33 @@ export class WebhookService implements OnModuleInit {
         console.log('Sorry, there seems to be an issue with the connection!');
       });
 
-      this.socketIoClient.on('connect_error', (err) => {
+      this.socketIoClient.on('connect_error', async (err) => {
         console.log('connect failed ' + err);
+        const newAuthReponse = await this.ordering.signIn({
+          email: `${this.config.get('ADMIN_EMAIL')}`,
+          password: `${this.config.get('ADMIN_PASSWORD')}`,
+        });
+        this.socketIoClient = io.connect(`${this.config.get('SOCKET_URL')}`, {
+          query: {
+            token: newAuthReponse.session.accessToken,
+            project: this.project,
+          },
+          transports: ['websocket'],
+        });
       });
       this.socketIoClient.on('connect', () => {
-        // const orderRoom = `${this.project}_orders`;
         const userOrderRoom = `${this.project}_orders_${user.userId}`;
-        const driverRoom = `${this.project}_drivers`;
-        const orderMessageRoom = `${this.project}_messages_orders`;
         const userOrderMessageRoom = `${this.project}_messages_orders_${user.userId}`;
+        const driverRoom = `${this.project}_drivers`;
+        const orderRoom = `${this.project}_orders`;
+        const orderMessageRoom = `${this.project}_messages_orders`;
+
         console.log('on connect to ordering server');
         console.log(this.socketIoClient.id, 'connecting to order server');
-        // this.socketIoClient.emit('join', orderRoom);
+        this.socketIoClient.emit('join', orderRoom);
         this.socketIoClient.emit('join', userOrderRoom);
-        this.socketIoClient.emit('join', userOrderMessageRoom);
+        // this.socketIoClient.emit('join', userOrderMessageRoom);
+        this.socketIoClient.emit('join', orderRoom);
         this.socketIoClient.emit('join', {
           room: 'orders',
           user_id: user.userId,
@@ -63,26 +89,32 @@ export class WebhookService implements OnModuleInit {
         });
         // this.socketIoClient.emit('join', driverRoom);
         // this.socketIoClient.emit('join', orderMessageRoom);
-        this.server.emit('newOrder', 'hello');
         this.socketIoClient.on('message', function (order) {
           //if there is a change in an order do something
           console.log('message order ', order);
         });
         this.socketIoClient.on('update_order', function (order) {
           //if there is a change in an order do something
-          console.log('updating order: line 73 ');
+          if (order.business_id === business.businessId) {
+            ioServer.emit('order_change', order);
+          }
+          return 'Something wrong happened';
         });
         this.socketIoClient.on('orders_register', function (order) {
           //if there is a new order do something
-          console.log('new order ', order);
+          if (order.business_id === business.businessId) {
+            ioServer.emit('orders_register', order);
+          }
+          return 'Something wrong happened';
         });
         this.socketIoClient.on('order_change', function (order) {
           //if there is a change in an order do something
           console.log('change order line 89', order);
-          ioServer.emit('order_change', order)
         });
       });
     });
-
+  }
+  newOrderNotification(order: any) {
+    console.log('Order come');
   }
 }

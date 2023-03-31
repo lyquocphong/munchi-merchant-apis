@@ -6,4 +6,8 @@ export class WebhookController {
   constructor(
     private WebhookService: WebhookService,
   ) {}
+  @Post('newOrder')
+  newOrder(@Body() order:any) {
+    return this.WebhookService.newOrderNotification(order)
+  }
 }
