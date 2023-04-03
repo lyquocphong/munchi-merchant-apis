@@ -10,4 +10,8 @@ export class WebhookController {
   newOrder(@Body() order:any) {
     return this.WebhookService.newOrderNotification(order)
   }
+  @Post('statusChange')
+  changeOrder(@Body() order:any) {
+    return this.WebhookService.changeOrderNotification(order)
+  }
 }
