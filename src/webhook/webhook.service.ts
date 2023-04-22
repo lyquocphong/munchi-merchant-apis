@@ -25,10 +25,7 @@ export class WebhookService implements OnModuleInit {
   onModuleInit() {
     const ioServer = this.server;
     ioServer.on('connection', (socket) => {
-      console.log(socket.id, 'connected');
-      console.log('starting to login');
       socket.on('join', (room) => {
-        console.log('Join')
         socket.join(room);
       });
       // const authReponse = await this.ordering.signIn({
