@@ -82,7 +82,7 @@ export class AuthService {
       secret: secret,
     });
     const refreshToken = await this.jwt.signAsync(payload, {
-      expiresIn: '7d',
+      expiresIn: '14d',
       secret: refreshSecret,
     });
     return {
