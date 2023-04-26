@@ -136,7 +136,7 @@ export class OrderingIoService {
       const businessResponseObject = response.data.result;
       const user = await this.user.getUserByPublicId(publicUserId);
       if (!user) throw new ForbiddenException('Something wrong happend');
-      businessResponseObject.map(async (business: any) => {
+      await businessResponseObject.map(async (business: any) => {
         const existedBusiness = await this.business.getBusinessById(business.id);
         if (existedBusiness) {
           return user.business;
@@ -145,7 +145,7 @@ export class OrderingIoService {
           return newBusiness;
         }
       });
-      return this.business.getAllBusiness(user.userId);
+      return await this.business.getAllBusiness(user.userId);
     } catch (error) {
       this.utils.getError(error);
     }
