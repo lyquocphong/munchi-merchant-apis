@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { ForbiddenException, Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets/decorators';
 import { Server, Socket } from 'socket.io';
@@ -15,8 +15,6 @@ export class WebhookService implements OnModuleInit {
   public project: string;
   constructor(
     private business: BusinessService,
-    private user: UserService,
-    private ordering: OrderingIoService,
     private config: ConfigService,
   ) {
     this.project = this.config.get('PROJECT_NAME');
@@ -116,18 +114,18 @@ export class WebhookService implements OnModuleInit {
     });
   }
   async newOrderNotification(order: any) {
-    const business = await this.business.getBusinessById(order.business_id);
+    const business = await this.business.findBusinessById(order.business_id);
     if (!business) {
-      return 'Something wrong happened';
+      throw new ForbiddenException('Something wrong happened');
     } else {
       this.server.to(business.publicId).emit('orders_register', order);
     }
   }
   async changeOrderNotification(order: any) {
-    console.log('Order status change')
-    const business = await this.business.getBusinessById(order.business_id);
+    console.log('Order status change');
+    const business = await this.business.findBusinessById(order.business_id);
     if (!business) {
-      return 'Something wrong happened';
+      throw new ForbiddenException('Something wrong happened');
     } else {
       this.server.to(business.publicId).emit('order_change', order);
     }

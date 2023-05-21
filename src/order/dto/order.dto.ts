@@ -3,6 +3,7 @@ import moment, { Moment } from 'moment';
 import { CustomerDto } from './customer.dto';
 import { ProductDto } from './product.dto';
 import { SummaryDto } from './summary.dto';
+import { HistoryDto } from './history.dto';
 
 @Exclude()
 export class OrderDto {
@@ -30,6 +31,9 @@ export class OrderDto {
   @Expose({ name: 'created_at' })
   createdAt: string;
 
+  @Expose({ name: 'spot_number' })
+  table: number;
+
   @Expose()
   @Type(() => SummaryDto)
   summary: SummaryDto[];
@@ -40,7 +44,11 @@ export class OrderDto {
 
   @Expose()
   @Type(() => CustomerDto)
-  customer: ProductDto[];
+  customer: CustomerDto[];
+
+  @Expose()
+  @Type(() => HistoryDto)
+  history: HistoryDto[];
 
   constructor(partial: Partial<OrderDto>) {
     Object.assign(this, partial);

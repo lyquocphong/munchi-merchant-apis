@@ -84,12 +84,14 @@ export class OrderingIoService {
         password: credentials.password,
       },
     };
+
     try {
       const response = await axios.request(options);
       const signInResponseObject = response.data.result;
       const tokens = await this.auth.getTokens(signInResponseObject.id, signInResponseObject.email);
       const user = await this.user.getUserByUserId(signInResponseObject.id);
       const { access_token } = signInResponseObject.session;
+
       if (!user) {
         const newUser = await this.user.saveUser(
           signInResponseObject,
@@ -98,11 +100,13 @@ export class OrderingIoService {
         );
         return newUser;
       }
+
       await this.auth.updateRefreshToken(
         signInResponseObject.id,
         tokens.refreshToken,
         access_token,
       );
+
       return new UserResponse(
         user.email,
         user.firstName,
@@ -131,28 +135,35 @@ export class OrderingIoService {
         Authorization: `Bearer ${accessToken}`,
       },
     };
+
     try {
       const response = await axios.request(options);
       const businessResponseObject = response.data.result;
       const user = await this.user.getUserByPublicId(publicUserId);
-      if (!user) throw new ForbiddenException('Something wrong happend');
+
+      if (!user) {
+        throw new ForbiddenException('Something wrong happend');
+      }
+
       await businessResponseObject.map(async (business: any) => {
-        const existedBusiness = await this.business.getBusinessById(business.id);
+        const existedBusiness = await this.business.findBusinessById(business.id);
         if (existedBusiness) {
           return user.business;
         } else {
-          const newBusiness = await this.business.addBusiness(business, user.userId);
+          const newBusiness = await this.business.createBusiness(business, user.userId);
           return newBusiness;
         }
       });
-      return await this.business.getAllBusiness(user.userId);
+
+      return await this.business.findAllBusiness(user.userId);
     } catch (error) {
       this.utils.getError(error);
     }
   }
 
   async getBusinessById(publicBusinessId: string, accessToken: string) {
-    const business = await this.business.getBusinessByPublicId(publicBusinessId);
+    const business = await this.business.findBusinessByPublicId(publicBusinessId);
+
     const options = {
       method: 'GET',
       url: `${this.utils.getEnvUrl('business', business.businessId)}?mode=dashboard`,
@@ -161,10 +172,12 @@ export class OrderingIoService {
         Authorization: `Bearer ${accessToken}`,
       },
     };
+
     try {
       const response = await axios.request(options);
       const businessResponseObject = response.data.result;
       const businessResponse = plainToClass(BusinessDto, businessResponseObject);
+
       return businessResponse;
     } catch (error) {
       this.utils.getError(error);
@@ -172,10 +185,8 @@ export class OrderingIoService {
   }
 
   async editBusiness(accessToken: string, publicBusinessId: string, status: any) {
-    const business = await this.business.getBusinessByPublicId(publicBusinessId);
-    console.log(status);
-    // // const data = JSON.parse(status)
-    // console.log(data)
+    const business = await this.business.findBusinessByPublicId(publicBusinessId);
+
     const options = {
       method: 'POST',
       url: `${this.utils.getEnvUrl('business', business.businessId)}`,
@@ -185,6 +196,7 @@ export class OrderingIoService {
         Authorization: `Bearer ${accessToken}`,
       },
     };
+
     try {
       const response = await axios.request(options);
       const businessResponseObject = response.data.result;
@@ -194,8 +206,10 @@ export class OrderingIoService {
       this.utils.getError(error);
     }
   }
+
   async activateBusiness(accessToken: string, publicBusinessId: string) {
-    const business = await this.business.getBusinessByPublicId(publicBusinessId);
+    const business = await this.business.findBusinessByPublicId(publicBusinessId);
+
     const options = {
       method: 'POST',
       url: `${this.utils.getEnvUrl('business', business.businessId)}`,
@@ -205,18 +219,20 @@ export class OrderingIoService {
         Authorization: `Bearer ${accessToken}`,
       },
     };
+
     try {
       const response = await axios.request(options);
       const businessResponseObject = response.data.result;
       const businessResponse = plainToClass(BusinessDto, businessResponseObject);
-      // console.log(response);
+
       return businessResponse;
     } catch (error) {
       this.utils.getError(error);
     }
   }
   async deactivateBusiness(accessToken: string, publicBusinessId: string) {
-    const business = await this.business.getBusinessByPublicId(publicBusinessId);
+    const business = await this.business.findBusinessByPublicId(publicBusinessId);
+
     const options = {
       method: 'POST',
       url: `${this.utils.getEnvUrl('business', business.businessId)}`,
@@ -226,11 +242,12 @@ export class OrderingIoService {
         Authorization: `Bearer ${accessToken}`,
       },
     };
+
     try {
       const response = await axios.request(options);
       const businessResponseObject = response.data.result;
       const businessResponse = plainToClass(BusinessDto, businessResponseObject);
-      // console.log(response);
+
       return businessResponse;
     } catch (error) {
       this.utils.getError(error);
@@ -246,6 +263,7 @@ export class OrderingIoService {
         Authorization: `Bearer ${acessToken}`,
       },
     };
+
     try {
       const response = await axios.request(options);
       const order = plainToClass(OrderDto, response.data.result);
@@ -261,7 +279,8 @@ export class OrderingIoService {
     paramsQuery: string[],
     publicBusinessId: string,
   ) {
-    const business = await this.business.getBusinessByPublicId(publicBusinessId);
+    const business = await this.business.findBusinessByPublicId(publicBusinessId);
+
     const options = {
       method: 'GET',
       url: `${this.utils.getEnvUrl('orders')}?mode=dashboard&where={${query},"business_id":${
@@ -272,6 +291,7 @@ export class OrderingIoService {
         Authorization: `Bearer ${accessToken}`,
       },
     };
+
     try {
       const response = await axios.request(options);
       const order = plainToClass(OrderDto, response.data.result);
@@ -289,8 +309,10 @@ export class OrderingIoService {
         Authorization: `Bearer ${accessToken}`,
       },
     };
+
     try {
       const response = await axios.request(options);
+      console.log(response.data.result);
       const order = plainToClass(OrderDto, response.data.result);
       return order;
     } catch (error) {
@@ -305,9 +327,11 @@ export class OrderingIoService {
       headers: { accept: 'application/json', Authorization: `Bearer ${acessToken}` },
       data: { status: orderData.orderStatus, prepared_in: orderData.preparedIn },
     };
+
     try {
       const response = await axios.request(options);
       const order = plainToClass(OrderDto, response.data.result);
+
       return order;
     } catch (error) {
       this.utils.getError(error);
@@ -319,8 +343,9 @@ export class OrderingIoService {
       url: `${this.utils.getEnvUrl('orders', orderId)}`,
       headers: { accept: 'application/json', Authorization: `Bearer ${acessToken}` },
     };
+
     try {
-      const response = await axios.request(options);
+      await axios.request(options);
     } catch (error) {
       this.utils.getError(error);
     }
@@ -333,10 +358,12 @@ export class OrderingIoService {
       url: this.utils.getEnvUrl('users', userId),
       headers: { accept: 'application/json', Authorization: `Bearer ${accessToken}` },
     };
+
     try {
       const response = await axios.request(options);
       const userResponseObject = response.data.result;
       const userResponse = plainToClass(UserDto, userResponseObject);
+
       return userResponse;
     } catch (error) {
       this.utils.getError(error);
