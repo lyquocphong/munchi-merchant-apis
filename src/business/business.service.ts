@@ -5,7 +5,7 @@ import { UtilsService } from 'src/utils/utils.service';
 @Injectable()
 export class BusinessService {
   constructor(private utils: UtilsService, private readonly prisma: PrismaService) {}
-  async addBusiness(businsessData: any, userId: number) {
+  async createBusiness(businsessData: any, userId: number) {
     const newBusinesses = await this.prisma.business.create({
       data: {
         businessId: businsessData.id,
@@ -18,12 +18,12 @@ export class BusinessService {
   }
   async getBusiness(businessId: number, userId: number) {
     if (businessId !== null) {
-      return this.getBusinessById(businessId);
+      return this.findBusinessById(businessId);
     } else if (businessId !== null && userId !== null) {
-      return this.getDuplicateBusiness(businessId, userId);
+      return this.findDuplicateBusiness(businessId, userId);
     }
   }
-  async getDuplicateBusiness(businessId: number, userId: number) {
+  async findDuplicateBusiness(businessId: number, userId: number) {
     const business = await this.prisma.business.findMany({
       where: {
         businessId: businessId,
@@ -33,7 +33,7 @@ export class BusinessService {
     return business;
   }
 
-  async getBusinessByPublicId(publicBusinessId: string) {
+  async findBusinessByPublicId(publicBusinessId: string) {
     const business = await this.prisma.business.findUnique({
       where: {
         publicId: publicBusinessId,
@@ -41,7 +41,7 @@ export class BusinessService {
     });
     return business;
   }
-  async getBusinessById(businessId: number) {
+  async findBusinessById(businessId: number) {
     const business = await this.prisma.business.findUnique({
       where: {
         businessId: businessId,
@@ -50,7 +50,7 @@ export class BusinessService {
     return business;
   }
 
-  async getAllBusiness(userId: number) {
+  async findAllBusiness(userId: number) {
     const business = await this.prisma.business.findMany({
       where: {
         userId: userId,
