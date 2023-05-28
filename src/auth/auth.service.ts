@@ -19,12 +19,21 @@ export class AuthService {
   ) {}
   async refreshTokens(userId: number, refreshToken: string) {
     const user = await this.user.getUserByUserId(userId);
-    if (!user || !user.refreshToken) throw new ForbiddenException('Access Denied');
+
+    if (!user || !user.refreshToken) {
+      throw new ForbiddenException('Access Denied');
+    }
+
     const refreshTokenMatches = await argon2.verify(user.refreshToken, refreshToken);
-    if (!refreshTokenMatches) throw new ForbiddenException('Access Denied');
+   
+    if (!refreshTokenMatches) {
+      throw new ForbiddenException('Access Denied');
+    }
+
     const userByPublicId = await this.user.getUserByPublicId(user.publicId);
     const token = await this.getTokens(userByPublicId.userId, user.email);
     await this.updateRefreshToken(userByPublicId.userId, token.refreshToken, null);
+
     return token;
   }
 
@@ -75,14 +84,17 @@ export class AuthService {
       sub: userId,
       email,
     };
+
     const secret = this.config.get('JWT_SECRET');
     const refreshSecret = this.config.get('JWT_REFRESH_SECRET');
+
     const verifyToken = await this.jwt.signAsync(payload, {
-      expiresIn: '1d',
+      expiresIn: '15s',
       secret: secret,
     });
+
     const refreshToken = await this.jwt.signAsync(payload, {
-      expiresIn: '14d',
+      expiresIn: '7d',
       secret: refreshSecret,
     });
     return {
