@@ -1,4 +1,5 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import axios from 'axios';
 import { plainToClass } from 'class-transformer';
 import console from 'console';
@@ -140,7 +141,6 @@ export class OrderingIoService {
       const response = await axios.request(options);
       const businessResponseObject = response.data.result;
       const user = await this.user.getUserByPublicId(publicUserId);
-
       if (!user) {
         throw new ForbiddenException('Something wrong happend');
       }
@@ -148,10 +148,12 @@ export class OrderingIoService {
       await businessResponseObject.map(async (business: any) => {
         const existedBusiness = await this.business.findBusinessById(business.id);
         if (existedBusiness) {
-          return user.business;
+          const owner = existedBusiness.owners.filter((owner) => owner.userId === user.userId);
+          if (!owner) {
+            await this.business.updateBusinessOwners(business, user.userId);
+          }
         } else {
-          const newBusiness = await this.business.createBusiness(business, user.userId);
-          return newBusiness;
+          await this.business.createBusiness(business, user.userId);
         }
       });
 
@@ -312,7 +314,6 @@ export class OrderingIoService {
 
     try {
       const response = await axios.request(options);
-      console.log(response.data.result);
       const order = plainToClass(OrderDto, response.data.result);
       return order;
     } catch (error) {
