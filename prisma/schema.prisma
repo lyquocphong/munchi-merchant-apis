@@ -26,7 +26,7 @@ model User {
   publicId     String     @unique
   refreshToken String     @unique
   session      Session?
-  business     Business[]
+  business     Business[] @relation("MyUserBusinessTable")
 
   @@map("user")
 }
@@ -36,8 +36,7 @@ model Business {
   businessId Int    @unique
   publicId   String @unique
   name       String
-  userId     Int
-  user       User   @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  owners     User[] @relation("MyUserBusinessTable")
 
   @@map("business")
 }
