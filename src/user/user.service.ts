@@ -81,6 +81,7 @@ export class UserService {
       },
     });
   }
+  
   async saveUser(userData: any, tokens: AuthTokens, password: string) {
     const hashPassword = this.utils.getPassword(password, true);
     const { access_token, token_type, expires_in } = userData.session;
