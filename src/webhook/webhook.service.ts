@@ -2,10 +2,7 @@ import { ForbiddenException, Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets/decorators';
 import { Server, Socket } from 'socket.io';
-import * as io from 'socket.io-client';
 import { BusinessService } from 'src/business/business.service';
-import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
-import { UserService } from 'src/user/user.service';
 
 @WebSocketGateway({ cors: { origin: { origin: '*' } } })
 @Injectable()
@@ -122,7 +119,6 @@ export class WebhookService implements OnModuleInit {
     }
   }
   async changeOrderNotification(order: any) {
-    console.log('Order status change');
     const business = await this.business.findBusinessById(order.business_id);
     if (!business) {
       throw new ForbiddenException('Something wrong happened');
