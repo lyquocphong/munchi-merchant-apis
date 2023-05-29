@@ -1,8 +1,6 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import axios from 'axios';
 import { plainToClass } from 'class-transformer';
-import console from 'console';
 import { AuthService } from 'src/auth/auth.service';
 import { UserResponse } from 'src/auth/dto/auth.dto';
 import { BusinessService } from 'src/business/business.service';
