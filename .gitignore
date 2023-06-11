@@ -1,8 +1,10 @@
 # compiled output
 /dist
 /node_modules
+/prisma
 /env
 .env
+.fly.toml
 # Logs
 logs
 *.log
