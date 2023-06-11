@@ -5,6 +5,7 @@
 /env
 .env
 .fly.toml
+fly.toml
 # Logs
 logs
 *.log
