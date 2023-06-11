@@ -6,7 +6,7 @@ import { AuthService } from './auth.service';
 import { RefreshTokenStrategy } from './strategy/refreshJwt.strategy';
 
 @Module({
-  imports: [JwtModule.register({}),],
+  imports: [JwtModule.register({}), forwardRef( () => UserModule)],
   controllers: [AuthController],
   providers: [AuthService,RefreshTokenStrategy],
   exports: [AuthService],
