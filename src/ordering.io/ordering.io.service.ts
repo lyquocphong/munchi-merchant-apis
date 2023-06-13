@@ -151,7 +151,6 @@ export class OrderingIoService {
     try {
       const response = await axios.request(options);
       const businessResponseObject = response.data.result;
-      console.log(businessResponseObject);
       const user = await this.user.getUserByPublicId(publicUserId);
 
       if (!user) {
@@ -168,7 +167,6 @@ export class OrderingIoService {
           if (owner.length < 1) {
             await this.business.updateBusinessOwners(business, user.userId);
           } else {
-            console.log('Ownership existed');
             return await this.business.findAllBusiness(user.userId);
           }
         } else {
