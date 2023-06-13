@@ -4,6 +4,7 @@ import { OwnerDto } from './owner.dto';
 
 @Exclude()
 export class BusinessDto {
+  
   @ApiProperty({
     description: 'The id of business',
     example: '123456',
@@ -31,6 +32,14 @@ export class BusinessDto {
   })
   @Expose()
   address: string;
+  
+  @ApiProperty({
+    description: 'The logo of business',
+    example: 'logo url',
+  })
+  @Expose()
+  logo: string;
+
   @ApiProperty({
     description: 'The address of business',
     example: true,

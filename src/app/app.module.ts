@@ -9,11 +9,13 @@ import { OrderWebhookModule } from 'src/webhook/webhook.module';
 import { UserModule } from 'src/user/user.module';
 import { BusinessModule } from 'src/business/business.module';
 import { UtilsModule } from 'src/utils/utils.module';
+import { CmsModule } from 'src/cms/cms.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    CmsModule,
     BusinessModule,
     AuthModule,
     PrismaModule,
