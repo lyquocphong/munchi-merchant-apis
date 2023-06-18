@@ -11,7 +11,7 @@ export class SessionDto {
   @Expose({ name: 'token_type' })
   tokenType: string;
   @Expose({ name: 'expires_in' })
-  expiresIn: number;
+  expiresAt: string;
 
   constructor(partial: Partial<SessionDto>) {
     Object.assign(this, partial);

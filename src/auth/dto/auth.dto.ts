@@ -6,7 +6,7 @@ import { SessionDto } from './session.dto';
 type Session = {
   accessToken: string;
   tokenType: string;
-  expiresIn: number;
+  expiresAt: string;
 };
 
 export class UserResponse {
