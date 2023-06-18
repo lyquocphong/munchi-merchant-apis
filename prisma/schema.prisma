@@ -10,9 +10,9 @@ datasource db {
 model Session {
   accessToken String @unique
   tokenType   String
-  expiresIn   Int
+  expiresAt   String 
   userId      Int    @unique
-  user        User   @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  user        User   @relation(fields: [userId], references: [userId], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model User {

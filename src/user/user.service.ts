@@ -1,16 +1,17 @@
-import { Injectable, Inject, forwardRef } from "@nestjs/common";
-import { AuthService } from "src/auth/auth.service";
-import { UserResponse } from "src/auth/dto/auth.dto";
-import { PrismaService } from "src/prisma/prisma.service";
-import { AuthTokens } from "src/type";
-import { UtilsService } from "src/utils/utils.service";
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
+import moment from 'moment';
+import { AuthService } from 'src/auth/auth.service';
+import { UserResponse } from 'src/auth/dto/auth.dto';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { AuthTokens } from 'src/type';
+import { UtilsService } from 'src/utils/utils.service';
 @Injectable()
 export class UserService {
   constructor(
     private prisma: PrismaService,
     private readonly utils: UtilsService,
     @Inject(forwardRef(() => AuthService))
-    private readonly auth: AuthService
+    private readonly auth: AuthService,
   ) {}
 
   getUserInternally = async (userId: number, publicUserId: string) => {
@@ -61,7 +62,7 @@ export class UserService {
         session: {
           select: {
             accessToken: true,
-            expiresIn: true,
+            expiresAt: true,
             tokenType: true,
           },
         },
@@ -87,9 +88,10 @@ export class UserService {
     });
   }
 
-  async saveUser(userData: any, tokens: AuthTokens, password: string) {
+  async createUser(userData: any, tokens: AuthTokens, password: string) {
     const hashPassword = this.utils.getPassword(password, true);
     const { access_token, token_type, expires_in } = userData.session;
+    const expiredAt = moment(moment()).add('milliseconds', expires_in).format();
     const hashedRefreshToken = await this.auth.hashData(tokens.refreshToken);
     try {
       const newUser = await this.prisma.user.create({
@@ -104,7 +106,7 @@ export class UserService {
           session: {
             create: {
               accessToken: access_token,
-              expiresIn: expires_in,
+              expiresAt: expiredAt,
               tokenType: token_type,
             },
           },
@@ -119,7 +121,7 @@ export class UserService {
           session: {
             select: {
               accessToken: true,
-              expiresIn: true,
+              expiresAt: true,
               tokenType: true,
             },
           },
@@ -134,10 +136,10 @@ export class UserService {
         newUser.publicId,
         newUser.session,
         tokens.verifyToken,
-        tokens.refreshToken
+        tokens.refreshToken,
       );
     } catch (error) {
-      console.log(error);
+      this.utils.logError(error);
     }
   }
 }
