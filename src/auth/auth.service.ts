@@ -126,16 +126,6 @@ export class AuthService {
     });
   }
 
-  async sessionCheckAndUpdate(userId: number) {
-    const currentSession = await this.prisma.session.findUnique({
-      where: {
-        userId: userId,
-      },
-    });
-    console.log(currentSession);
-    return currentSession;
-  }
-
   async signOut(publicUserId: string) {
     const user = await this.user.getUserByPublicId(publicUserId);
     if (!user) {
