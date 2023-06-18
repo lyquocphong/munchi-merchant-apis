@@ -41,7 +41,7 @@ export class OrderingIoService {
 
       const tokens = await this.auth.getTokens(signInResponseObject.id, signInResponseObject.email);
       const { access_token, token_type, expires_in } = signInResponseObject.session;
-      const expiredAt = moment(moment()).add('milliseconds', expires_in).format();
+      const expiredAt = moment(moment()).add(expires_in, 'milliseconds').format();
       const user = await this.user.getUserByUserId(signInResponseObject.id);
 
       if (!user) {

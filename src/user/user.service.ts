@@ -91,7 +91,7 @@ export class UserService {
   async createUser(userData: any, tokens: AuthTokens, password: string) {
     const hashPassword = this.utils.getPassword(password, true);
     const { access_token, token_type, expires_in } = userData.session;
-    const expiredAt = moment(moment()).add('milliseconds', expires_in).format();
+    const expiredAt = moment(moment()).add(expires_in,'milliseconds').format();
     const hashedRefreshToken = await this.auth.hashData(tokens.refreshToken);
     try {
       const newUser = await this.prisma.user.create({
