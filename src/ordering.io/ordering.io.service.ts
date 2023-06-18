@@ -151,7 +151,6 @@ export class OrderingIoService {
     try {
       const response = await axios.request(options);
       const businessResponseObject = response.data.result;
-      console.log(businessResponseObject);
       const user = await this.user.getUserByPublicId(publicUserId);
 
       if (!user) {
@@ -168,7 +167,6 @@ export class OrderingIoService {
           if (owner.length < 1) {
             await this.business.updateBusinessOwners(business, user.userId);
           } else {
-            console.log('Ownership existed');
             return await this.business.findAllBusiness(user.userId);
           }
         } else {
@@ -183,7 +181,9 @@ export class OrderingIoService {
 
   async getBusinessById(publicBusinessId: string, accessToken: string) {
     const business = await this.business.findBusinessByPublicId(publicBusinessId);
-
+    if (!business) {
+      throw new ForbiddenException('Something wrong happened');
+    }
     const options = {
       method: 'GET',
       url: `${this.utils.getEnvUrl('business', business.businessId)}?mode=dashboard`,
@@ -206,7 +206,9 @@ export class OrderingIoService {
 
   async editBusiness(accessToken: string, publicBusinessId: string, status: any) {
     const business = await this.business.findBusinessByPublicId(publicBusinessId);
-
+    if (!business) {
+      throw new ForbiddenException('Something wrong happened');
+    }
     const options = {
       method: 'POST',
       url: `${this.utils.getEnvUrl('business', business.businessId)}`,
@@ -229,7 +231,9 @@ export class OrderingIoService {
 
   async activateBusiness(accessToken: string, publicBusinessId: string) {
     const business = await this.business.findBusinessByPublicId(publicBusinessId);
-
+    if (!business) {
+      throw new ForbiddenException('Something wrong happened');
+    }
     const options = {
       method: 'POST',
       url: `${this.utils.getEnvUrl('business', business.businessId)}`,
@@ -252,7 +256,9 @@ export class OrderingIoService {
   }
   async deactivateBusiness(accessToken: string, publicBusinessId: string) {
     const business = await this.business.findBusinessByPublicId(publicBusinessId);
-
+    if (!business) {
+      throw new ForbiddenException('Something wrong happened');
+    }
     const options = {
       method: 'POST',
       url: `${this.utils.getEnvUrl('business', business.businessId)}`,
@@ -300,7 +306,9 @@ export class OrderingIoService {
     publicBusinessId: string,
   ) {
     const business = await this.business.findBusinessByPublicId(publicBusinessId);
-
+    if (!business) {
+      throw new ForbiddenException('Something wrong happened');
+    }
     const options = {
       method: 'GET',
       url: `${this.utils.getEnvUrl('orders')}?mode=dashboard&where={${query},"business_id":${
@@ -320,6 +328,7 @@ export class OrderingIoService {
       this.utils.getError(error);
     }
   }
+
   async getOrderbyId(orderId: number, accessToken: string) {
     const options = {
       method: 'GET',
