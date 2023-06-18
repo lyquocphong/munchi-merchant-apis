@@ -25,6 +25,9 @@ export class OrderDto {
   @Expose({ name: 'delivery_type' })
   deliveryType: number;
 
+  @Expose({ name: 'delivery_datetime' })
+  deliveryTime: number;
+
   @Expose({ name: 'prepared_in' })
   preparedIn: number;
 
