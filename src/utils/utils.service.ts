@@ -38,14 +38,13 @@ export class UtilsService {
     });
 
     if (!user || !session) {
-      console.log('Is this runnig?')
       throw new ForbiddenException('Access Denied');
     }
 
     const decryptedPassword = this.getPassword(user.hash, false);
     const expireAtmoment = moment(session.expiresAt).format();
     const diff = moment(expireAtmoment).diff(moment(), 'minutes');
-    console.log(diff);
+   
     if (diff < 60) {
       try {
         await this.orderingIo.signIn({ email: user.email, password: decryptedPassword });
@@ -58,7 +57,7 @@ export class UtilsService {
 
   async getUpdatedPublicId(publicUserId: string) {
     const newPublicUserId = this.getPublicId();
-    const user = await this.prisma.user.update({
+    await this.prisma.user.update({
       where: {
         publicId: publicUserId,
       },

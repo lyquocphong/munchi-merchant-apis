@@ -51,7 +51,7 @@ export class AuthService {
           },
         });
       } catch (error) {
-        this.utils.getError(error);
+        this.utils.logError(error);
       }
     } else {
       try {
@@ -69,7 +69,7 @@ export class AuthService {
           },
         });
       } catch (error) {
-        this.utils.getError(error);
+        this.utils.logError(error);
       }
     }
   }
@@ -96,7 +96,7 @@ export class AuthService {
     });
 
     const refreshToken = await this.jwt.signAsync(payload, {
-      expiresIn: '1h',
+      expiresIn: '9h',
       secret: refreshSecret,
     });
     return {
@@ -119,11 +119,21 @@ export class AuthService {
     await this.prisma.session.create({
       data: {
         accessToken: session.accessToken,
-        expiresIn: session.expiresIn,
+        expiresAt: session.expiresAt,
         tokenType: session.tokenType,
         userId: userId,
       },
     });
+  }
+
+  async sessionCheckAndUpdate(userId: number) {
+    const currentSession = await this.prisma.session.findUnique({
+      where: {
+        userId: userId,
+      },
+    });
+    console.log(currentSession);
+    return currentSession;
   }
 
   async signOut(publicUserId: string) {
