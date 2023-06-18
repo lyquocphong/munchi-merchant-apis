@@ -26,8 +26,8 @@ export class OrderController {
     @Query('publicBusinessId') publicBusinessId: string,
   ) {
     const { userId } = req.user;
-    const accessToken = await this.utils.getAccessToken(userId);
-    return this.orderingIo.getFilteredOrders(accessToken, query, paramsQuery, publicBusinessId);
+   
+    return this.orderingIo.getFilteredOrders(userId, query, paramsQuery, publicBusinessId);
   }
   @Get(':orderId')
   async getOrderbyId(@Param('orderId') orderId: number, @Request() req: any) {
