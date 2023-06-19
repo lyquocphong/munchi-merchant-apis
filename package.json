@@ -36,6 +36,8 @@
     "@nestjs/swagger": "^6.1.4",
     "@nestjs/websockets": "^9.2.1",
     "@prisma/client": "^4.9.0",
+    "@sentry/node": "^7.55.2",
+    "@sentry/tracing": "^7.55.2",
     "@socket.io/redis-adapter": "^7.2.0",
     "api": "^5.0.1",
     "argon2": "^0.30.2",
