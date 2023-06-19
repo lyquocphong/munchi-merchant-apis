@@ -10,6 +10,7 @@ import { UserModule } from 'src/user/user.module';
 import { BusinessModule } from 'src/business/business.module';
 import { UtilsModule } from 'src/utils/utils.module';
 import { CmsModule } from 'src/cms/cms.module';
+import { OrderingIoModule } from 'src/ordering.io/ordering.io.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -17,11 +18,12 @@ import { CmsModule } from 'src/cms/cms.module';
     }),
     CmsModule,
     BusinessModule,
-    AuthModule,
+    OrderingIoModule,
     PrismaModule,
     OrderModule,
     UserModule,
     OrderWebhookModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
