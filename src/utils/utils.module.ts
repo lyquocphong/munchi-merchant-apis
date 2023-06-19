@@ -6,7 +6,7 @@ import { OrderingIoModule } from 'src/ordering.io/ordering.io.module';
 import { UtilsService } from './utils.service';
 @Global()
 @Module({
-  imports: [JwtModule.register({})],
+  imports: [JwtModule.register({}),OrderingIoModule],
   providers: [UtilsService],
   exports: [UtilsService],
 })

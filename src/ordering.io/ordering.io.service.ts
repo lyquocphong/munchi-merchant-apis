@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, forwardRef } from '@nestjs/common';
 import axios from 'axios';
 import { plainToClass } from 'class-transformer';
 import moment from 'moment';
@@ -15,10 +15,10 @@ import { UtilsService } from 'src/utils/utils.service';
 @Injectable()
 export class OrderingIoService {
   constructor(
+    @Inject(forwardRef(() => BusinessService)) private business: BusinessService,
+    @Inject(forwardRef(() => UserService)) private user: UserService,
     private utils: UtilsService,
-    private business: BusinessService,
-    private user: UserService,
-    private auth: AuthService,
+    
   ) {}
   // Auth service
   async signIn(credentials: AuthCredentials) {
@@ -37,45 +37,8 @@ export class OrderingIoService {
 
     try {
       const response = await axios.request(options);
-      const signInResponseObject = response.data.result;
-
-      const tokens = await this.auth.getTokens(signInResponseObject.id, signInResponseObject.email);
-      const { access_token, token_type, expires_in } = signInResponseObject.session;
-      const expiredAt = moment(moment()).add(expires_in, 'milliseconds').format();
-      const user = await this.user.getUserByUserId(signInResponseObject.id);
-
-      if (!user) {
-        const newUser = await this.user.createUser(
-          signInResponseObject,
-          tokens,
-          credentials.password,
-        );
-        return newUser;
-      } else if (user && !user.session) {
-        await this.auth.createSession(user.userId, {
-          accessToken: access_token,
-          expiresAt: expiredAt,
-          tokenType: token_type,
-        });
-      }
-
-      await this.auth.updateRefreshToken(
-        signInResponseObject.id,
-        tokens.refreshToken,
-        access_token,
-      );
-      return new UserResponse(
-        user.email,
-        user.firstName,
-        user.lastname,
-        user.level,
-        user.publicId,
-        user.session,
-        tokens.verifyToken,
-        tokens.refreshToken,
-      );
+      return response.data.result;
     } catch (error) {
-      console.log('You hit an error');
       this.utils.logError(error);
     }
   }
