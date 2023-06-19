@@ -1,4 +1,4 @@
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory,HttpAdapterHost } from '@nestjs/core';
 import { DocumentBuilder } from '@nestjs/swagger';
 import { SwaggerDocumentOptions, SwaggerModule } from '@nestjs/swagger/dist';
@@ -10,11 +10,16 @@ declare const module: any;
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const logger = new Logger('Main');
 
   //init Sentry
-  Sentry.init({
-    dsn: process.env.SENTRY_DNS,
-  });
+  if (process.env.NODE_ENV === 'production') {
+    // Initialize Sentry with your DSN
+    Sentry.init({
+      dsn: process.env.SENTRY_DNS,
+    });
+  } 
+ 
 
   const config = new DocumentBuilder()
     .setTitle('Api documentation')
@@ -45,7 +50,7 @@ async function bootstrap() {
   const { httpAdapter } = app.get(HttpAdapterHost);
 
   app.useGlobalFilters(new SentryFilter(httpAdapter));
-  
+
   app.enableCors({
     credentials: true,
   });
@@ -56,7 +61,17 @@ async function bootstrap() {
     }),
   );
   
-  await app.listen(process.env.PORT);
+  try {
+    logger.log('Application starting...');
+  
+    // Rest of the bootstrap code
+  
+    await app.listen(process.env.PORT);
+    logger.log('Application started');
+  } catch (error) {
+    logger.error(`Error starting application: ${error.message}`, error.stack);
+  }
+ 
   if (module.hot) {
     module.hot.accept();
     module.hot.dispose(() => app.close());
