@@ -8,11 +8,15 @@ import { ConfigService } from '@nestjs/config';
 import Cryptr from 'cryptr';
 import { JwtService } from '@nestjs/jwt';
 import { SessionDto } from './dto/session.dto';
+import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
+import { AuthCredentials } from 'src/type';
+import moment from 'moment';
 @Injectable()
 export class AuthService {
   constructor(
-    @Inject(forwardRef(() => UserService))
-    private user: UserService,
+    @Inject(forwardRef(() => UserService)) private user: UserService,
+    @Inject(forwardRef(() => OrderingIoService)) private readonly orderingIo: OrderingIoService,
+
     private config: ConfigService,
     private readonly jwt: JwtService,
     private readonly prisma: PrismaService,
@@ -76,6 +80,47 @@ export class AuthService {
 
   async hashData(data: string) {
     return argon2.hash(data);
+  }
+
+  async signIn(credentials: AuthCredentials) {
+    const response: any = await this.orderingIo.signIn(credentials);
+    const tokens = await this.getTokens(response.id, response.email);
+    const { access_token, token_type, expires_in } = response.session;
+    const expiredAt = moment(moment()).add(expires_in, 'milliseconds').format();
+    const user = await this.user.getUserByUserId(response.id);
+
+    if (!user) {
+      const newUser = await this.user.createUser(response, tokens, credentials.password);
+      return newUser;
+    } else if (user && !user.session) {
+      await this.createSession(user.userId, {
+        accessToken: access_token,
+        expiresAt: expiredAt,
+        tokenType: token_type,
+      });
+    }
+
+    await this.updateRefreshToken(response.id, tokens.refreshToken, access_token);
+
+    return new UserResponse(
+      user.email,
+      user.firstName,
+      user.lastname,
+      user.level,
+      user.publicId,
+      user.session,
+      tokens.verifyToken,
+      tokens.refreshToken,
+    );
+  }
+
+  async updateToken(userId: number) {
+    const user = await this.user.getUserInternally(userId, null);
+    const decryptPassword = this.utils.getPassword(user.hash, false);
+    return await this.signIn({
+      email: user.email,
+      password: decryptPassword,
+    });
   }
 
   async getTokens(
