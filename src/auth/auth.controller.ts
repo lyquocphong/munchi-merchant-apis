@@ -5,6 +5,7 @@ import { AuthCredentials } from 'src/type';
 import { AuthService } from './auth.service';
 import { AuthReponseDto } from './dto/auth.dto';
 import { RefreshJwt } from './guard/refreshJwt.guard';
+import { JwtGuard } from './guard/jwt.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -18,15 +19,22 @@ export class AuthController {
     description: 'Please try again',
   })
   @Post('signin')
-  async signin(@Body() credentials: AuthCredentials) {
-    return this.orderingIo.signIn(credentials);
+  async signIn(@Body() credentials: AuthCredentials) {
+    return this.auth.signIn(credentials);
+  }
+
+  @UseGuards(JwtGuard)
+  @Post('updateToken')
+  async autoSignIn(@Request() req: any) {
+    const {userId} = req.user
+    return this.auth.updateToken(userId);
   }
 
   @ApiCreatedResponse({
     description: 'Signed out',
   })
   @Post('signout')
-  async signout(@Body('publicUserId') publicUserId: string) {
+  async signOut(@Body('publicUserId') publicUserId: string) {
     await this.auth.signOut(publicUserId);
     return this.orderingIo.signOut(publicUserId);
   }

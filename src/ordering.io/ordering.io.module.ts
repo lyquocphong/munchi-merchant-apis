@@ -1,15 +1,12 @@
-import { Module,Global } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
+import { Global, Module, forwardRef } from '@nestjs/common';
 import { AuthModule } from 'src/auth/auth.module';
 
 import { BusinessModule } from 'src/business/business.module';
 import { UserModule } from 'src/user/user.module';
-import { UtilsModule } from 'src/utils/utils.module';
 import { OrderingIoService } from './ordering.io.service';
 
-@Global()
-  @Module({
-  imports: [BusinessModule,UserModule,AuthModule],
+@Module({
+  imports: [forwardRef(() => BusinessModule), forwardRef(() => UserModule), forwardRef(() => AuthModule)],
   providers: [OrderingIoService],
   exports: [OrderingIoService],
 })
