@@ -1,13 +1,21 @@
 import { ValidationPipe } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
+import { NestFactory,HttpAdapterHost } from '@nestjs/core';
 import { DocumentBuilder } from '@nestjs/swagger';
 import { SwaggerDocumentOptions, SwaggerModule } from '@nestjs/swagger/dist';
+import * as Sentry from '@sentry/node';
+import { SentryFilter } from './filters/sentry.filter';
 
 import { AppModule } from './app/app.module';
 declare const module: any;
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  //init Sentry
+  Sentry.init({
+    dsn: process.env.SENTRY_DNS,
+  });
+
   const config = new DocumentBuilder()
     .setTitle('Api documentation')
     .setDescription('The API description of munchi-apis')
@@ -29,15 +37,25 @@ async function bootstrap() {
     operationIdFactory: (controllerKey: string, methodKey: string) => methodKey,
   };
   const document = SwaggerModule.createDocument(app, config, options);
+
+
+
   SwaggerModule.setup('api', app, document);
+  
+  const { httpAdapter } = app.get(HttpAdapterHost);
+
+  app.useGlobalFilters(new SentryFilter(httpAdapter));
+  
   app.enableCors({
     credentials: true,
   });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
     }),
   );
+  
   await app.listen(process.env.PORT);
   if (module.hot) {
     module.hot.accept();
