@@ -136,7 +136,7 @@ export class AuthService {
     const refreshSecret = this.config.get('JWT_REFRESH_SECRET');
 
     const verifyToken = await this.jwt.signAsync(payload, {
-      expiresIn: '10m',
+      expiresIn: '1h',
       secret: secret,
     });
 
