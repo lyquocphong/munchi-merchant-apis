@@ -217,7 +217,7 @@ export class OrderingIoService {
   ) {
     const accessToken = await this.utils.getAccessToken(userId);
     const business = await this.business.findBusinessByPublicId(publicBusinessId);
-    // const sessionTask = await this.auth.sessionCheckAndUpdate(userId);
+  
     if (!business) {
       throw new ForbiddenException('Something wrong happened');
     }
