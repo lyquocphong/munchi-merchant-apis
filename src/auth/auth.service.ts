@@ -175,6 +175,8 @@ export class AuthService {
     const user = await this.user.getUserByPublicId(publicUserId);
     if (!user) {
       throw new ForbiddenException('No user exist');
+    } else if (!user.session) {
+      throw new ForbiddenException('Something wrong happened');
     }
     await this.prisma.session.delete({
       where: {
