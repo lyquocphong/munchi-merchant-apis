@@ -1,21 +1,22 @@
-import { Injectable } from '@nestjs/common';
+/* eslint-disable prettier/prettier */
+
+import { ForbiddenException, Inject, Injectable, forwardRef } from '@nestjs/common';
 import axios from 'axios';
 import { plainToClass } from 'class-transformer';
-import console from 'console';
-import { AuthResponse } from 'src/auth/dto/auth.dto';
 import { BusinessService } from 'src/business/business.service';
-import { AllBusinessDto, BusinessDto } from 'src/business/dto/business.dto';
+import { BusinessDto } from 'src/business/dto/business.dto';
 import { OrderDto } from 'src/order/dto/order.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { AuthCredentials, FilterQuery, OrderData } from 'src/type';
+import { AuthCredentials, OrderData } from 'src/type';
 import { UserDto } from 'src/user/dto/user.dto';
+import { UserService } from 'src/user/user.service';
 import { UtilsService } from 'src/utils/utils.service';
+
 @Injectable()
 export class OrderingIoService {
   constructor(
-    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => BusinessService)) private business: BusinessService,
+    @Inject(forwardRef(() => UserService)) private user: UserService,
     private utils: UtilsService,
-    private business: BusinessService,
   ) {}
   // Auth service
   async signIn(credentials: AuthCredentials) {
@@ -29,101 +30,24 @@ export class OrderingIoService {
       data: {
         email: credentials.email,
         password: credentials.password,
-        security_recaptcha_auth: '0',
       },
     };
+
     try {
       const response = await axios.request(options);
-      const signInResponseObject = response.data.result;
-      const { access_token } = signInResponseObject.session;
-      const existingUser = await this.utils.getUser(signInResponseObject.id, null);
-      if (!existingUser) {
-        const verifyToken = await this.utils.signToken(existingUser.userId, existingUser.email);
-        const newUserObject = await this.utils.createUser(
-          signInResponseObject,
-          credentials.password,
-        );
-        const newUserResponse = Object.assign(newUserObject, verifyToken);
-        return newUserResponse;
-      } else {
-        await this.utils.getSession(signInResponseObject.id, access_token);
-      }
-      const signInResponse = new AuthResponse(
-        signInResponseObject.email,
-        signInResponseObject.name,
-        signInResponseObject.lastname,
-        signInResponseObject.level,
-        existingUser.publicId,
-        existingUser.session,
-      );
-      const verifyToken = await this.utils.signToken(
-        signInResponseObject.id,
-        signInResponseObject.email,
-      );
-      const finalResponse = Object.assign(signInResponse, verifyToken);
-      return finalResponse;
+      return response.data.result;
     } catch (error) {
-      this.utils.getError(error);
+      this.utils.logError(error);
     }
   }
 
-  async signUp(credentials: AuthCredentials) {
-    const options = {
-      method: 'POST',
-      url: this.utils.getEnvUrl('users'),
-      headers: {
-        accept: 'application/json',
-        'content-type': 'application/json',
-      },
-      data: {
-        firstName: credentials.firstName,
-        lastname: credentials.lastname,
-        level: credentials.role,
-        email: credentials.email,
-        password: credentials.password,
-      },
-    };
-    try {
-      const response = await axios.request(options);
-      const signUpResponseObject = response.data.result;
-      const { access_token } = signUpResponseObject.session;
-      const existingUser = await this.utils.getUser(signUpResponseObject.id, null);
-
-      if (!existingUser) {
-        const verifyToken = await this.utils.signToken(existingUser.userId, existingUser.email);
-        const newUserObject = await this.utils.createUser(
-          signUpResponseObject,
-          credentials.password,
-        );
-        const newUserResponse = Object.assign(newUserObject, verifyToken);
-        return newUserResponse;
-      } else {
-        await this.utils.getSession(signUpResponseObject.id, access_token);
-      }
-      const signInResponse = new AuthResponse(
-        signUpResponseObject.email,
-        signUpResponseObject.name,
-        signUpResponseObject.lastname,
-        signUpResponseObject.level,
-        existingUser.publicId,
-        existingUser.session,
-      );
-      const verifyToken = await this.utils.signToken(
-        signUpResponseObject.id,
-        signUpResponseObject.email,
-      );
-      const finalResponse = Object.assign(signInResponse, verifyToken);
-      return finalResponse;
-    } catch (error) {
-      this.utils.getError(error);
-    }
-  }
   async signOut(publicUserId: string) {
     return this.utils.getUpdatedPublicId(publicUserId);
   }
 
   //business services
-  async getAllBusiness(accessToken: string, publicUserId: string) {
+  async getAllBusiness(userId: number, publicUserId: string) {
+    const accessToken = await this.utils.getAccessToken(userId);
     const options = {
       method: 'GET',
       url: `${this.utils.getEnvUrl('business')}?type=1&params=zones%2Cname&mode=dashboard`,
@@ -132,26 +56,39 @@ export class OrderingIoService {
         Authorization: `Bearer ${accessToken}`,
       },
     };
+
     try {
       const response = await axios.request(options);
       const businessResponseObject = response.data.result;
-      const user = await this.utils.getUser(null, publicUserId);
-      businessResponseObject.map(async (business: any) => {
-        const existedBusiness = await this.business.getBusiness(business.id);
-        if (existedBusiness.length === 0) {
-          //create Business
-          const newBusiness = await this.business.addBusiness(business, user.userId);
-          return newBusiness;
+      const user = await this.user.getUserByPublicId(publicUserId);
+
+      if (!user) {
+        throw new ForbiddenException('Something wrong happend');
+      }
+
+      for (const business of businessResponseObject) {
+        const existedBusiness = await this.business.findBusinessById(business.id);
+
+        if (existedBusiness) {
+          // Check ownership of the new user with existed business
+          const owner = existedBusiness.owners.filter((owner) => owner.userId === user.userId);
+          // If no ownership then add and update it to business
+          if (owner.length < 1) {
+            await this.business.updateBusinessOwners(business, user.userId);
+          } else {
+            return await this.business.findAllBusiness(user.userId);
+          }
+        } else {
+          await this.business.createBusiness(business, user.userId);
         }
-      });
-      // const businessResponse = plainToClass(AllBusinessDto, businessResponseObject);
-      return user.business;
+      }
+      return await this.business.findAllBusiness(user.userId);
     } catch (error) {
-      this.utils.getError(error);
+      this.utils.logError(error);
     }
   }
 
-  async getBusinessById(businessId: number, accessToken: string) {
+  async getBusinessById(accessToken: string, businessId: number) {
     const options = {
       method: 'GET',
       url: `${this.utils.getEnvUrl('business', businessId)}?mode=dashboard`,
@@ -162,51 +99,84 @@ export class OrderingIoService {
     };
     try {
       const response = await axios.request(options);
-      const businessResponseObject = response.data.result;
-      const businessResponse = plainToClass(BusinessDto, businessResponseObject);
-      return businessResponse;
+      return response.data.result;
     } catch (error) {
-      this.utils.getError(error);
+      this.utils.logError(error);
     }
   }
 
-  async getBusinessOnline(businessId: number, accessToken: string) {
+  async editBusiness(accessToken: string, publicBusinessId: string, status: any) {
+    const business = await this.business.findBusinessByPublicId(publicBusinessId);
+    if (!business) {
+      throw new ForbiddenException('Something wrong happened');
+    }
     const options = {
       method: 'POST',
-      url: `${this.utils.getEnvUrl('business', businessId)}`,
+      url: `${this.utils.getEnvUrl('business', business.businessId)}`,
+      data: { enabled: status },
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+    };
+
+    try {
+      return await axios.request(options);
+    } catch (error) {
+      this.utils.logError(error);
+    }
+  }
+
+  async activateBusiness(accessToken: string, publicBusinessId: string) {
+    const business = await this.business.findBusinessByPublicId(publicBusinessId);
+    if (!business) {
+      throw new ForbiddenException('Something wrong happened');
+    }
+    const options = {
+      method: 'POST',
+      url: `${this.utils.getEnvUrl('business', business.businessId)}`,
       data: { enabled: true },
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
       },
     };
+
     try {
       const response = await axios.request(options);
       const businessResponseObject = response.data.result;
-      return `Business Online`;
+      const businessResponse = plainToClass(BusinessDto, businessResponseObject);
+
+      return businessResponse;
     } catch (error) {
-      this.utils.getError(error);
+      this.utils.logError(error);
     }
   }
-  async getBusinessOffline(businessId: number, accessToken: string) {
+  async deactivateBusiness(accessToken: string, publicBusinessId: string) {
+    const business = await this.business.findBusinessByPublicId(publicBusinessId);
+    if (!business) {
+      throw new ForbiddenException('Something wrong happened');
+    }
     const options = {
       method: 'POST',
-      url: `${this.utils.getEnvUrl('business', businessId)}`,
+      url: `${this.utils.getEnvUrl('business', business.businessId)}`,
       data: { enabled: false },
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
       },
     };
+
     try {
       const response = await axios.request(options);
       const businessResponseObject = response.data.result;
-      return `Business Offline`;
+      const businessResponse = plainToClass(BusinessDto, businessResponseObject);
+
+      return businessResponse;
     } catch (error) {
-      this.utils.getError(error);
+      this.utils.logError(error);
     }
   }
-
   //Order service
   async getAllOrders(acessToken: string) {
     const options = {
@@ -217,34 +187,48 @@ export class OrderingIoService {
         Authorization: `Bearer ${acessToken}`,
       },
     };
+
     try {
       const response = await axios.request(options);
       const order = plainToClass(OrderDto, response.data.result);
       return order;
     } catch (error) {
-      this.utils.getError(error);
+      this.utils.logError(error);
     }
   }
 
-  async getFilteredOrders(accessToken: string, filterQuery: FilterQuery, paramsQuery: string) {
+  async getFilteredOrders(
+    userId: number,
+    query: string,
+    paramsQuery: string[],
+    publicBusinessId: string,
+  ) {
+    const accessToken = await this.utils.getAccessToken(userId);
+    const business = await this.business.findBusinessByPublicId(publicBusinessId);
+
+    if (!business) {
+      throw new ForbiddenException('Something wrong happened');
+    }
     const options = {
       method: 'GET',
-      url: `${this.utils.getEnvUrl('orders')}?mode=dashboard&where={"status":${
-        filterQuery.status
-      },"business_id":${filterQuery.businessId}}&params=${paramsQuery}`,
+      url: `${this.utils.getEnvUrl('orders')}?mode=dashboard&where={${query},"business_id":${
+        business.businessId
+      }}&params=${paramsQuery}`,
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
       },
     };
+
     try {
       const response = await axios.request(options);
       const order = plainToClass(OrderDto, response.data.result);
       return order;
     } catch (error) {
-      this.utils.getError(error);
+      this.utils.logError(error);
     }
   }
+
   async getOrderbyId(orderId: number, accessToken: string) {
     const options = {
       method: 'GET',
@@ -254,12 +238,13 @@ export class OrderingIoService {
         Authorization: `Bearer ${accessToken}`,
       },
     };
+
     try {
       const response = await axios.request(options);
       const order = plainToClass(OrderDto, response.data.result);
       return order;
     } catch (error) {
-      this.utils.getError(error);
+      this.utils.logError(error);
     }
   }
 
@@ -267,27 +252,39 @@ export class OrderingIoService {
     const options = {
       method: 'PUT',
       url: `${this.utils.getEnvUrl('orders', orderId)}`,
-      headers: { accept: 'application/json', Authorization: `Bearer ${acessToken}` },
-      data: { status: orderData.orderStatus, prepared_in: orderData.prepared_in },
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${acessToken}`,
+      },
+      data: {
+        status: orderData.orderStatus,
+        prepared_in: orderData.preparedIn,
+      },
     };
+
     try {
       const response = await axios.request(options);
       const order = plainToClass(OrderDto, response.data.result);
+
       return order;
     } catch (error) {
-      this.utils.getError(error);
+      this.utils.logError(error);
     }
   }
   async removeOrder(orderId: number, acessToken: string) {
     const options = {
       method: 'DELETE',
       url: `${this.utils.getEnvUrl('orders', orderId)}`,
-      headers: { accept: 'application/json', Authorization: `Bearer ${acessToken}` },
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${acessToken}`,
+      },
     };
+
     try {
-      const response = await axios.request(options);
+      await axios.request(options);
     } catch (error) {
-      this.utils.getError(error);
+      this.utils.logError(error);
     }
   }
 
@@ -296,15 +293,40 @@ export class OrderingIoService {
     const options = {
       method: 'GET',
       url: this.utils.getEnvUrl('users', userId),
-      headers: { accept: 'application/json', Authorization: `Bearer ${accessToken}` },
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
     };
+
     try {
       const response = await axios.request(options);
       const userResponseObject = response.data.result;
       const userResponse = plainToClass(UserDto, userResponseObject);
+
       return userResponse;
     } catch (error) {
-      this.utils.getError(error);
+      this.utils.logError(error);
+    }
+  }
+
+  //Page
+  async getPage(accessToken: string) {
+    const options = {
+      method: 'GET',
+      url: this.utils.getEnvUrl('pages'),
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+    };
+
+    try {
+      const response = await axios.request(options);
+      const pageResponseObject = response.data.result;
+      return pageResponseObject;
+    } catch (error) {
+      this.utils.logError(error);
     }
   }
 }

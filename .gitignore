@@ -1,8 +1,11 @@
 # compiled output
 /dist
 /node_modules
+/prisma/dev.db
 /env
-/prisma/data/dev.db
+.env
+.fly.toml
+fly.toml
 # Logs
 logs
 *.log
@@ -11,7 +14,7 @@ pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
-
+/prisma/dev.db
 # OS
 .DS_Store
 
