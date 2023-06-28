@@ -57,6 +57,7 @@
     "rxjs": "^7.2.0",
     "socket.io": "^4.5.4",
     "socket.io-client": "^2.0.2",
+    "swagger-ui-express": "^4.6.3",
     "uuid": "^9.0.0"
   },
   "devDependencies": {
