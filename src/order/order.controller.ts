@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import { Body, Controller, Delete, Get, Param, Put, Request, UseGuards } from '@nestjs/common';
 import { Query } from '@nestjs/common/decorators';
 import { ApiBearerAuth } from '@nestjs/swagger';
@@ -26,7 +27,7 @@ export class OrderController {
     @Query('publicBusinessId') publicBusinessId: string,
   ) {
     const { userId } = req.user;
-   
+
     return this.orderingIo.getFilteredOrders(userId, query, paramsQuery, publicBusinessId);
   }
   @Get(':orderId')

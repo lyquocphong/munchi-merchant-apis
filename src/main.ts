@@ -1,5 +1,5 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
-import { NestFactory,HttpAdapterHost } from '@nestjs/core';
+import { NestFactory, HttpAdapterHost } from '@nestjs/core';
 import { DocumentBuilder } from '@nestjs/swagger';
 import { SwaggerDocumentOptions, SwaggerModule } from '@nestjs/swagger/dist';
 import * as Sentry from '@sentry/node';
@@ -18,8 +18,7 @@ async function bootstrap() {
     Sentry.init({
       dsn: process.env.SENTRY_DNS,
     });
-  } 
- 
+  }
 
   const config = new DocumentBuilder()
     .setTitle('Api documentation')
@@ -43,10 +42,8 @@ async function bootstrap() {
   };
   const document = SwaggerModule.createDocument(app, config, options);
 
-
-
   SwaggerModule.setup('api', app, document);
-  
+
   const { httpAdapter } = app.get(HttpAdapterHost);
 
   app.useGlobalFilters(new SentryFilter(httpAdapter));
@@ -60,18 +57,18 @@ async function bootstrap() {
       whitelist: true,
     }),
   );
-  
+
   try {
     logger.log('Application starting...');
-  
+
     // Rest of the bootstrap code
-  
+
     await app.listen(process.env.PORT);
     logger.log('Application started');
   } catch (error) {
     logger.error(`Error starting application: ${error.message}`, error.stack);
   }
- 
+
   if (module.hot) {
     module.hot.accept();
     module.hot.dispose(() => app.close());

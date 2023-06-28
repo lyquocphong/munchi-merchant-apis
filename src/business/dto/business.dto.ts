@@ -1,10 +1,10 @@
-import { ApiExtraModels, ApiProperty } from '@nestjs/swagger';
+/* eslint-disable prettier/prettier */
+import { ApiProperty } from '@nestjs/swagger';
 import { Exclude, Expose, Type } from 'class-transformer';
 import { OwnerDto } from './owner.dto';
 
 @Exclude()
 export class BusinessDto {
-  
   @ApiProperty({
     description: 'The id of business',
     example: '123456',
@@ -32,7 +32,7 @@ export class BusinessDto {
   })
   @Expose()
   address: string;
-  
+
   @ApiProperty({
     description: 'The logo of business',
     example: 'logo url',

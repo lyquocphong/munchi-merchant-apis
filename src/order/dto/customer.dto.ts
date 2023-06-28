@@ -4,7 +4,7 @@ import { Exclude, Expose } from 'class-transformer';
 export class CustomerDto {
   @Expose()
   name: number;
-  
+
   @Expose({ name: 'lastname' })
   lastName: number;
 
@@ -16,7 +16,7 @@ export class CustomerDto {
 
   @Expose({ name: 'address_notes' })
   addressNotes: string;
-  
+
   @Expose({ name: 'cellphone' })
   phone: string;
 

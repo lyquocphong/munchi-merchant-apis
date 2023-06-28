@@ -26,7 +26,7 @@ export class AuthController {
   @UseGuards(JwtGuard)
   @Post('updateToken')
   async autoSignIn(@Request() req: any) {
-    const {userId} = req.user
+    const { userId } = req.user;
     return this.auth.updateToken(userId);
   }
 

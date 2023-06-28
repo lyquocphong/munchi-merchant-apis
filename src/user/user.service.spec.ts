@@ -13,8 +13,7 @@ describe('UserService', () => {
           useValue: { PrismaService, UtilsService, getUserByPublicId: jest.fn() },
         },
       ],
-    })
-      .compile();
+    }).compile();
 
     service = module.get<UserService>(UserService);
   });

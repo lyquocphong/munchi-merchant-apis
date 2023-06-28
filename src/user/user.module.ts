@@ -6,9 +6,9 @@ import { UserService } from './user.service';
 import { OrderingIoModule } from 'src/ordering.io/ordering.io.module';
 
 @Module({
-  imports: [forwardRef( () => AuthModule), forwardRef( () => OrderingIoModule)],
+  imports: [forwardRef(() => AuthModule), forwardRef(() => OrderingIoModule)],
   controllers: [UserController],
-  providers: [UserService,JwtStrategy],
-  exports: [UserService]
+  providers: [UserService, JwtStrategy],
+  exports: [UserService],
 })
 export class UserModule {}

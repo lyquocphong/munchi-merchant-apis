@@ -6,6 +6,6 @@ import { OrderingIoModule } from 'src/ordering.io/ordering.io.module';
 @Module({
   imports: [OrderingIoModule],
   controllers: [CmsController],
-  providers: [CmsService]
+  providers: [CmsService],
 })
 export class CmsModule {}
