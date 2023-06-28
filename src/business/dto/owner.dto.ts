@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { Exclude, Expose, Type } from 'class-transformer';
+import { Exclude, Expose } from 'class-transformer';
 
 @Exclude()
 export class OwnerDto {

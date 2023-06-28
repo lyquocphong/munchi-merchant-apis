@@ -1,5 +1,4 @@
-import { Exclude, Expose, Transform, Type } from 'class-transformer';
-import moment, { Moment } from 'moment';
+import { Exclude, Expose, Type } from 'class-transformer';
 import { CustomerDto } from './customer.dto';
 import { ProductDto } from './product.dto';
 import { SummaryDto } from './summary.dto';
