@@ -32,7 +32,7 @@ export class AuthService {
     const refreshTokenMatches = await argon2.verify(user.refreshToken, refreshToken);
 
     if (!refreshTokenMatches) {
-      throw new ForbiddenException('Access Denied');
+      throw new ForbiddenException('Invalid Token');
     }
 
     const userByPublicId = await this.user.getUserByPublicId(user.publicId);
