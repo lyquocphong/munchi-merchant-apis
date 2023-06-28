@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
-import { type } from 'os';
 import { SessionDto } from './session.dto';
 
 type Session = {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Body, Controller, Post } from '@nestjs/common';
 import { WebhookService } from './webhook.service';
 
