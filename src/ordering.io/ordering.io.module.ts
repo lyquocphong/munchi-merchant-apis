@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { Global, Module, forwardRef } from '@nestjs/common';
+import {  Module, forwardRef } from '@nestjs/common';
 import { AuthModule } from 'src/auth/auth.module';
 
 import { BusinessModule } from 'src/business/business.module';
