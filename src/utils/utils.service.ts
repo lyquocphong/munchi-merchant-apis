@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { Inject } from '@nestjs/common/decorators';
 import { forwardRef } from '@nestjs/common/utils';
@@ -17,7 +18,7 @@ export class UtilsService {
     private orderingIo: OrderingIoService,
     private config: ConfigService,
   ) {}
-  getEnvUrl(path: string, idParam?: string | number, queryParams?: Array<String>): string {
+  getEnvUrl(path: string, idParam?: string | number, queryParams?: Array<string>): string {
     let envUrl = `${process.env.BASE_URL}/${path}`;
     if (idParam === null || idParam === undefined) return envUrl;
     else envUrl = `${process.env.BASE_URL}/${path}/${idParam}`;
@@ -44,7 +45,7 @@ export class UtilsService {
     const decryptedPassword = this.getPassword(user.hash, false);
     const expireAtmoment = moment(session.expiresAt).format();
     const diff = moment(expireAtmoment).diff(moment(), 'minutes');
-   
+
     if (diff < 60) {
       try {
         await this.orderingIo.signIn({ email: user.email, password: decryptedPassword });
@@ -86,11 +87,10 @@ export class UtilsService {
 
   logError(error: any) {
     if (error.response) {
-      console.log(error.response);
       const errorMsg = error.response.data;
       throw new ForbiddenException(errorMsg);
     } else {
-      console.log(error);
+      throw new ForbiddenException(error);
     }
   }
 }

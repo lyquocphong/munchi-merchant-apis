@@ -18,7 +18,6 @@ export class ProductDto {
   @Expose()
   comment: string;
 
-
   @Expose()
   @Type(() => OptionDto)
   options: OptionDto[];

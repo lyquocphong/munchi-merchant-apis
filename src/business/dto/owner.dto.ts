@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import { Exclude, Expose, Type } from 'class-transformer';
 
 @Exclude()

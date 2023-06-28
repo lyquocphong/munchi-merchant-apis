@@ -4,11 +4,10 @@ import { BusinessController } from './business.controller';
 import { BusinessService } from './business.service';
 import { OrderingIoModule } from 'src/ordering.io/ordering.io.module';
 
-
 @Module({
   imports: [forwardRef(() => OrderingIoModule)],
   controllers: [BusinessController],
-  providers: [BusinessService,JwtStrategy],
-  exports:[BusinessService]
+  providers: [BusinessService, JwtStrategy],
+  exports: [BusinessService],
 })
 export class BusinessModule {}

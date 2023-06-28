@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { OrderingIoService } from './ordering.io.service';
 
-
 describe('Ordering Service', () => {
   let service: OrderingIoService;
   beforeEach(async () => {
@@ -23,4 +22,3 @@ describe('Ordering Service', () => {
     expect(service).toBeDefined();
   });
 });
-

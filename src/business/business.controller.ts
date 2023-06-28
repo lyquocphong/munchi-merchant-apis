@@ -1,19 +1,11 @@
+/* eslint-disable prettier/prettier */
 import { Body, Controller, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
-import {
-  ApiBadRequestResponse,
-  ApiBearerAuth,
-  ApiCreatedResponse,
-  ApiProperty,
-  ApiResponse,
-} from '@nestjs/swagger';
-import { Exclude } from 'class-transformer';
+import { ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse } from '@nestjs/swagger';
 import { JwtGuard } from 'src/auth/guard/jwt.guard';
-;
 import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
-import { BusinessAttributes } from 'src/type';
-
 import { UtilsService } from 'src/utils/utils.service';
 import { AllBusinessDto, BusinessDto } from './dto/business.dto';
+import { BusinessService } from './business.service';
 
 @UseGuards(JwtGuard)
 @Controller('business')
@@ -22,7 +14,11 @@ import { AllBusinessDto, BusinessDto } from './dto/business.dto';
   description: 'Something wrong happened',
 })
 export class BusinessController {
-  constructor(private utils: UtilsService, private orderingIo: OrderingIoService) {}
+  constructor(
+    private utils: UtilsService,
+    private orderingIo: OrderingIoService,
+    private business: BusinessService,
+  ) {}
 
   @ApiCreatedResponse({
     description: 'Get all businesses',
@@ -31,11 +27,7 @@ export class BusinessController {
   @Post('allbusiness')
   async getAllBusiness(@Request() req: any, @Body('publicUserId') publicUserId: string) {
     const { userId } = req.user;
-    if (!publicUserId) {
-      return 'No publicUserId';
-    }
-    const accessToken = await this.utils.getAccessToken(userId);
-    return this.orderingIo.getAllBusiness(accessToken, publicUserId);
+    return this.orderingIo.getAllBusiness(userId, publicUserId);
   }
   @ApiCreatedResponse({
     description: 'Get a specific business',
@@ -44,8 +36,7 @@ export class BusinessController {
   @Get(':businessId')
   async getBusinessById(@Request() req: any, @Param('businessId') publicBusinessId: string) {
     const { userId } = req.user;
-    const accessToken = await this.utils.getAccessToken(userId);
-    return this.orderingIo.getBusinessById(publicBusinessId, accessToken);
+    return this.business.getBusinessById(userId, publicBusinessId);
   }
   @ApiCreatedResponse({
     description: 'Edit a specific business',
@@ -59,7 +50,7 @@ export class BusinessController {
   ) {
     const { userId } = req.user;
     const accessToken = await this.utils.getAccessToken(userId);
-   
+
     return this.orderingIo.editBusiness(accessToken, publicBusinessId, status);
   }
   @ApiCreatedResponse({

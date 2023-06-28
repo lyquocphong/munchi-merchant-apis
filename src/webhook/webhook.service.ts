@@ -1,44 +1,42 @@
+/* eslint-disable prettier/prettier */
 import { ForbiddenException, Injectable, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets/decorators';
-import { Server, Socket } from 'socket.io';
+import { Server } from 'socket.io';
 import { BusinessService } from 'src/business/business.service';
+import { UtilsService } from 'src/utils/utils.service';
 
 @WebSocketGateway({ cors: { origin: { origin: '*' } } })
 @Injectable()
 export class WebhookService implements OnModuleInit {
   @WebSocketServer() public server: Server;
-  public socketIoClient: Socket;
-  public project: string;
-  constructor(private business: BusinessService, private config: ConfigService) {
-    this.project = this.config.get('PROJECT_NAME');
-  }
+  constructor(private business: BusinessService, private utils: UtilsService) {}
 
   onModuleInit() {
     const ioServer = this.server;
 
     ioServer.on('connection', (socket) => {
-      socket.on('join', (room) => {
-        socket.join(room);
+      socket.on('join', async (room) => {
+        const business = await this.business.findBusinessByPublicId(room);
+        if (!business) {
+          throw new ForbiddenException(403, 'No business found');
+        } else {
+          socket.join(business.businessId.toString());
+        }
       });
     });
   }
   async newOrderNotification(order: any) {
-    const business = await this.business.findBusinessById(order.business_id);
-
-    if (!business) {
-      throw new ForbiddenException('Please provide a business id');
-    } else {
-      this.server.to(business.publicId).emit('orders_register', order);
+    try {
+      this.server.to(order.business_id.toString()).emit('orders_register', order);
+    } catch (error) {
+      this.utils.logError(error);
     }
   }
   async changeOrderNotification(order: any) {
-    const business = await this.business.findBusinessById(order.business_id);
-
-    if (!business) {
-      throw new ForbiddenException('Please provide a business id');
-    } else {
-      this.server.to(business.publicId).emit('order_change', order);
+    try {
+      this.server.to(order.business_id.toString()).emit('order_change', order);
+    } catch (error) {
+      this.utils.logError(error);
     }
   }
 }

@@ -1,9 +1,8 @@
+/* eslint-disable prettier/prettier */
+
 import { ForbiddenException, Inject, Injectable, forwardRef } from '@nestjs/common';
 import axios from 'axios';
 import { plainToClass } from 'class-transformer';
-import moment from 'moment';
-import { AuthService } from 'src/auth/auth.service';
-import { UserResponse } from 'src/auth/dto/auth.dto';
 import { BusinessService } from 'src/business/business.service';
 import { BusinessDto } from 'src/business/dto/business.dto';
 import { OrderDto } from 'src/order/dto/order.dto';
@@ -18,7 +17,6 @@ export class OrderingIoService {
     @Inject(forwardRef(() => BusinessService)) private business: BusinessService,
     @Inject(forwardRef(() => UserService)) private user: UserService,
     private utils: UtilsService,
-    
   ) {}
   // Auth service
   async signIn(credentials: AuthCredentials) {
@@ -48,7 +46,8 @@ export class OrderingIoService {
   }
 
   //business services
-  async getAllBusiness(accessToken: string, publicUserId: string) {
+  async getAllBusiness(userId: number, publicUserId: string) {
+    const accessToken = await this.utils.getAccessToken(userId);
     const options = {
       method: 'GET',
       url: `${this.utils.getEnvUrl('business')}?type=1&params=zones%2Cname&mode=dashboard`,
@@ -67,7 +66,7 @@ export class OrderingIoService {
         throw new ForbiddenException('Something wrong happend');
       }
 
-      for (let business of businessResponseObject) {
+      for (const business of businessResponseObject) {
         const existedBusiness = await this.business.findBusinessById(business.id);
 
         if (existedBusiness) {
@@ -89,26 +88,18 @@ export class OrderingIoService {
     }
   }
 
-  async getBusinessById(publicBusinessId: string, accessToken: string) {
-    const business = await this.business.findBusinessByPublicId(publicBusinessId);
-    if (!business) {
-      throw new ForbiddenException('Something wrong happened');
-    }
+  async getBusinessById(accessToken: string, businessId: number) {
     const options = {
       method: 'GET',
-      url: `${this.utils.getEnvUrl('business', business.businessId)}?mode=dashboard`,
+      url: `${this.utils.getEnvUrl('business', businessId)}?mode=dashboard`,
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
       },
     };
-
     try {
       const response = await axios.request(options);
-      const businessResponseObject = response.data.result;
-      const businessResponse = plainToClass(BusinessDto, businessResponseObject);
-
-      return businessResponse;
+      return response.data.result;
     } catch (error) {
       this.utils.logError(error);
     }
@@ -130,10 +121,7 @@ export class OrderingIoService {
     };
 
     try {
-      const response = await axios.request(options);
-      const businessResponseObject = response.data.result;
-      // console.log(response);
-      return `Business Online`;
+      return await axios.request(options);
     } catch (error) {
       this.utils.logError(error);
     }
@@ -217,7 +205,7 @@ export class OrderingIoService {
   ) {
     const accessToken = await this.utils.getAccessToken(userId);
     const business = await this.business.findBusinessByPublicId(publicBusinessId);
-  
+
     if (!business) {
       throw new ForbiddenException('Something wrong happened');
     }
