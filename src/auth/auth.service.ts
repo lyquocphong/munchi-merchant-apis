@@ -1,89 +1,28 @@
-import { Injectable, ForbiddenException, Inject, forwardRef } from '@nestjs/common';
-import { UserResponse } from 'src/auth/dto/auth.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { UserService } from 'src/user/user.service';
-import { UtilsService } from 'src/utils/utils.service';
-import * as argon2 from 'argon2';
+import { Inject, Injectable, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Cryptr from 'cryptr';
-import { JwtService } from '@nestjs/jwt';
-import { SessionDto } from './dto/session.dto';
-import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
-import { AuthCredentials } from 'src/type';
 import moment from 'moment';
+import { UserResponse } from 'src/auth/dto/auth.dto';
+import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { AuthCredentials } from 'src/type';
+import { UserService } from 'src/user/user.service';
+import { UtilsService } from 'src/utils/utils.service';
+import { SessionService } from './session.service';
 @Injectable()
 export class AuthService {
   constructor(
     @Inject(forwardRef(() => UserService)) private user: UserService,
-    private readonly orderingIo: OrderingIoService,
+    @Inject(forwardRef(() => OrderingIoService)) private readonly orderingIo: OrderingIoService,
+    @Inject(forwardRef(() => UtilsService)) readonly utils: UtilsService,
+    private readonly sessionService: SessionService,
     private config: ConfigService,
-    private readonly jwt: JwtService,
     private readonly prisma: PrismaService,
-    private readonly utils: UtilsService,
   ) {}
-  async refreshTokens(userId: number, refreshToken: string) {
-    const user = await this.user.getUserByUserId(userId);
-
-    if (!user || !user.refreshToken) {
-      throw new ForbiddenException('Access Denied');
-    }
-
-    const refreshTokenMatches = await argon2.verify(user.refreshToken, refreshToken);
-
-    if (!refreshTokenMatches) {
-      throw new ForbiddenException('Invalid Token');
-    }
-
-    const userByPublicId = await this.user.getUserByPublicId(user.publicId);
-    const token = await this.getTokens(userByPublicId.userId, user.email);
-    await this.updateRefreshToken(userByPublicId.userId, token.refreshToken, null);
-
-    return token;
-  }
-
-  async updateRefreshToken(userId: number, refreshToken: string, accessToken: string) {
-    const hashedRefreshToken = await this.hashData(refreshToken);
-    if (!accessToken) {
-      try {
-        await this.prisma.user.update({
-          where: {
-            userId: userId,
-          },
-          data: {
-            refreshToken: hashedRefreshToken,
-          },
-        });
-      } catch (error) {
-        this.utils.logError(error);
-      }
-    } else {
-      try {
-        await this.prisma.user.update({
-          where: {
-            userId: userId,
-          },
-          data: {
-            refreshToken: hashedRefreshToken,
-            session: {
-              update: {
-                accessToken: accessToken,
-              },
-            },
-          },
-        });
-      } catch (error) {
-        this.utils.logError(error);
-      }
-    }
-  }
-
-  async hashData(data: string) {
-    return argon2.hash(data);
-  }
 
   async signIn(credentials: AuthCredentials) {
-    const response: any = await this.orderingIo.signIn(credentials);
-    const tokens = await this.getTokens(response.id, response.email);
+    const response = await this.orderingIo.signIn(credentials);
+    const tokens = await this.sessionService.getTokens(response.id, response.email);
     const { access_token, token_type, expires_in } = response.session;
     const expiredAt = moment(moment()).add(expires_in, 'milliseconds').format();
     const user = await this.user.getUserByUserId(response.id);
@@ -92,14 +31,18 @@ export class AuthService {
       const newUser = await this.user.createUser(response, tokens, credentials.password);
       return newUser;
     } else if (user && !user.session) {
-      await this.createSession(user.userId, {
+      await this.sessionService.createSession(user.userId, {
         accessToken: access_token,
         expiresAt: expiredAt,
         tokenType: token_type,
       });
     }
 
-    await this.updateRefreshToken(response.id, tokens.refreshToken, access_token);
+    await this.sessionService.updateTokens(response.id, tokens.refreshToken, {
+      accessToken: access_token,
+      expiresAt: expiredAt,
+      tokenType: token_type,
+    });
 
     return new UserResponse(
       user.email,
@@ -107,47 +50,11 @@ export class AuthService {
       user.lastname,
       user.level,
       user.publicId,
-      user.session,
       tokens.verifyToken,
       tokens.refreshToken,
     );
   }
 
-  async updateToken(userId: number) {
-    const user = await this.user.getUserInternally(userId, null);
-    const decryptPassword = this.utils.getPassword(user.hash, false);
-    return await this.signIn({
-      email: user.email,
-      password: decryptPassword,
-    });
-  }
-
-  async getTokens(
-    userId: number,
-    email: string,
-  ): Promise<{ verifyToken: string; refreshToken: string }> {
-    const payload = {
-      sub: userId,
-      email,
-    };
-
-    const secret = this.config.get('JWT_SECRET');
-    const refreshSecret = this.config.get('JWT_REFRESH_SECRET');
-
-    const verifyToken = await this.jwt.signAsync(payload, {
-      expiresIn: '1h',
-      secret: secret,
-    });
-
-    const refreshToken = await this.jwt.signAsync(payload, {
-      expiresIn: '9h',
-      secret: refreshSecret,
-    });
-    return {
-      verifyToken: verifyToken,
-      refreshToken: refreshToken,
-    };
-  }
   getPassword(password: string, needCrypt: boolean) {
     const cryptr = new Cryptr(this.config.get('HASH_SECRET'));
     let passwordAfter: string;
@@ -159,28 +66,12 @@ export class AuthService {
     return passwordAfter;
   }
 
-  async createSession(userId: number, session: SessionDto) {
-    await this.prisma.session.create({
-      data: {
-        accessToken: session.accessToken,
-        expiresAt: session.expiresAt,
-        tokenType: session.tokenType,
-        userId: userId,
-      },
-    });
-  }
-
-  async signOut(publicUserId: string) {
-    const user = await this.user.getUserByPublicId(publicUserId);
-    if (!user) {
-      throw new ForbiddenException('No user exist');
-    } else if (!user.session) {
-      throw new ForbiddenException('No user session');
-    }
-    await this.orderingIo.signOut();
+  async signOut(userId: number) {
+    const accessToken = await this.utils.getAccessToken(userId);
+    await this.orderingIo.signOut(accessToken);
     await this.prisma.session.delete({
       where: {
-        userId: user.userId,
+        userId: userId,
       },
     });
   }
