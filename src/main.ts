@@ -10,16 +10,6 @@ declare const module: any;
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const logger = new Logger('Main');
-
-  //init Sentry
-  if (process.env.NODE_ENV === 'production') {
-    // Initialize Sentry with your DSN
-    Sentry.init({
-      dsn: process.env.SENTRY_DNS,
-    });
-  }
-
   const config = new DocumentBuilder()
     .setTitle('Api documentation')
     .setDescription('The API description of munchi-apis')
@@ -36,13 +26,23 @@ async function bootstrap() {
       'JWT-auth',
     )
     .build();
+
   const options: SwaggerDocumentOptions = {
     deepScanRoutes: true,
     operationIdFactory: (controllerKey: string, methodKey: string) => methodKey,
   };
-  const document = SwaggerModule.createDocument(app, config, options);
 
+  const document = SwaggerModule.createDocument(app, config, options);
   SwaggerModule.setup('api', app, document);
+
+  //init Sentry
+
+  if (process.env.NODE_ENV === 'production') {
+    // Initialize Sentry with your DSN
+    Sentry.init({
+      dsn: process.env.SENTRY_DNS,
+    });
+  }
 
   const { httpAdapter } = app.get(HttpAdapterHost);
 
@@ -58,17 +58,7 @@ async function bootstrap() {
     }),
   );
 
-  try {
-    logger.log('Application starting...');
-
-    // Rest of the bootstrap code
-
-    await app.listen(process.env.PORT);
-    logger.log('Application started');
-  } catch (error) {
-    logger.error(`Error starting application: ${error.message}`, error.stack);
-  }
-
+  await app.listen(process.env.PORT);
   if (module.hot) {
     module.hot.accept();
     module.hot.dispose(() => app.close());

@@ -1,9 +1,8 @@
-import { Controller, Get, Param, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Request, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse } from '@nestjs/swagger';
 import { JwtGuard } from 'src/auth/guard/jwt.guard';
 
 import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
-import { OrderId } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
 import { UserDto } from './dto/user.dto';
 import { UserService } from './user.service';
@@ -15,16 +14,15 @@ export class UserController {
   constructor(
     private orderingIo: OrderingIoService,
     private utils: UtilsService,
-    private user: UserService,
+    private userService: UserService,
   ) {}
   @ApiCreatedResponse({
     description: 'Get a spcecific user',
     type: UserDto,
   })
   @Get(':userId')
-  async getUser(@Param('userId') userIdParam: OrderId, @Request() req: any) {
+  async getUser(@Request() req: any) {
     const { userId } = req.user;
-    const accessToken = await this.utils.getAccessToken(userId);
-    return this.orderingIo.getUser(userIdParam, accessToken);
+    return this.userService.getUser(userId);
   }
 }
