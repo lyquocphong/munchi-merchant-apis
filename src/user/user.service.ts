@@ -2,9 +2,12 @@ import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import moment from 'moment';
 import { AuthService } from 'src/auth/auth.service';
 import { UserResponse } from 'src/auth/dto/auth.dto';
+import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AuthTokens } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
+import { UserDto } from './dto/user.dto';
+import { plainToClass } from 'class-transformer';
 @Injectable()
 export class UserService {
   constructor(
@@ -12,7 +15,18 @@ export class UserService {
     private readonly utils: UtilsService,
     @Inject(forwardRef(() => AuthService))
     private readonly auth: AuthService,
+    private readonly orderingIo: OrderingIoService,
   ) {}
+
+  async getUser(userId: number) {
+    const accessToken = await this.utils.getAccessToken(userId);
+    try {
+      const response = await this.orderingIo.getUser(accessToken, userId);
+      return plainToClass(UserDto, response);
+    } catch (error) {
+      this.utils.logError(error);
+    }
+  }
 
   getUserInternally = async (userId: number, publicUserId: string) => {
     if (userId === null) {

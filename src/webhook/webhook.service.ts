@@ -15,7 +15,7 @@ export class WebhookService implements OnModuleInit {
     const ioServer = this.server;
 
     ioServer.on('connection', (socket) => {
-      socket.on('join', async (room) => {
+      socket.on('join', async (room: string) => {
         const business = await this.business.findBusinessByPublicId(room);
         if (!business) {
           throw new ForbiddenException(403, 'No business found');
@@ -25,6 +25,7 @@ export class WebhookService implements OnModuleInit {
       });
     });
   }
+
   async newOrderNotification(order: any) {
     try {
       this.server.to(order.business_id.toString()).emit('orders_register', order);
@@ -32,6 +33,7 @@ export class WebhookService implements OnModuleInit {
       this.utils.logError(error);
     }
   }
+
   async changeOrderNotification(order: any) {
     try {
       this.server.to(order.business_id.toString()).emit('order_change', order);

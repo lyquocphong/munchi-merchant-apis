@@ -17,6 +17,10 @@ This repository contains an API server created with NestJS. The server serves as
 1. Start the server: `npm start`
 2. The server will be running at `http://localhost:<PORT>`, where `<PORT>` is the specified port in your `.env` file.
 
+## API Endpoints
+
+- To explore the available endpoints and their functionality, you can access the Swagger documentation by navigating to the base URL of your server followed by `/api`. For example, if your server is running on `http://localhost:5000`, you can access the Swagger documentation at `http://localhost:5000/api`. The Swagger documentation provides detailed information about each endpoint, including request/response schemas and available operations.
+
 ## Contributing
 
 Contributions are welcome! If you find any issues or have suggestions for improvements, please open an issue or submit a pull request.

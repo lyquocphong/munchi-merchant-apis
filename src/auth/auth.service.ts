@@ -15,8 +15,7 @@ import moment from 'moment';
 export class AuthService {
   constructor(
     @Inject(forwardRef(() => UserService)) private user: UserService,
-    @Inject(forwardRef(() => OrderingIoService)) private readonly orderingIo: OrderingIoService,
-
+    private readonly orderingIo: OrderingIoService,
     private config: ConfigService,
     private readonly jwt: JwtService,
     private readonly prisma: PrismaService,
@@ -176,8 +175,9 @@ export class AuthService {
     if (!user) {
       throw new ForbiddenException('No user exist');
     } else if (!user.session) {
-      throw new ForbiddenException('Something wrong happened');
+      throw new ForbiddenException('No user session');
     }
+    await this.orderingIo.signOut();
     await this.prisma.session.delete({
       where: {
         userId: user.userId,
