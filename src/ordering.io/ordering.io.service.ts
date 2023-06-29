@@ -31,11 +31,15 @@ export class OrderingIoService {
     }
   }
 
-  async signOut() {
+  async signOut(accessToken: string) {
     const options = {
       method: 'POST',
       url: this.utils.getEnvUrl('auth', 'logout'),
-      headers: { accept: 'application/json', 'content-type': 'application/json' },
+      headers: {
+        accept: 'application/json',
+        'content-type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
     };
 
     try {

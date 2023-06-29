@@ -1,13 +1,10 @@
-/* eslint-disable prettier/prettier */
-import { Module, Global } from '@nestjs/common';
-
-import { JwtModule } from '@nestjs/jwt';
-import { OrderingIoModule } from 'src/ordering.io/ordering.io.module';
-
+import { Global, Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
 import { UtilsService } from './utils.service';
+
 @Global()
 @Module({
-  imports: [JwtModule.register({}), OrderingIoModule],
+  imports: [AuthModule],
   providers: [UtilsService],
   exports: [UtilsService],
 })
