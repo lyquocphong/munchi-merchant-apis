@@ -15,7 +15,7 @@ export class AuthService {
     @Inject(forwardRef(() => UserService)) private user: UserService,
     @Inject(forwardRef(() => OrderingIoService)) private readonly orderingIo: OrderingIoService,
     @Inject(forwardRef(() => UtilsService)) readonly utils: UtilsService,
-    private readonly sessionService: SessionService,
+    @Inject(forwardRef(() => SessionService)) private readonly sessionService: SessionService,
     private config: ConfigService,
     private readonly prisma: PrismaService,
   ) {}
