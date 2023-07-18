@@ -1,21 +1,16 @@
 /* eslint-disable prettier/prettier */
-import { ForbiddenException, Injectable } from '@nestjs/common';
-import { Inject } from '@nestjs/common/decorators';
-import { forwardRef } from '@nestjs/common/utils';
+import { ForbiddenException, Injectable, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
 import Cryptr from 'cryptr';
 import moment from 'moment';
-import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
+import { SessionService } from 'src/auth/session.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { v4 as uuidv4 } from 'uuid';
 @Injectable()
 export class UtilsService {
   constructor(
-    private readonly jwt: JwtService,
+    @Inject(forwardRef(() => SessionService)) private readonly sessionService: SessionService,
     private readonly prisma: PrismaService,
-    @Inject(forwardRef(() => OrderingIoService))
-    private orderingIo: OrderingIoService,
     private config: ConfigService,
   ) {}
   getEnvUrl(path: string, idParam?: string | number, queryParams?: Array<string>): string {
@@ -26,12 +21,7 @@ export class UtilsService {
   }
 
   async getAccessToken(userId: number) {
-    const session = await this.prisma.session.findUnique({
-      where: {
-        userId: userId,
-      },
-    });
-
+    const session = await this.sessionService.getSession(userId);
     const user = await this.prisma.user.findUnique({
       where: {
         userId: userId,
@@ -43,12 +33,17 @@ export class UtilsService {
     }
 
     const decryptedPassword = this.getPassword(user.hash, false);
-    const expireAtmoment = moment(session.expiresAt).format();
-    const diff = moment(expireAtmoment).diff(moment(), 'minutes');
+    const expireAt = moment(session.expiresAt).format();
+    const diff = moment(expireAt).diff(moment(), 'minutes');
 
-    if (diff < 60) {
+    if (diff <= 60) {
       try {
-        await this.orderingIo.signIn({ email: user.email, password: decryptedPassword });
+        await this.sessionService.updateOrderingIoAccessToken({
+          email: user.email,
+          password: decryptedPassword,
+        });
+        const newSession = await this.sessionService.getSession(userId);
+        return newSession.accessToken;
       } catch (error) {
         this.logError(error);
       }

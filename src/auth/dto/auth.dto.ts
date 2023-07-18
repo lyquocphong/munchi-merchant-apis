@@ -2,40 +2,16 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
 import { SessionDto } from './session.dto';
 
-type Session = {
-  accessToken: string;
-  tokenType: string;
-  expiresAt: string;
-};
-
 export class UserResponse {
-  email: string;
-  firstName: string;
-  lastName: string;
-  level: number;
-  publicId: string;
-  session: Session;
-  verifyToken: string;
-  refreshToken: string;
   constructor(
-    email: string,
-    firstName: string,
-    lastName: string,
-    level: number,
-    publicId: string,
-    session: Session,
-    verifyToken: string,
-    refreshToken: string,
-  ) {
-    this.email = email;
-    this.firstName = firstName;
-    this.lastName = lastName;
-    this.level = level;
-    this.publicId = publicId;
-    this.session = session;
-    this.verifyToken = verifyToken;
-    this.refreshToken = refreshToken;
-  }
+    public email: string,
+    public firstName: string,
+    public lastName: string,
+    public level: number,
+    public publicId: string,
+    public verifyToken: string,
+    public refreshToken: string,
+  ) {}
 }
 
 export class AuthReponseDto {

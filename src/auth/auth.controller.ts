@@ -5,10 +5,11 @@ import { AuthService } from './auth.service';
 import { AuthReponseDto } from './dto/auth.dto';
 import { RefreshJwt } from './guard/refreshJwt.guard';
 import { JwtGuard } from './guard/jwt.guard';
+import { SessionService } from './session.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService, private sessionService: SessionService) {}
 
   @ApiCreatedResponse({
     description: 'Sign in new user',
@@ -26,21 +27,23 @@ export class AuthController {
   @Post('updateToken')
   async autoSignIn(@Request() req: any) {
     const { userId } = req.user;
-    return this.authService.updateToken(userId);
+    return this.sessionService.updateToken(userId);
   }
 
   @ApiCreatedResponse({
     description: 'Signed out',
   })
+  @UseGuards(JwtGuard)
   @Post('signout')
-  async signOut(@Body('publicUserId') publicUserId: string) {
-    return this.authService.signOut(publicUserId);
+  async signOut(@Request() req: any) {
+    const { userId } = req.user;
+    return this.authService.signOut(userId);
   }
   @UseGuards(RefreshJwt)
   @Get('refreshToken')
   getRefreshTokens(@Request() req: any) {
     const userId = req.user['sub'];
     const refreshToken = req.user['refreshToken'];
-    return this.authService.refreshTokens(userId, refreshToken);
+    return this.sessionService.refreshTokens(userId, refreshToken);
   }
 }
