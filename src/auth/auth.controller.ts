@@ -23,6 +23,7 @@ export class AuthController {
     return this.authService.signIn(credentials);
   }
 
+  // TODO: Verify does it use in frontend, remove if it not needed after check
   @UseGuards(JwtGuard)
   @Post('updateToken')
   async autoSignIn(@Request() req: any) {
