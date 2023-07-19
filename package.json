@@ -5,8 +5,10 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
-  "scripts": {
-    "prisma:dev:deploy": "prisma migrate deploy",
+  "scripts": {    
+    "prisma:dev:deploy": "./scripts/migrate_dev.sh",
+    "prisma:test:deploy": "./scripts/migrate_dev.sh",
+    "serve:dev": "./scripts/serve_dev.sh",
     "db:dev:rm": "docker compose rm dev-db -s -f -v",
     "db:dev:up": "docker compose up dev-db -d",
     "db:dev:restart": "npm db:dev:rm && npm db:dev:up && sleep 1 && npm prisma:dev:deploy",
