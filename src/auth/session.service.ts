@@ -95,16 +95,18 @@ export class SessionService {
       email,
     };
 
-    const secret = this.config.get('JWT_SECRET');
+    const secret = this.config.get('JWT_SECRET');    
+    const tokenTimeToLive = this.config.get('JWT_SECRET_TTL');
     const refreshSecret = this.config.get('JWT_REFRESH_SECRET');
+    const refreshTokenTimeToLive = this.config.get('JWT_REFRESH_TTL');
 
     const verifyToken = await this.jwt.signAsync(payload, {
-      expiresIn: '2h',
+      expiresIn: tokenTimeToLive,
       secret: secret,
     });
 
     const refreshToken = await this.jwt.signAsync(payload, {
-      expiresIn: '1d',
+      expiresIn: refreshTokenTimeToLive,
       secret: refreshSecret,
     });
     return {
