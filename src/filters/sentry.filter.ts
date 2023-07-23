@@ -4,8 +4,12 @@ import * as Sentry from '@sentry/node';
 
 @Catch()
 export class SentryFilter extends BaseExceptionFilter {
-  catch(exception: unknown, host: ArgumentsHost) {
+  catch(exception: any, host: ArgumentsHost) {
     Sentry.captureException(exception);
+
+    if (exception.message) {
+      Sentry.captureMessage(exception.message);
+    }
     super.catch(exception, host);
   }
 }
