@@ -40,3 +40,12 @@ model Business {
 
   @@map("business")
 }
+
+model Notification {
+  id          Int       @id @default(autoincrement())
+  type        String 
+  deviceId    String
+  scheduledAt DateTime
+
+  @@map("notification")
+} 
