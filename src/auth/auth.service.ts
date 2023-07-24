@@ -28,7 +28,7 @@ export class AuthService {
     const user = await this.user.getUserByUserId(response.id);
 
     if (!user) {
-      const newUser = await this.user.createUser(response, tokens, credentials.password);
+      const newUser = await this.user.createUser(response, tokens, credentials);
       return newUser;
     } else if (user && !user.session) {
       await this.sessionService.createSession(user.userId, {
