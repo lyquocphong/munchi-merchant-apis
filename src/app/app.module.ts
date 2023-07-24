@@ -10,6 +10,8 @@ import { UserModule } from 'src/user/user.module';
 import { OrderWebhookModule } from 'src/webhook/webhook.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ReportModule } from 'src/report/report.module';
+import { ScheduleModule } from '@nestjs/schedule';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -23,6 +25,8 @@ import { AppService } from './app.service';
     UserModule,
     OrderWebhookModule,
     AuthModule,
+    ReportModule,
+    ScheduleModule.forRoot()
   ],
   controllers: [AppController],
   providers: [AppService],

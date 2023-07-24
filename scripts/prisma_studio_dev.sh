@@ -24,19 +24,5 @@ PRISMA_URL=$DEV_PRISMA_URL
 export PRISMA_URL
 echo "Overwrite PRISMA_URL: $PRISMA_URL"
 
-echo "Run prisma generate"
-npx prisma generate
-
-npm run start:dev
-
-#echo "db-development is down"
-
-# Run the Docker command for migrations
-# docker-compose run --rm db-testing prisma migrate deploy
-
-
-echo "Restore PRISMA_URL: $OLD_PRISMA_URL"
-PRISMA_URL=$OLD_PRISMA_URL
-export PRISMA_URL
-
-docker-compose stop db-development
+echo "Run prisma studio"
+npx prisma studio
