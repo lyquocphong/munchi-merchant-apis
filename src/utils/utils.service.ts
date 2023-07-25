@@ -13,6 +13,8 @@ export class UtilsService {
     private readonly prisma: PrismaService,
     private config: ConfigService,
   ) {}
+
+  // TODO: Need to change the name, seem it now only work for ordering co service
   getEnvUrl(path: string, idParam?: string | number, queryParams?: Array<string>): string {
     let envUrl = `${process.env.BASE_URL}/${path}`;
     if (idParam === null || idParam === undefined) return envUrl;
