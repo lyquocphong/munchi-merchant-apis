@@ -64,6 +64,7 @@ export class SessionService {
       accessToken: access_token,
       expiresAt: expiredAt,
       tokenType: token_type,
+      deviceId: credentials.deviceId
     });
   }
   async refreshTokens(userId: number, refreshToken: string) {
@@ -122,16 +123,18 @@ export class SessionService {
         expiresAt: session.expiresAt,
         tokenType: session.tokenType,
         userId: userId,
+        deviceId: session.deviceId
       },
     });
   }
 
-  async updateToken(userId: number) {
+  async updateToken(userId: number, deviceId: string) {
     const user = await this.userService.getUserInternally(userId, null);
     const decryptPassword = this.utils.getPassword(user.hash, false);
     return await this.authService.signIn({
       email: user.email,
       password: decryptPassword,
+      deviceId
     });
   }
 

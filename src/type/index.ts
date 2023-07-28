@@ -3,27 +3,13 @@ import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 
 export class AuthCredentials {
   @ApiProperty({
-    description: 'Input firstName provided',
-    example: 'John',
-  })
-  firstName?: string;
-  @ApiProperty({
-    description: 'Input lastname provided',
-    example: 'Doe',
-  })
-  lastname?: string;
-  @ApiProperty({
-    description: 'Input role provided',
-    example: '2',
-  })
-  role?: string | number;
-  @ApiProperty({
     description: 'Input email provided',
     example: 'johndoe@gmail.com',
   })
   @IsEmail()
   @IsNotEmpty()
   email: string;
+
   @ApiProperty({
     description: 'Input password provided',
     type: 'password',
@@ -32,6 +18,14 @@ export class AuthCredentials {
   @IsString()
   @IsNotEmpty()
   password: string;
+
+  @ApiProperty({
+    description: 'Device id which will be used to work with Onesignal',    
+    example: '123123-sadsad2-213214',
+  })
+  @IsString()
+  @IsNotEmpty()
+  deviceId: string;
 }
 
 export type OrderId = number;

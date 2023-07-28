@@ -12,7 +12,7 @@ import { SessionService } from './session.service';
 @Injectable()
 export class AuthService {
   constructor(
-    @Inject(forwardRef(() => UserService)) private user: UserService,
+    @Inject(forwardRef(() => UserService)) private userService: UserService,
     @Inject(forwardRef(() => OrderingIoService)) private readonly orderingIo: OrderingIoService,
     @Inject(forwardRef(() => UtilsService)) readonly utils: UtilsService,
     @Inject(forwardRef(() => SessionService)) private readonly sessionService: SessionService,
@@ -25,16 +25,18 @@ export class AuthService {
     const tokens = await this.sessionService.getTokens(response.id, response.email);
     const { access_token, token_type, expires_in } = response.session;
     const expiredAt = moment(moment()).add(expires_in, 'milliseconds').format();
-    const user = await this.user.getUserByUserId(response.id);
+    let user = await this.userService.getUserByUserId(response.id);
 
+    let session;
     if (!user) {
-      const newUser = await this.user.createUser(response, tokens, credentials.password);
+      const newUser = await this.userService.createUser(response, tokens, credentials.password, credentials.deviceId);
       return newUser;
     } else if (user && !user.session) {
-      await this.sessionService.createSession(user.userId, {
+      session = await this.sessionService.createSession(user.userId, {
         accessToken: access_token,
         expiresAt: expiredAt,
         tokenType: token_type,
+        deviceId: credentials.deviceId
       });
     }
 
@@ -42,6 +44,7 @@ export class AuthService {
       accessToken: access_token,
       expiresAt: expiredAt,
       tokenType: token_type,
+      deviceId: credentials.deviceId
     });
 
     return new UserResponse(
@@ -52,6 +55,7 @@ export class AuthService {
       user.publicId,
       tokens.verifyToken,
       tokens.refreshToken,
+      session.deviceId
     );
   }
 

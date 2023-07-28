@@ -24,7 +24,7 @@ export class NotificationService {
     });
 
     if (!existingNotification) {
-      const numberOfMinutesForSchedule = 2;
+      const numberOfMinutesForSchedule = 1;
       const scheduledAt = new Date();
       scheduledAt.setMinutes(scheduledAt.getMinutes() + numberOfMinutesForSchedule);
 
@@ -47,37 +47,23 @@ export class NotificationService {
     });
   }
 
-  @Interval(10000)
+  @Interval(50000)
   async createOpenAppPushNotification() {
-    console.log('Start open app notification');
-
-    const now = new Date();
-    const oneMinuteAgo = new Date(now.getTime() - 60000);
+    this.logger.log('Start open app notification');
 
     const existingNotification = await this.prisma.notification.findMany({
       where: {
-        type: NotificationType.OPEN_APP,
-        scheduledAt: {
-          gte: oneMinuteAgo,
-          lte: now,
-        },
+        type: NotificationType.OPEN_APP
       },
     });
 
+    this.logger.log(`Existing notification: ${existingNotification.length}`);
     if (existingNotification.length == 0) {
       this.logger.log('Do not need to make any push notification');
     } else {
       const externalIds = existingNotification.map(notification => notification.deviceId);
       this.logger.log(`Make push notification to: ${JSON.stringify(externalIds)}`);
       this.onesignal.pushOpenAppNotification(externalIds)
-
-      this.prisma.notification.deleteMany({
-        where: {
-          deviceId: {
-            in: externalIds
-          }
-        }
-      })
     }
 
     this.logger.log('End open app notification');

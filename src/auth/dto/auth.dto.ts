@@ -11,6 +11,7 @@ export class UserResponse {
     public publicId: string,
     public verifyToken: string,
     public refreshToken: string,
+    public sessionId: string
   ) {}
 }
 

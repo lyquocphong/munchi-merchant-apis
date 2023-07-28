@@ -22,7 +22,7 @@ export class ReportAppStateDto {
     state: AppState;
 }
 
-export interface ReportAppStateDtoOld {
-    deviceId: string,
-    state: string
+export interface ReportAppBusinessDto {
+    sessionId: string,
+    businessIds: string[] //public-id
 }
