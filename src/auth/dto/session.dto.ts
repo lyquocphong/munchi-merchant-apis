@@ -9,6 +9,8 @@ export class SessionDto {
   @Expose({ name: 'expires_in' })
   expiresAt: string;
 
+  deviceId: string;
+
   constructor(partial: Partial<SessionDto>) {
     Object.assign(this, partial);
   }

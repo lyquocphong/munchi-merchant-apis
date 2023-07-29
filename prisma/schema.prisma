@@ -8,11 +8,13 @@ datasource db {
 }
 
 model Session {
+  id          String @id @default(uuid())
   accessToken String @unique
   tokenType   String
   expiresAt   String 
   userId      Int    @unique
   user        User   @relation(fields: [userId], references: [userId], onDelete: Cascade, onUpdate: Cascade)
+  deviceId    String
 }
 
 model User {

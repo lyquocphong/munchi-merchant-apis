@@ -27,6 +27,7 @@ echo "Overwrite PRISMA_URL: $PRISMA_URL"
 echo "Run prisma migrate dev"
 npx prisma migrate dev
 
+npx prisma generate
 
 echo "Restore PRISMA_URL: $OLD_PRISMA_URL"
 PRISMA_URL=$OLD_PRISMA_URL

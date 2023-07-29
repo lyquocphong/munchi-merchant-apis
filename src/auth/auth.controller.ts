@@ -27,8 +27,8 @@ export class AuthController {
   @UseGuards(JwtGuard)
   @Post('updateToken')
   async autoSignIn(@Request() req: any) {
-    const { userId } = req.user;
-    return this.sessionService.updateToken(userId);
+    const { userId, deviceId } = req.user;
+    return this.sessionService.updateToken(userId, deviceId);
   }
 
   @ApiCreatedResponse({

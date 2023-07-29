@@ -121,6 +121,7 @@ export class UserService {
               accessToken: access_token,
               expiresAt: expiredAt,
               tokenType: token_type,
+              deviceId
             },
           },
           refreshToken: hashedRefreshToken,
@@ -132,6 +133,7 @@ export class UserService {
           publicId: true,
           level: true,
           refreshToken: true,
+          session: true
         },
       });
       return new UserResponse(
@@ -142,6 +144,7 @@ export class UserService {
         newUser.publicId,
         tokens.verifyToken,
         tokens.refreshToken,
+        newUser.session.
       );
     } catch (error) {
       this.utils.logError(error);
