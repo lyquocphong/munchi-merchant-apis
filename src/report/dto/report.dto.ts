@@ -20,6 +20,14 @@ export class ReportAppStateDto {
     @Expose()
     @IsString()
     state: AppState;
+
+    @ApiProperty({
+        description: "Business id",
+        example: '2af4ad2f-bd96-4e54-95a3-dfa473a65a06'
+    })
+    @Expose()
+    @IsString()
+    businessId: string
 }
 
 export interface ReportAppStateDtoOld {
