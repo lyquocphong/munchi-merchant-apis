@@ -6,6 +6,7 @@ import * as Sentry from '@sentry/node';
 import { SentryFilter } from './filters/sentry.filter';
 
 import { AppModule } from './app/app.module';
+
 declare const module: any;
 
 async function bootstrap() {
@@ -39,7 +40,6 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
 
   //init Sentry
-
   if (process.env.NODE_ENV === 'production') {
     // Initialize Sentry with your DSN
     Sentry.init({

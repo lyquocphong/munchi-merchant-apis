@@ -3,7 +3,7 @@ import moment from 'moment';
 import { UserResponse } from 'src/auth/dto/auth.dto';
 import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { AuthTokens } from 'src/type';
+import { AuthCredentials, AuthTokens } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
 import { UserDto } from './dto/user.dto';
 import { plainToClass } from 'class-transformer';
@@ -72,6 +72,7 @@ export class UserService {
         publicId: true,
         level: true,
         userId: true,
+        externalUserId: true,
         session: {
           select: {
             accessToken: true,
@@ -101,8 +102,8 @@ export class UserService {
     });
   }
 
-  async createUser(userData: any, tokens: AuthTokens, password: string) {
-    const hashPassword = this.utils.getPassword(password, true);
+  async createUser(userData: any, tokens: AuthTokens, credentials: AuthCredentials) {
+    const hashPassword = this.utils.getPassword(credentials.password, true);
     const { access_token, token_type, expires_in } = userData.session;
     const expiredAt = moment(moment()).add(expires_in, 'milliseconds').format();
     const hashedRefreshToken = await this.sessionService.hashData(tokens.refreshToken);
@@ -116,6 +117,11 @@ export class UserService {
           hash: hashPassword,
           level: userData.level,
           publicId: this.utils.getPublicId(),
+          externalUserId: {
+            create: {
+              deviceId: credentials.externalUserId,
+            },
+          },
           session: {
             create: {
               accessToken: access_token,

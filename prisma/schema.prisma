@@ -10,25 +10,32 @@ datasource db {
 model Session {
   accessToken String @unique
   tokenType   String
-  expiresAt   String 
+  expiresAt   String
   userId      Int    @unique
   user        User   @relation(fields: [userId], references: [userId], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model User {
-  id           Int        @id @default(autoincrement())
-  userId       Int        @unique
-  firstName    String
-  lastname     String
-  email        String     @unique
-  hash         String
-  level        Int?
-  publicId     String     @unique
-  refreshToken String     @unique
-  session      Session?
-  business     Business[] @relation("MyUserBusinessTable")
+  id             Int        @id @default(autoincrement())
+  userId         Int        @unique
+  firstName      String
+  lastname       String
+  email          String     @unique
+  hash           String
+  level          Int?
+  publicId       String     @unique
+  refreshToken   String     @unique
+  externalUserId DeviceId[] // This id is use to work with one signal
+  session        Session?
+  business       Business[] @relation("MyUserBusinessTable")
 
   @@map("user")
+}
+
+model DeviceId {
+  deviceId String @unique
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId   Int    @unique
 }
 
 model Business {

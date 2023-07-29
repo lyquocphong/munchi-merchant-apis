@@ -3,13 +3,18 @@ import { ForbiddenException, Injectable, OnModuleInit } from '@nestjs/common';
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets/decorators';
 import { Server } from 'socket.io';
 import { BusinessService } from 'src/business/business.service';
+import { OneSignalService } from 'src/one-signal/one-signal.service';
 import { UtilsService } from 'src/utils/utils.service';
 
 @WebSocketGateway({ cors: { origin: { origin: '*' } } })
 @Injectable()
 export class WebhookService implements OnModuleInit {
   @WebSocketServer() public server: Server;
-  constructor(private business: BusinessService, private utils: UtilsService) {}
+  constructor(
+    private business: BusinessService,
+    private utils: UtilsService,
+    private oneSignalService: OneSignalService,
+  ) {}
 
   onModuleInit() {
     const ioServer = this.server;
@@ -28,6 +33,7 @@ export class WebhookService implements OnModuleInit {
 
   async newOrderNotification(order: any) {
     try {
+      this.oneSignalService.createNotification(order)
       this.server.to(order.business_id.toString()).emit('orders_register', order);
     } catch (error) {
       this.utils.logError(error);
