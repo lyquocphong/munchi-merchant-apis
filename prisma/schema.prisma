@@ -45,7 +45,9 @@ model Notification {
   id          Int       @id @default(autoincrement())
   type        String 
   deviceId    String
-  scheduledAt DateTime
+  businessId  String
+  scheduledAt DateTime @db.Timestamp()
+  userId      Int
 
   @@map("notification")
 } 

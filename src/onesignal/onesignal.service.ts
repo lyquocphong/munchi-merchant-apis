@@ -38,9 +38,9 @@ export class OneSignalService {
         return notification;
     }
 
-    async pushOpenAppNotification(externalIds: string[], language: string = 'en') {
+    async pushOpenAppNotification(playerIds: string[], language: string = 'en') {
         const notification = this.createNotification({
-            include_external_user_ids: externalIds,
+            include_player_ids: playerIds,
             android_channel_id: PushNotificationChannel.NEW_MERCHANT_APP_CHANNEL,
             template_id: PushNotificationTemplate.OPEN_APP_REMINDER
         });
@@ -48,7 +48,7 @@ export class OneSignalService {
         try {
             await this.client.createNotification(notification);
         } catch (error) {
-            this.logger.error(`Error creating open app notification to: ${JSON.stringify(externalIds)}`);
+            this.logger.error(`Error creating open app notification to: ${JSON.stringify(playerIds)}`);
             this.logger.error(error);
             throw error;
         }

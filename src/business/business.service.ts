@@ -68,6 +68,16 @@ export class BusinessService {
     return plainToClass(BusinessDto, response);
   }
 
+  async getBusinessTodayScheduleById(userId: number, publicBusinessId: string) {
+    const accessToken = await this.utils.getAccessToken(userId);
+    const business = await this.findBusinessByPublicId(publicBusinessId);
+    if (!business) {
+      throw new ForbiddenException(`we need this: ${publicBusinessId}`);
+    }
+    const response = await this.orderingIo.getBusinessById(accessToken, business.businessId);
+    return {today: response.today, timezone: response.timezone};
+  }
+
   async editBusiness(userId: number, publicBusinessId: string, status: boolean) {
     const accessToken = await this.utils.getAccessToken(userId);
     const business = await this.findBusinessByPublicId(publicBusinessId);
