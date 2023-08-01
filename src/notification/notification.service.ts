@@ -126,8 +126,9 @@ export class NotificationService {
 
       this.logger.log(`Make push notification to: ${JSON.stringify(deviceIds)}`);
 
-      // TODO: DeviceIds now is pĺayerid
-      //this.onesignal.pushOpenAppNotification(deviceIds)
+      if (deviceIds.length > 0) {
+        this.onesignal.pushOpenAppNotification(deviceIds)
+      }
     }
   }
 }
