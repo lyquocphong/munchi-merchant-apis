@@ -6,6 +6,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { UtilsService } from 'src/utils/utils.service';
 import { BusinessDto } from './dto/business.dto';
 import { UserService } from 'src/user/user.service';
+import moment from 'moment-timezone';
 
 @Injectable()
 export class BusinessService {
@@ -57,35 +58,47 @@ export class BusinessService {
     }
     return await this.findAllBusiness(user.userId);
   }
-
-  async getBusinessById(userId: number, publicBusinessId: string) {
+  
+  async getOrderingBusiness(userId: number, publicBusinessId: string) {
     const accessToken = await this.utils.getAccessToken(userId);
     const business = await this.findBusinessByPublicId(publicBusinessId);
     if (!business) {
       throw new ForbiddenException(`we need this: ${publicBusinessId}`);
     }
-    const response = await this.orderingIo.getBusinessById(accessToken, business.businessId);
+    return await this.orderingIo.getBusinessById(accessToken, business.businessId);
+  }
+
+  /**
+   * This function is used to set status for today on or off
+   * 
+   * This is used to set business is closed or not
+   * 
+   * @param userId 
+   * @param publicId 
+   * @param status 
+   * @returns 
+   */
+  async setTodayScheduleStatus(userId: number, publicId: string ,status: boolean) {
+    const business = await this.getOrderingBusiness(userId, publicId);
+    const {schedule} = business;
+    const numberOfToday = moment().weekday();
+    schedule[numberOfToday].enabled = status;
+    const accessToken = await this.utils.getAccessToken(userId);
+    const response = await this.orderingIo.editBusiness(accessToken, business.id, {schedule: JSON.stringify(schedule)});
+
+    // The response from edit business Ordering Co does not return today so I need to set it from schedule
+    response.today = response.schedule[numberOfToday];
     return plainToClass(BusinessDto, response);
+  }
+
+  async getBusinessById(userId: number, publicBusinessId: string) {
+    const business = await this.getOrderingBusiness(userId, publicBusinessId);
+    return plainToClass(BusinessDto, business);
   }
 
   async getBusinessTodayScheduleById(userId: number, publicBusinessId: string) {
-    const accessToken = await this.utils.getAccessToken(userId);
-    const business = await this.findBusinessByPublicId(publicBusinessId);
-    if (!business) {
-      throw new ForbiddenException(`we need this: ${publicBusinessId}`);
-    }
-    const response = await this.orderingIo.getBusinessById(accessToken, business.businessId);
-    return {today: response.today, timezone: response.timezone};
-  }
-
-  async editBusiness(userId: number, publicBusinessId: string, status: boolean) {
-    const accessToken = await this.utils.getAccessToken(userId);
-    const business = await this.findBusinessByPublicId(publicBusinessId);
-    if (!business) {
-      throw new ForbiddenException(`we need this: ${publicBusinessId}`);
-    }
-    const response = await this.orderingIo.editBusiness(accessToken, business.businessId, status);
-    return plainToClass(BusinessDto, response);
+    const business = await this.getOrderingBusiness(userId, publicBusinessId);
+    return {today: business.today, timezone: business.timezone};
   }
 
   async updateBusinessOwners(businsessData: any, userId: number) {

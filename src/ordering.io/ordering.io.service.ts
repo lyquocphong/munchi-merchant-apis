@@ -86,11 +86,11 @@ export class OrderingIoService {
     }
   }
 
-  async editBusiness(accessToken: string, businessId: number, status: boolean) {
+  async editBusiness(accessToken: string, businessId: number, data: object) {
     const options = {
       method: 'POST',
       url: `${this.utils.getEnvUrl('business', businessId)}`,
-      data: { enabled: status },
+      data,
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
@@ -229,6 +229,31 @@ export class OrderingIoService {
 
   //Page
   async getPage(accessToken: string) {
+    const options = {
+      method: 'GET',
+      url: this.utils.getEnvUrl('pages'),
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+    };
+
+    try {
+      const response = await axios.request(options);
+      return response.data.result;
+    } catch (error) {
+      this.utils.logError(error);
+    }
+  }
+
+  /**
+   * Set schedule for business
+   * 
+   * @param accessToken 
+   * @param schedule    Json string of schedule
+   * @returns 
+   */
+  async setBusinessSchedule(accessToken: string, schedule: string) {
     const options = {
       method: 'GET',
       url: this.utils.getEnvUrl('pages'),

@@ -2,6 +2,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude, Expose, Type } from 'class-transformer';
 import { OwnerDto } from './owner.dto';
+import { Schedule } from 'src/ordering.io/ordering.io.type';
+import { IsBoolean, IsString } from 'class-validator';
 
 @Exclude()
 export class BusinessDto {
@@ -48,6 +50,27 @@ export class BusinessDto {
   enabled: boolean;
 
   @ApiProperty({
+    description: 'Schedule for today',
+    example: {
+      "enabled": true,
+      "lapses": [
+        {
+          "open": {
+            "hour": 0,
+            "minute": 0
+          },
+          "close": {
+            "hour": 23,
+            "minute": 30
+          }
+        }
+      ]
+    },
+  })
+  @Expose()
+  today: Schedule;
+
+  @ApiProperty({
     description: 'The owners of business',
     example: {
       id: '123456',
@@ -84,4 +107,20 @@ export class AllBusinessDto {
   constructor(partial: Partial<AllBusinessDto>) {
     Object.assign(this, partial);
   }
+}
+
+export class SetOnlineStatusDto {
+  @ApiProperty({
+    description: 'The public id of business',
+    example: '123456',
+  })
+  @IsString()
+  publicBusinessId: string;
+  
+  @ApiProperty({
+    description: 'Status want to set. true for on and false for off',
+    example: false,
+  })
+  @IsBoolean()
+  status: boolean;
 }
