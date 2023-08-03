@@ -29,7 +29,7 @@ export class OrderService {
     try {
       const response = await this.orderingIo.getFilteredOrders(
         accessToken,
-        business.businessId,
+        business.orderingExternalId,
         query,
         paramsQuery,
       );

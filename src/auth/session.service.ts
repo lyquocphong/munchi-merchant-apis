@@ -26,7 +26,7 @@ export class SessionService {
     return argon2.hash(data);
   }
 
-  async updateTokens(userId: number, refreshToken?: string, session?: SessionDto) {
+  async updateTokens(orderingExternalId: number, refreshToken?: string, session?: SessionDto) {
     const data: any = {};
 
     if (refreshToken) {
@@ -47,7 +47,7 @@ export class SessionService {
     try {
       await this.prisma.user.update({
         where: {
-          userId: userId,
+          orderingExternalId: orderingExternalId,
         },
         data: data,
       });
@@ -67,7 +67,7 @@ export class SessionService {
     });
   }
   async refreshTokens(userId: number, refreshToken: string) {
-    const user = await this.userService.getUserByUserId(userId);
+    const user = await this.userService.getUserByOrderingExternalId(userId);
 
     if (!user || !user.refreshToken) {
       throw new ForbiddenException('Access Denied');
@@ -80,8 +80,8 @@ export class SessionService {
     }
 
     const userByPublicId = await this.userService.getUserByPublicId(user.publicId);
-    const token = await this.getTokens(userByPublicId.userId, user.email);
-    await this.updateTokens(userByPublicId.userId, token.refreshToken, null);
+    const token = await this.getTokens(userByPublicId.orderingExternalId, user.email);
+    await this.updateTokens(userByPublicId.orderingExternalId, token.refreshToken, null);
 
     return token;
   }
@@ -115,13 +115,13 @@ export class SessionService {
     };
   }
 
-  async createSession(userId: number, session: SessionDto) {
+  async createSession(orderingExternalId: number, session: SessionDto) {
     await this.prisma.session.create({
       data: {
         accessToken: session.accessToken,
         expiresAt: session.expiresAt,
         tokenType: session.tokenType,
-        userId: userId,
+        orderingExternalId: orderingExternalId,
       },
     });
   }
@@ -135,10 +135,10 @@ export class SessionService {
     });
   }
 
-  async getSession(userId: number) {
+  async getSession(orderingExternalId: number) {
     return await this.prisma.session.findUnique({
       where: {
-        userId: userId,
+        orderingExternalId: orderingExternalId,
       },
     });
   }

@@ -25,13 +25,13 @@ export class AuthService {
     const tokens = await this.sessionService.getTokens(response.id, response.email);
     const { access_token, token_type, expires_in } = response.session;
     const expiredAt = moment(moment()).add(expires_in, 'milliseconds').format();
-    const user = await this.user.getUserByUserId(response.id);
+    const user = await this.user.getUserByOrderingExternalId(response.id);
 
     if (!user) {
       const newUser = await this.user.createUser(response, tokens, credentials.password);
       return newUser;
     } else if (user && !user.session) {
-      await this.sessionService.createSession(user.userId, {
+      await this.sessionService.createSession(user.orderingExternalId, {
         accessToken: access_token,
         expiresAt: expiredAt,
         tokenType: token_type,
@@ -47,7 +47,7 @@ export class AuthService {
     return new UserResponse(
       user.email,
       user.firstName,
-      user.lastname,
+      user.lastName,
       user.level,
       user.publicId,
       tokens.verifyToken,
@@ -66,12 +66,12 @@ export class AuthService {
     return passwordAfter;
   }
 
-  async signOut(userId: number) {
-    const accessToken = await this.utils.getAccessToken(userId);
+  async signOut(orderingExternalId: number) {
+    const accessToken = await this.utils.getAccessToken(orderingExternalId);
     await this.orderingIo.signOut(accessToken);
     await this.prisma.session.delete({
       where: {
-        userId: userId,
+        orderingExternalId: orderingExternalId,
       },
     });
   }

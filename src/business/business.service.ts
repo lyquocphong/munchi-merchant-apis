@@ -16,25 +16,25 @@ export class BusinessService {
     private readonly userService: UserService,
     @Inject(forwardRef(() => OrderingIoService)) private orderingIo: OrderingIoService,
   ) {}
-  async createBusiness(businsessData: any, userId: number) {
+  async createBusiness(businsessData: any, orderingExternalId: number) {
     return await this.prisma.business.create({
       data: {
-        businessId: businsessData.id,
+        orderingExternalId: businsessData.id,
         name: businsessData.name,
         publicId: this.utils.getPublicId(),
         owners: {
           connect: {
-            userId: userId,
+            orderingExternalId: orderingExternalId,
           },
         },
       },
     });
   }
 
-  async getAllBusiness(userId: number) {
-    const accessToken = await this.utils.getAccessToken(userId);
+  async getAllBusiness(orderingId: number) {
+    const accessToken = await this.utils.getAccessToken(orderingId);
     const response = await this.orderingIo.getAllBusiness(accessToken);
-    const user = await this.userService.getUserInternally(userId, null);
+    const user = await this.userService.getUserInternally(orderingId, null);
 
     if (!user) {
       throw new ForbiddenException('Something wrong happend');
@@ -45,18 +45,18 @@ export class BusinessService {
 
       if (existedBusiness) {
         // Check ownership of the new user with existed business
-        const owner = existedBusiness.owners.filter((owner) => owner.userId === user.userId);
+        const owner = existedBusiness.owners.filter((owner) => owner.orderingExternalId === user.orderingExternalId);
         // If no ownership then add and update it to business
         if (owner.length < 1) {
-          await this.updateBusinessOwners(business, user.userId);
+          await this.updateBusinessOwners(business, user.orderingExternalId);
         } else {
-          return await this.findAllBusiness(user.userId);
+          return await this.findAllBusiness(user.orderingExternalId);
         }
       } else {
-        await this.createBusiness(business, user.userId);
+        await this.createBusiness(business, user.orderingExternalId);
       }
     }
-    return await this.findAllBusiness(user.userId);
+    return await this.findAllBusiness(user.orderingExternalId);
   }
   
   async getOrderingBusiness(userId: number, publicBusinessId: string) {
@@ -65,7 +65,7 @@ export class BusinessService {
     if (!business) {
       throw new ForbiddenException(`we need this: ${publicBusinessId}`);
     }
-    return await this.orderingIo.getBusinessById(accessToken, business.businessId);
+    return await this.orderingIo.getBusinessById(accessToken, business.orderingExternalId);
   }
 
   /**
@@ -101,15 +101,15 @@ export class BusinessService {
     return {today: business.today, timezone: business.timezone};
   }
 
-  async updateBusinessOwners(businsessData: any, userId: number) {
+  async updateBusinessOwners(businsessData: any, orderingExternalId: number) {
     return await this.prisma.business.update({
       where: {
-        businessId: businsessData.id,
+        orderingExternalId: businsessData.id,
       },
       data: {
         owners: {
           connect: {
-            userId: userId,
+            orderingExternalId: orderingExternalId,
           },
         },
       },
@@ -124,10 +124,10 @@ export class BusinessService {
     });
   }
 
-  async findBusinessById(businessId: number) {
+  async findBusinessById(orderingExternalId: number) {
     const business = await this.prisma.business.findUnique({
       where: {
-        businessId: businessId,
+        orderingExternalId: orderingExternalId,
       },
       include: {
         owners: true,
@@ -136,12 +136,12 @@ export class BusinessService {
     return business;
   }
 
-  async findAllBusiness(userId: number) {
+  async findAllBusiness(orderingExternalId: number) {
     return await this.prisma.business.findMany({
       where: {
         owners: {
           some: {
-            userId: userId,
+            orderingExternalId: orderingExternalId,
           },
         },
       },

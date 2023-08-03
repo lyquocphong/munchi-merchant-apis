@@ -27,8 +27,8 @@ export class UserService {
     }
   }
 
-  getUserInternally = async (userId: number, publicUserId: string) => {
-    if (userId === null) {
+  getUserInternally = async (orderingExternalId: number, publicUserId: string) => {
+    if (orderingExternalId === null) {
       const user = await this.prisma.user.findUnique({
         where: {
           publicId: publicUserId,
@@ -41,7 +41,7 @@ export class UserService {
     } else {
       const user = await this.prisma.user.findUnique({
         where: {
-          userId: userId,
+          orderingExternalId: orderingExternalId,
         },
         include: {
           business: true,
@@ -50,6 +50,7 @@ export class UserService {
       return user;
     }
   };
+
   deleteUser = async (userId: number) => {
     const user = await this.getUserInternally(userId, null);
     const deleteUser = await this.prisma.user.delete({
@@ -60,18 +61,20 @@ export class UserService {
 
     return deleteUser;
   };
-  async getUserByUserId(userId: number) {
+
+  //Get user by user ordering id
+  async getUserByOrderingExternalId(orderingExternalId: number) {
     return await this.prisma.user.findUnique({
       where: {
-        userId: userId,
+        orderingExternalId: orderingExternalId,
       },
       select: {
         firstName: true,
-        lastname: true,
+        lastName: true,
         email: true,
         publicId: true,
         level: true,
-        userId: true,
+        orderingExternalId: true,
         session: {
           select: {
             accessToken: true,
@@ -89,6 +92,7 @@ export class UserService {
       },
     });
   }
+
   async getUserByPublicId(publicUserId: string) {
     return await this.prisma.user.findUnique({
       where: {
@@ -109,9 +113,9 @@ export class UserService {
     try {
       const newUser = await this.prisma.user.create({
         data: {
-          userId: userData.id,
+          orderingExternalId: userData.id,
           firstName: userData.name,
-          lastname: userData.lastname,
+          lastName: userData.lastname,
           email: userData.email,
           hash: hashPassword,
           level: userData.level,
@@ -127,7 +131,7 @@ export class UserService {
         },
         select: {
           firstName: true,
-          lastname: true,
+          lastName: true,
           email: true,
           publicId: true,
           level: true,
@@ -137,7 +141,7 @@ export class UserService {
       return new UserResponse(
         newUser.email,
         newUser.firstName,
-        newUser.lastname,
+        newUser.lastName,
         newUser.level,
         newUser.publicId,
         tokens.verifyToken,

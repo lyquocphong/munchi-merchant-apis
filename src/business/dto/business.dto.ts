@@ -2,7 +2,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude, Expose, Type } from 'class-transformer';
 import { OwnerDto } from './owner.dto';
-import { Schedule } from 'src/ordering.io/ordering.io.type';
+// import { Schedule } from 'src/ordering.io/ordering.io.type';
 import { IsBoolean, IsString } from 'class-validator';
 
 @Exclude()
@@ -67,8 +67,8 @@ export class BusinessDto {
       ]
     },
   })
-  @Expose()
-  today: Schedule;
+  // @Expose()
+  // today: Schedule;
 
   @ApiProperty({
     description: 'The owners of business',

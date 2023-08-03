@@ -22,11 +22,11 @@ export class UtilsService {
     return envUrl;
   }
 
-  async getAccessToken(userId: number) {
-    const session = await this.sessionService.getSession(userId);
+  async getAccessToken(orderingExternalId: number) {
+    const session = await this.sessionService.getSession(orderingExternalId);
     const user = await this.prisma.user.findUnique({
       where: {
-        userId: userId,
+        orderingExternalId: orderingExternalId,
       },
     });
 
@@ -44,7 +44,7 @@ export class UtilsService {
           email: user.email,
           password: decryptedPassword,
         });
-        const newSession = await this.sessionService.getSession(userId);
+        const newSession = await this.sessionService.getSession(orderingExternalId);
         return newSession.accessToken;
       } catch (error) {
         this.logError(error);
