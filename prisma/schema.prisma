@@ -3,23 +3,23 @@ generator client {
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("PRISMA_URL")
+  provider = "postgresql"
+  url      = env("PRISMA_URL")
 }
 
 model Session {
   accessToken String @unique
   tokenType   String
-  expiresAt   String 
-  userId      Int    @unique
-  user        User   @relation(fields: [userId], references: [userId], onDelete: Cascade, onUpdate: Cascade)
+  expiresAt   String
+  orderingExternalId  Int    @unique
+  user        User   @relation(fields: [orderingExternalId], references: [orderingExternalId], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model User {
   id           Int        @id @default(autoincrement())
-  userId       Int        @unique
+  orderingExternalId   Int        @unique
   firstName    String
-  lastname     String
+  lastName     String
   email        String     @unique
   hash         String
   level        Int?
@@ -33,7 +33,7 @@ model User {
 
 model Business {
   id         Int    @id @default(autoincrement())
-  businessId Int    @unique
+  orderingExternalId Int    @unique
   publicId   String @unique
   name       String
   owners     User[] @relation("MyUserBusinessTable")
@@ -42,12 +42,12 @@ model Business {
 }
 
 model Notification {
-  id          Int       @id @default(autoincrement())
-  type        String 
+  id          Int      @id @default(autoincrement())
+  type        String
   deviceId    String
   businessId  String
   scheduledAt DateTime @db.Timestamp()
   userId      Int
 
   @@map("notification")
-} 
+}
