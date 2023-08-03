@@ -3,7 +3,7 @@ import { Body, Controller, Get, Param, Post, Request, UseGuards } from '@nestjs/
 import { ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse } from '@nestjs/swagger';
 import { JwtGuard } from 'src/auth/guard/jwt.guard';
 import { BusinessService } from './business.service';
-import { AllBusinessDto, BusinessDto } from './dto/business.dto';
+import { AllBusinessDto, BusinessDto, SetOnlineStatusDto } from './dto/business.dto';
 
 @UseGuards(JwtGuard)
 @Controller('business')
@@ -36,13 +36,15 @@ export class BusinessController {
     description: 'Edit a specific business',
     type: BusinessDto,
   })
-  @Post('editBusiness')
-  async editBusiness(
+
+
+  @Post('online-status')
+  async setOnlineStatus(
     @Request() req: any,
-    @Body('publicBusinessId') publicBusinessId: string,
-    @Body('status') status: boolean,
+    @Body() body: SetOnlineStatusDto
   ) {
     const { userId } = req.user;
-    return this.businessService.editBusiness(userId, publicBusinessId, status);
+    const { publicBusinessId, status} = body;
+    return this.businessService.setTodayScheduleStatus(userId, publicBusinessId, status);
   }
 }
