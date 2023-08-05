@@ -9,7 +9,9 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { AuthCredentials } from 'src/type';
 import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
-import moment from 'moment';
+import { Prisma } from '@prisma/client';
+import { JwtTokenPayload } from './session.type';
+
 @Injectable()
 export class SessionService {
   constructor(
@@ -20,13 +22,13 @@ export class SessionService {
     private readonly jwt: JwtService,
     private config: ConfigService,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   async hashData(data: string) {
     return argon2.hash(data);
   }
 
-  async updateTokens(userId: number, refreshToken?: string, session?: SessionDto) {
+  async updateTokensOld(orderingUserId: number, refreshToken?: string, session?: SessionDto) {
     const data: any = {};
 
     if (refreshToken) {
@@ -47,7 +49,7 @@ export class SessionService {
     try {
       await this.prisma.user.update({
         where: {
-          userId: userId,
+          orderingUserId,
         },
         data: data,
       });
@@ -57,89 +59,155 @@ export class SessionService {
   }
 
   async updateOrderingIoAccessToken(credentials: AuthCredentials) {
-    const response = await this.orderingIo.signIn(credentials);
-    const { access_token, token_type, expires_in } = response.session;
-    const expiredAt = moment(moment()).add(expires_in, 'milliseconds').format();
-    await this.updateTokens(response.id, null, {
-      accessToken: access_token,
-      expiresAt: expiredAt,
-      tokenType: token_type,
-    });
-  }
-  async refreshTokens(userId: number, refreshToken: string) {
-    const user = await this.userService.getUserByUserId(userId);
+    const orderingUserInfo = await this.orderingIo.signIn(credentials);
 
-    if (!user || !user.refreshToken) {
+    const userSelect = Prisma.validator<Prisma.UserSelect>()({
+      id: true
+    })
+
+    await this.userService.upsertUserFromOrderingInfo<typeof userSelect>(
+      { ...orderingUserInfo, password: credentials.password },
+      userSelect
+    );
+  }
+
+  /**
+   * * Has checked
+   * 
+   * @param refreshToken 
+   * @param sessionPublicId 
+   * @returns 
+   */
+  async refreshTokens(refreshToken: string, sessionPublicId: string) {
+
+    const findSessionArgs = Prisma.validator<Prisma.SessionFindFirstArgsBase>()({
+      select: {
+        id: true,
+        refreshToken: true,
+        user: {
+          select: {
+            id: true,
+            orderingUserId: true,
+            publicId: true,
+            email: true
+          }
+        }
+      }
+    })
+
+    const session = await this.getSessionByPublcId<Prisma.SessionGetPayload<typeof findSessionArgs>>(sessionPublicId, findSessionArgs);
+    const { user } = session;
+
+    if (!user || !session || !session.refreshToken) {
       throw new ForbiddenException('Access Denied');
     }
 
-    const refreshTokenMatches = await argon2.verify(user.refreshToken, refreshToken);
+    const refreshTokenMatches = await argon2.verify(session.refreshToken, refreshToken);
 
     if (!refreshTokenMatches) {
       throw new ForbiddenException('Invalid Token');
     }
 
-    const userByPublicId = await this.userService.getUserByPublicId(user.publicId);
-    const token = await this.getTokens(userByPublicId.userId, user.email);
-    await this.updateTokens(userByPublicId.userId, token.refreshToken, null);
+    const jwtPayload: JwtTokenPayload = {
+      userPublicId: user.publicId,
+      email: user.email,
+      sessionPublicId: sessionPublicId
+    }
+
+    const token = await this.getTokens(jwtPayload);
+
+    // Update refresh token back to session
+    await this.prisma.session.update({
+      where: {
+        publicId: sessionPublicId
+      },
+      data: {
+        refreshToken: await this.hashData(token.refreshToken)
+      }
+    })
 
     return token;
   }
 
-  async getTokens(
-    userId: number,
-    email: string,
-  ): Promise<{ verifyToken: string; refreshToken: string }> {
-    const payload = {
-      sub: userId,
-      email,
-    };
-
-    const secret = this.config.get('JWT_SECRET');    
+  async generateJwtToken(payload: JwtTokenPayload): Promise<string> {
+    const secret = this.config.get('JWT_SECRET');
     const tokenTimeToLive = this.config.get('JWT_SECRET_TTL');
-    const refreshSecret = this.config.get('JWT_REFRESH_SECRET');
-    const refreshTokenTimeToLive = this.config.get('JWT_REFRESH_TTL');
 
-    const verifyToken = await this.jwt.signAsync(payload, {
+    return await this.jwt.signAsync(payload, {
       expiresIn: tokenTimeToLive,
       secret: secret,
     });
+  }
 
-    const refreshToken = await this.jwt.signAsync(payload, {
+  async generateRefreshToken(payload: JwtTokenPayload): Promise<string> {
+    const refreshSecret = this.config.get('JWT_REFRESH_SECRET');
+    const refreshTokenTimeToLive = this.config.get('JWT_REFRESH_TTL');
+
+    return await this.jwt.signAsync(payload, {
       expiresIn: refreshTokenTimeToLive,
       secret: refreshSecret,
     });
+  }
+
+  async getTokens(payload: JwtTokenPayload): Promise<{ verifyToken: string; refreshToken: string }> {
     return {
-      verifyToken: verifyToken,
-      refreshToken: refreshToken,
+      verifyToken: await this.generateJwtToken(payload),
+      refreshToken: await this.generateRefreshToken(payload),
     };
   }
 
-  async createSession(userId: number, session: SessionDto) {
-    await this.prisma.session.create({
-      data: {
-        accessToken: session.accessToken,
-        expiresAt: session.expiresAt,
-        tokenType: session.tokenType,
-        userId: userId,
-      },
+  async createSession<
+    I extends Prisma.SessionCreateInput | Prisma.SessionUncheckedCreateInput,
+    S extends Prisma.SessionSelect
+  >(createInput: I, select: S) {
+
+    createInput.refreshToken = await this.hashData(createInput.refreshToken);
+
+    return await this.prisma.session.create({
+      data: createInput,
+      select
     });
   }
 
-  async updateToken(userId: number) {
-    const user = await this.userService.getUserInternally(userId, null);
-    const decryptPassword = this.utils.getPassword(user.hash, false);
-    return await this.authService.signIn({
-      email: user.email,
-      password: decryptPassword,
-    });
-  }
+  async getSessionByPublcId<T>(
+    publicId: string,
+    args?): Promise<T> {
 
-  async getSession(userId: number) {
-    return await this.prisma.session.findUnique({
+    let findArgs: Prisma.SessionFindUniqueArgsBase = {
       where: {
-        userId: userId,
+        publicId: publicId
+      }
+    }
+
+    if (args) {
+      findArgs = { ...findArgs, ...args };
+    }
+
+    return await this.prisma.session.findUnique(findArgs) as T;
+  }
+
+  async deleteSession(where: Prisma.SessionWhereInput) {
+    await this.prisma.session.deleteMany({
+      where
+    })
+  }
+
+  async getSessionUserBySessionPublicId(sessionPublicId: string) {
+    const select = Prisma.validator<Prisma.SessionSelect>()({
+      user: {
+        select: {
+          orderingUserId: true
+        }
+      }
+    })
+
+    const session = await this.prisma.session.findFirst({
+      where: {
+        publicId: sessionPublicId
       },
-    });
+      select
+    })
+
+    return session.user;
   }
 }

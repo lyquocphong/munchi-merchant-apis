@@ -1,5 +1,5 @@
 import { Controller, Post, Body, UseGuards, Get, Request } from '@nestjs/common';
-import { ApiBadRequestResponse, ApiCreatedResponse } from '@nestjs/swagger';
+import { ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse } from '@nestjs/swagger';
 import { AuthCredentials } from 'src/type';
 import { AuthService } from './auth.service';
 import { AuthReponseDto } from './dto/auth.dto';
@@ -9,7 +9,7 @@ import { SessionService } from './session.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService, private sessionService: SessionService) {}
+  constructor(private authService: AuthService, private sessionService: SessionService) { }
 
   @ApiCreatedResponse({
     description: 'Sign in new user',
@@ -23,28 +23,28 @@ export class AuthController {
     return this.authService.signIn(credentials);
   }
 
-  // TODO: Verify does it use in frontend, remove if it not needed after check
-  @UseGuards(JwtGuard)
-  @Post('updateToken')
-  async autoSignIn(@Request() req: any) {
-    const { userId } = req.user;
-    return this.sessionService.updateToken(userId);
-  }
-
   @ApiCreatedResponse({
     description: 'Signed out',
   })
+  @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtGuard)
   @Post('signout')
-  async signOut(@Request() req: any) {
-    const { userId } = req.user;
-    return this.authService.signOut(userId);
+  /**
+   * Has checked
+   */
+  async signOut(@Request() req: any) {    
+    const { sessionPublicId } = req.user;
+    return this.authService.signOut(sessionPublicId);
   }
+
   @UseGuards(RefreshJwt)
+  @ApiBearerAuth('JWT-auth')
   @Get('refreshToken')
+  /**
+   * Has checked
+   */
   getRefreshTokens(@Request() req: any) {
-    const userId = req.user['sub'];
-    const refreshToken = req.user['refreshToken'];
-    return this.sessionService.refreshTokens(userId, refreshToken);
+    const { refreshToken, sessionPublicId } = req.user;
+    return this.sessionService.refreshTokens(refreshToken, sessionPublicId);
   }
 }

@@ -8,14 +8,5 @@ import { UserService } from './user.service';
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtGuard)
 export class UserController {
-  constructor(private userService: UserService) {}
-  @ApiCreatedResponse({
-    description: 'Get a spcecific user',
-    type: UserDto,
-  })
-  @Get(':userId')
-  async getUser(@Request() req: any) {
-    const { userId } = req.user;
-    return this.userService.getUser(userId);
-  }
+  
 }

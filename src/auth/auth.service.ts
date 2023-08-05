@@ -9,6 +9,9 @@ import { AuthCredentials } from 'src/type';
 import { UserService } from 'src/user/user.service';
 import { UtilsService } from 'src/utils/utils.service';
 import { SessionService } from './session.service';
+import { Prisma } from '@prisma/client';
+import { JwtTokenPayload } from './session.type';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -18,36 +21,62 @@ export class AuthService {
     @Inject(forwardRef(() => SessionService)) private readonly sessionService: SessionService,
     private config: ConfigService,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   async signIn(credentials: AuthCredentials) {
-    const response = await this.orderingIo.signIn(credentials);
-    const tokens = await this.sessionService.getTokens(response.id, response.email);
-    const { access_token, token_type, expires_in } = response.session;
-    const expiredAt = moment(moment()).add(expires_in, 'milliseconds').format();
-    const user = await this.user.getUserByUserId(response.id);
+    const orderingUserInfo = await this.orderingIo.signIn(credentials);
 
-    if (!user) {
-      const newUser = await this.user.createUser(response, tokens, credentials.password);
-      return newUser;
-    } else if (user && !user.session) {
-      await this.sessionService.createSession(user.userId, {
-        accessToken: access_token,
-        expiresAt: expiredAt,
-        tokenType: token_type,
-      });
+    const userSelect = Prisma.validator<Prisma.UserSelect>()({
+      id: true,
+      publicId: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      level: true,
+      businesses: {
+        select: {
+          publicId: true,
+          name: true
+        }
+      }
+    })
+
+    // Upsert user to database
+    const user = await this.user.upsertUserFromOrderingInfo<typeof userSelect>(
+      { ...orderingUserInfo, password: credentials.password },
+      userSelect
+    );
+
+    const sessionPublicId = this.utils.generatePublicId();
+    const jwtPayload: JwtTokenPayload = {
+      userPublicId: user.publicId,
+      email: user.email,
+      sessionPublicId: sessionPublicId
     }
+    
+    // Generate JwtToken and RefreshToken
+    const tokens = await this.sessionService.getTokens(jwtPayload);
 
-    await this.sessionService.updateTokens(response.id, tokens.refreshToken, {
-      accessToken: access_token,
-      expiresAt: expiredAt,
-      tokenType: token_type,
-    });
+    const sessionData = Prisma.validator<Prisma.SessionUncheckedCreateInput>()({
+      publicId: sessionPublicId,
+      refreshToken: tokens.refreshToken,
+      userId: user.id
+    })
+
+    const sessionSelect = Prisma.validator<Prisma.SessionSelect>()({
+      publicId: true
+    })
+
+    // Create new session for user
+    await this.sessionService.createSession(
+      sessionData,
+      sessionSelect
+    );
 
     return new UserResponse(
       user.email,
       user.firstName,
-      user.lastname,
+      user.lastName,
       user.level,
       user.publicId,
       tokens.verifyToken,
@@ -55,24 +84,30 @@ export class AuthService {
     );
   }
 
-  getPassword(password: string, needCrypt: boolean) {
-    const cryptr = new Cryptr(this.config.get('HASH_SECRET'));
-    let passwordAfter: string;
-    if (needCrypt) {
-      passwordAfter = cryptr.encrypt(password);
-    } else {
-      passwordAfter = cryptr.decrypt(password);
-    }
-    return passwordAfter;
-  }
+  /**
+   * * Have checked
+   * 
+   * @param sessionPublicId 
+   */
+  async signOut(sessionPublicId: string) {
+    const findSessionArgs = Prisma.validator<Prisma.SessionFindFirstArgsBase>()({
+      select: {        
+        id: true,
+        refreshToken: true,
+        user: {
+          select: {
+            orderingUserId: true
+          }
+        }
+      }
+    })    
 
-  async signOut(userId: number) {
-    const accessToken = await this.utils.getAccessToken(userId);
+    const session = await this.sessionService.getSessionByPublcId<Prisma.SessionGetPayload<typeof findSessionArgs>>(sessionPublicId, findSessionArgs);
+    console.log(session.user);
+    const accessToken = await this.utils.getOrderingAccessToken(session.user.orderingUserId);
     await this.orderingIo.signOut(accessToken);
-    await this.prisma.session.delete({
-      where: {
-        userId: userId,
-      },
-    });
+    await this.sessionService.deleteSession({
+      publicId: sessionPublicId
+    })
   }
 }

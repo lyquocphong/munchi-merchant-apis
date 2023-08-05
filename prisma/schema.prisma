@@ -3,51 +3,52 @@ generator client {
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("PRISMA_URL")
+  provider = "postgresql"
+  url      = env("PRISMA_URL")
 }
 
 model Session {
-  accessToken String @unique
-  tokenType   String
-  expiresAt   String 
-  userId      Int    @unique
-  user        User   @relation(fields: [userId], references: [userId], onDelete: Cascade, onUpdate: Cascade)
+  id           Int    @id @default(autoincrement())
+  publicId     String @unique @default(uuid())
+  refreshToken String @unique
+  userId       Int
+  user         User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model User {
-  id           Int        @id @default(autoincrement())
-  userId       Int        @unique
-  firstName    String
-  lastname     String
-  email        String     @unique
-  hash         String
-  level        Int?
-  publicId     String     @unique
-  refreshToken String     @unique
-  session      Session?
-  business     Business[] @relation("MyUserBusinessTable")
+  id                           Int        @id @default(autoincrement())
+  orderingUserId               Int        @unique
+  orderingAccessToken          String     @unique
+  orderingAccessTokenExpiredAt DateTime   @db.Timestamp()
+  firstName                    String
+  lastName                     String
+  email                        String     @unique
+  hash                         String
+  level                        Int?
+  publicId                     String     @unique @default(uuid())
+  sessions                     Session[]
+  businesses                   Business[] @relation("MyUserBusinessTable")
 
   @@map("user")
 }
 
 model Business {
-  id         Int    @id @default(autoincrement())
-  businessId Int    @unique
-  publicId   String @unique
-  name       String
-  owners     User[] @relation("MyUserBusinessTable")
+  id                 Int    @id @default(autoincrement())
+  orderingBusinessId Int    @unique
+  publicId           String @unique @default(uuid())
+  name               String
+  owners             User[] @relation("MyUserBusinessTable")
 
   @@map("business")
 }
 
 model Notification {
-  id          Int       @id @default(autoincrement())
-  type        String 
+  id          Int      @id @default(autoincrement())
+  type        String
   deviceId    String
   businessId  String
   scheduledAt DateTime @db.Timestamp()
   userId      Int
 
   @@map("notification")
-} 
+}
