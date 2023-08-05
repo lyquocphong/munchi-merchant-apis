@@ -1,18 +1,21 @@
 /* eslint-disable prettier/prettier */
 import { ForbiddenException, Injectable, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Prisma } from '@prisma/client';
 import Cryptr from 'cryptr';
 import moment from 'moment';
 import { SessionService } from 'src/auth/session.service';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { UserService } from 'src/user/user.service';
 import { v4 as uuidv4 } from 'uuid';
 @Injectable()
 export class UtilsService {
   constructor(
     @Inject(forwardRef(() => SessionService)) private readonly sessionService: SessionService,
+    @Inject(forwardRef(() => UserService)) private readonly userService: UserService,
     private readonly prisma: PrismaService,
     private config: ConfigService,
-  ) {}
+  ) { }
 
   // TODO: Need to change the name, seem it now only work for ordering co service
   getEnvUrl(path: string, idParam?: string | number, queryParams?: Array<string>): string {
@@ -22,20 +25,30 @@ export class UtilsService {
     return envUrl;
   }
 
-  async getAccessToken(orderingExternalId: number) {
-    const session = await this.sessionService.getSession(orderingExternalId);
-    const user = await this.prisma.user.findUnique({
-      where: {
-        orderingExternalId: orderingExternalId,
-      },
-    });
+  /**
+   * Get access token from user table
+   * 
+   * @param publicUserId 
+   * @returns 
+   */
+  async getOrderingAccessToken(orderingUserId: number) {
 
-    if (!user || !session) {
+    const selectArg = Prisma.validator<Prisma.UserSelect>()({
+        hash: true,
+        orderingAccessTokenExpiredAt: true,
+        orderingAccessToken: true,
+        email: true
+    })
+
+    let user = await this.userService.getUserByOrderingUserId<typeof selectArg>(orderingUserId, selectArg);
+
+    if (!user) {
       throw new ForbiddenException('Access Denied');
     }
 
     const decryptedPassword = this.getPassword(user.hash, false);
-    const expireAt = moment(session.expiresAt).format();
+
+    const expireAt = moment(user.orderingAccessTokenExpiredAt).format();
     const diff = moment(expireAt).diff(moment(), 'minutes');
 
     if (diff <= 60) {
@@ -44,29 +57,16 @@ export class UtilsService {
           email: user.email,
           password: decryptedPassword,
         });
-        const newSession = await this.sessionService.getSession(orderingExternalId);
-        return newSession.accessToken;
+        user = await this.userService.getUserByOrderingUserId<typeof selectArg>(orderingUserId, selectArg);
       } catch (error) {
         this.logError(error);
       }
     }
-    return session.accessToken;
+
+    return user.orderingAccessToken;
   }
 
-  async getUpdatedPublicId(publicUserId: string) {
-    const newPublicUserId = this.getPublicId();
-    await this.prisma.user.update({
-      where: {
-        publicId: publicUserId,
-      },
-      data: {
-        publicId: newPublicUserId,
-      },
-    });
-    return 'Signed out successfully';
-  }
-
-  getPublicId() {
+  generatePublicId() {
     const publicId = uuidv4();
     return publicId;
   }

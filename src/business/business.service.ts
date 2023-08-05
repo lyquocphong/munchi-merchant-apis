@@ -16,15 +16,14 @@ export class BusinessService {
     private readonly userService: UserService,
     @Inject(forwardRef(() => OrderingIoService)) private orderingIo: OrderingIoService,
   ) {}
-  async createBusiness(businsessData: any, orderingExternalId: number) {
+  async createBusiness(businsessData: any, orderingUserId: number) {
     return await this.prisma.business.create({
       data: {
-        orderingExternalId: businsessData.id,
-        name: businsessData.name,
-        publicId: this.utils.getPublicId(),
+        orderingBusinessId: businsessData.id,
+        name: businsessData.name,        
         owners: {
           connect: {
-            orderingExternalId: orderingExternalId,
+            orderingUserId: orderingUserId,
           },
         },
       },
@@ -32,7 +31,7 @@ export class BusinessService {
   }
 
   async getAllBusiness(orderingId: number) {
-    const accessToken = await this.utils.getAccessToken(orderingId);
+    const accessToken = await this.utils.getOrderingAccessToken(orderingId);
     const response = await this.orderingIo.getAllBusiness(accessToken);
     const user = await this.userService.getUserInternally(orderingId, null);
 
@@ -41,31 +40,32 @@ export class BusinessService {
     }
 
     for (const business of response) {
-      const existedBusiness = await this.findBusinessById(business.id);
+      const existedBusiness = await this.findBusinessByOrderingId(business.id);
 
       if (existedBusiness) {
         // Check ownership of the new user with existed business
-        const owner = existedBusiness.owners.filter((owner) => owner.orderingExternalId === user.orderingExternalId);
+        const owner = existedBusiness.owners.filter((owner) => owner.orderingUserId === user.orderingUserId);
         // If no ownership then add and update it to business
         if (owner.length < 1) {
-          await this.updateBusinessOwners(business, user.orderingExternalId);
+          await this.updateBusinessOwners(business, user.orderingUserId);
         } else {
-          return await this.findAllBusiness(user.orderingExternalId);
+          return await this.findAllBusiness(user.orderingUserId);
         }
       } else {
-        await this.createBusiness(business, user.orderingExternalId);
+        await this.createBusiness(business, user.orderingUserId);
       }
     }
-    return await this.findAllBusiness(user.orderingExternalId);
+
+    return await this.findAllBusiness(user.orderingUserId);
   }
   
   async getOrderingBusiness(userId: number, publicBusinessId: string) {
-    const accessToken = await this.utils.getAccessToken(userId);
+    const accessToken = await this.utils.getOrderingAccessToken(userId);
     const business = await this.findBusinessByPublicId(publicBusinessId);
     if (!business) {
       throw new ForbiddenException(`we need this: ${publicBusinessId}`);
     }
-    return await this.orderingIo.getBusinessById(accessToken, business.orderingExternalId);
+    return await this.orderingIo.getBusinessById(accessToken, business.orderingBusinessId);
   }
 
   /**
@@ -83,7 +83,7 @@ export class BusinessService {
     const {schedule} = business;
     const numberOfToday = moment().weekday();
     schedule[numberOfToday].enabled = status;
-    const accessToken = await this.utils.getAccessToken(userId);
+    const accessToken = await this.utils.getOrderingAccessToken(userId);
     const response = await this.orderingIo.editBusiness(accessToken, business.id, {schedule: JSON.stringify(schedule)});
 
     // The response from edit business Ordering Co does not return today so I need to set it from schedule
@@ -101,15 +101,15 @@ export class BusinessService {
     return {today: business.today, timezone: business.timezone};
   }
 
-  async updateBusinessOwners(businsessData: any, orderingExternalId: number) {
+  async updateBusinessOwners(businsessData: any, orderingUserId: number) {
     return await this.prisma.business.update({
       where: {
-        orderingExternalId: businsessData.id,
+        orderingBusinessId: businsessData.id,
       },
       data: {
         owners: {
           connect: {
-            orderingExternalId: orderingExternalId,
+            orderingUserId
           },
         },
       },
@@ -124,10 +124,10 @@ export class BusinessService {
     });
   }
 
-  async findBusinessById(orderingExternalId: number) {
+  async findBusinessByOrderingId(orderingBusinessId: number) {
     const business = await this.prisma.business.findUnique({
       where: {
-        orderingExternalId: orderingExternalId,
+        orderingBusinessId
       },
       include: {
         owners: true,
@@ -136,12 +136,12 @@ export class BusinessService {
     return business;
   }
 
-  async findAllBusiness(orderingExternalId: number) {
+  async findAllBusiness(orderingUserId: number) {
     return await this.prisma.business.findMany({
       where: {
         owners: {
           some: {
-            orderingExternalId: orderingExternalId,
+            orderingUserId: orderingUserId,
           },
         },
       },

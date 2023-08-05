@@ -20,7 +20,7 @@ export class WebhookService implements OnModuleInit {
         if (!business) {
           throw new ForbiddenException(403, 'No business found');
         } else {
-          socket.join(business.orderingExternalId.toString());
+          socket.join(business.orderingBusinessId.toString());
         }
       });
     });

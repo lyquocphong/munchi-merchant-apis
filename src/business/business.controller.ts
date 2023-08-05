@@ -1,9 +1,9 @@
-/* eslint-disable prettier/prettier */
 import { Body, Controller, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse } from '@nestjs/swagger';
 import { JwtGuard } from 'src/auth/guard/jwt.guard';
 import { BusinessService } from './business.service';
 import { AllBusinessDto, BusinessDto, SetOnlineStatusDto } from './dto/business.dto';
+import { SessionService } from 'src/auth/session.service';
 
 @UseGuards(JwtGuard)
 @Controller('business')
@@ -12,7 +12,12 @@ import { AllBusinessDto, BusinessDto, SetOnlineStatusDto } from './dto/business.
   description: 'Something wrong happened',
 })
 export class BusinessController {
-  constructor(private businessService: BusinessService) {}
+
+  constructor(
+    private businessService: BusinessService,
+    private sessionService: SessionService
+  ) {}
+
 
   @ApiCreatedResponse({
     description: 'Get all businesses',
@@ -20,17 +25,19 @@ export class BusinessController {
   })
   @Get('allbusiness')
   async getAllBusiness(@Request() req: any) {
-    const { userId } = req.user;
-    return this.businessService.getAllBusiness(userId);
+    const { sessionPublicId } = req.user;
+    const user = await this.sessionService.getSessionUserBySessionPublicId(sessionPublicId);
+    return this.businessService.getAllBusiness(user.orderingUserId);
   }
   @ApiCreatedResponse({
     description: 'Get a specific business',
     type: BusinessDto,
   })
   @Get(':businessId')
-  async getBusinessById(@Request() req: any, @Param('businessId') publicBusinessId: string) {
-    const { userId } = req.user;
-    return this.businessService.getBusinessById(userId, publicBusinessId);
+  async getBusinessById(@Request() req: any, @Param('businessId') publicBusinessId: string) {    
+    const { sessionPublicId } = req.user;
+    const user = await this.sessionService.getSessionUserBySessionPublicId(sessionPublicId);
+    return this.businessService.getBusinessById(user.orderingUserId, publicBusinessId);
   }
   @ApiCreatedResponse({
     description: 'Edit a specific business',
@@ -43,8 +50,9 @@ export class BusinessController {
     @Request() req: any,
     @Body() body: SetOnlineStatusDto
   ) {
-    const { userId } = req.user;
-    const { publicBusinessId, status} = body;
-    return this.businessService.setTodayScheduleStatus(userId, publicBusinessId, status);
+    const { publicBusinessId, status } = body;
+    const { sessionPublicId } = req.user;
+    const user = await this.sessionService.getSessionUserBySessionPublicId(sessionPublicId);
+    return this.businessService.setTodayScheduleStatus(user.orderingUserId, publicBusinessId, status);
   }
 }

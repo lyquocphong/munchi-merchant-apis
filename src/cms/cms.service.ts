@@ -6,7 +6,7 @@ import { UtilsService } from 'src/utils/utils.service';
 export class CmsService {
   constructor(private utils: UtilsService, private orderingIoService: OrderingIoService) {}
   async getPage(userId: number) {
-    const accessToken = await this.utils.getAccessToken(userId);
+    const accessToken = await this.utils.getOrderingAccessToken(userId);
     // getPage from ordering
     return await this.orderingIoService.getPage(accessToken);
     //return getPage to client

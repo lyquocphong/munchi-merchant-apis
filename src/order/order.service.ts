@@ -20,7 +20,7 @@ export class OrderService {
     paramsQuery: string[],
     publicBusinessId: string,
   ) {
-    const accessToken = await this.utils.getAccessToken(userId);
+    const accessToken = await this.utils.getOrderingAccessToken(userId);
     const business = await this.business.findBusinessByPublicId(publicBusinessId);
 
     if (!business) {
@@ -29,7 +29,7 @@ export class OrderService {
     try {
       const response = await this.orderingIo.getFilteredOrders(
         accessToken,
-        business.orderingExternalId,
+        business.orderingBusinessId,
         query,
         paramsQuery,
       );
@@ -40,7 +40,7 @@ export class OrderService {
   }
 
   async getOrderbyId(userId: number, orderId: number) {
-    const accessToken = await this.utils.getAccessToken(userId);
+    const accessToken = await this.utils.getOrderingAccessToken(userId);
     try {
       const response = await this.orderingIo.getOrderbyId(accessToken, orderId);
       return plainToClass(OrderDto, response);
@@ -50,7 +50,7 @@ export class OrderService {
   }
 
   async updateOrder(userId: number, orderId: number, orderData: OrderData) {
-    const accessToken = await this.utils.getAccessToken(userId);
+    const accessToken = await this.utils.getOrderingAccessToken(userId);
     try {
       const response = await this.orderingIo.updateOrder(accessToken, orderId, orderData);
       return plainToClass(OrderDto, response);
@@ -60,7 +60,7 @@ export class OrderService {
   }
 
   async deleteOrder(userId: number, orderId: number) {
-    const accessToken = await this.utils.getAccessToken(userId);
+    const accessToken = await this.utils.getOrderingAccessToken(userId);
     try {
       const response = await this.orderingIo.deleteOrder(accessToken, orderId);
       return response;

@@ -8,6 +8,14 @@ import { UtilsService } from 'src/utils/utils.service';
 import { UserDto } from './dto/user.dto';
 import { plainToClass } from 'class-transformer';
 import { SessionService } from 'src/auth/session.service';
+import { OrderingIoUser } from 'src/ordering.io/ordering.io.type';
+import { Prisma } from '@prisma/client';
+
+type UserInfoSelectBase = {
+  id: true,
+  firstName: true
+}
+
 @Injectable()
 export class UserService {
   constructor(
@@ -17,34 +25,24 @@ export class UserService {
     @Inject(forwardRef(() => OrderingIoService)) private readonly orderingIo: OrderingIoService,
   ) {}
 
-  async getUser(userId: number) {
-    const accessToken = await this.utils.getAccessToken(userId);
-    try {
-      const response = await this.orderingIo.getUser(accessToken, userId);
-      return plainToClass(UserDto, response);
-    } catch (error) {
-      this.utils.logError(error);
-    }
-  }
-
-  getUserInternally = async (orderingExternalId: number, publicUserId: string) => {
-    if (orderingExternalId === null) {
+  getUserInternally = async (orderingUserId: number, publicUserId: string) => {
+    if (orderingUserId === null) {
       const user = await this.prisma.user.findUnique({
         where: {
           publicId: publicUserId,
         },
         include: {
-          business: true,
+          businesses: true,
         },
       });
       return user;
     } else {
       const user = await this.prisma.user.findUnique({
         where: {
-          orderingExternalId: orderingExternalId,
+          orderingUserId: orderingUserId,
         },
         include: {
-          business: true,
+          businesses: true,
         },
       });
       return user;
@@ -62,93 +60,49 @@ export class UserService {
     return deleteUser;
   };
 
-  //Get user by user ordering id
-  async getUserByOrderingExternalId(orderingExternalId: number) {
-    return await this.prisma.user.findUnique({
-      where: {
-        orderingExternalId: orderingExternalId,
-      },
-      select: {
-        firstName: true,
-        lastName: true,
-        email: true,
-        publicId: true,
-        level: true,
-        orderingExternalId: true,
-        session: {
-          select: {
-            accessToken: true,
-            expiresAt: true,
-            tokenType: true,
-          },
-        },
-        business: {
-          select: {
-            publicId: true,
-            name: true,
-          },
-        },
-        refreshToken: true,
-      },
-    });
-  }
-
-  async getUserByPublicId(publicUserId: string) {
+  async getUserByPublicId<S extends Prisma.UserSelect = UserInfoSelectBase>(publicUserId: string, select?: S): Promise<S> {  
     return await this.prisma.user.findUnique({
       where: {
         publicId: publicUserId,
       },
-      include: {
-        business: true,
-        session: true,
-      },
-    });
+      select
+    }) as S;
   }
 
-  async createUser(userData: any, tokens: AuthTokens, password: string) {
-    const hashPassword = this.utils.getPassword(password, true);
-    const { access_token, token_type, expires_in } = userData.session;
-    const expiredAt = moment(moment()).add(expires_in, 'milliseconds').format();
-    const hashedRefreshToken = await this.sessionService.hashData(tokens.refreshToken);
-    try {
-      const newUser = await this.prisma.user.create({
-        data: {
-          orderingExternalId: userData.id,
-          firstName: userData.name,
-          lastName: userData.lastname,
-          email: userData.email,
-          hash: hashPassword,
-          level: userData.level,
-          publicId: this.utils.getPublicId(),
-          session: {
-            create: {
-              accessToken: access_token,
-              expiresAt: expiredAt,
-              tokenType: token_type,
-            },
-          },
-          refreshToken: hashedRefreshToken,
-        },
-        select: {
-          firstName: true,
-          lastName: true,
-          email: true,
-          publicId: true,
-          level: true,
-          refreshToken: true,
-        },
-      });
-      return new UserResponse(
-        newUser.email,
-        newUser.firstName,
-        newUser.lastName,
-        newUser.level,
-        newUser.publicId,
-        tokens.verifyToken,
-        tokens.refreshToken,
-      );
-    } catch (error) {
-      this.utils.logError(error);
+  async getUserByOrderingUserId<S extends Prisma.UserSelect = UserInfoSelectBase>(orderingUserId: number, select: S) {
+    return await this.prisma.user.findUnique({
+      where: {
+        orderingUserId
+      },
+      select
+    })
+  }
+
+  async upsertUserFromOrderingInfo<S extends Prisma.UserSelect = UserInfoSelectBase>(
+    userInfo: OrderingIoUser & {password: string},
+    select: S
+  ) {
+    
+    const expiredAt = moment().utc().add(userInfo.session.expires_in, 'milliseconds');
+
+    const data = {
+      firstName: userInfo.name,
+      lastName: userInfo.lastname,
+      orderingUserId: userInfo.id,
+      orderingAccessToken: userInfo.session.access_token,
+      orderingAccessTokenExpiredAt: expiredAt.format(),
+      email: userInfo.email,
+      level: userInfo.level,
+      hash:  this.utils.getPassword(userInfo.password, true)
     }
+
+    return await this.prisma.user.upsert({
+      where: {
+        orderingUserId: userInfo.id
+      },
+      create: data,
+      update: data,
+      select
+    })
   }
 }

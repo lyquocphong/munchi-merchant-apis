@@ -4,12 +4,13 @@ import { plainToClass } from 'class-transformer';
 import { OrderDto } from 'src/order/dto/order.dto';
 import { AuthCredentials, OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
+import { OrderingIoUser } from './ordering.io.type';
 
 @Injectable()
 export class OrderingIoService {
   constructor(private utils: UtilsService) {}
   // Auth service
-  async signIn(credentials: AuthCredentials) {
+  async signIn(credentials: AuthCredentials): Promise<OrderingIoUser> {
     const options = {
       method: 'POST',
       url: this.utils.getEnvUrl('auth'),
@@ -25,7 +26,7 @@ export class OrderingIoService {
 
     try {
       const response = await axios.request(options);
-      return response.data.result;
+      return plainToClass(OrderingIoUser, response.data.result);
     } catch (error) {
       this.utils.logError(error);
     }
