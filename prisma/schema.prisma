@@ -8,33 +8,34 @@ datasource db {
 }
 
 model Session {
-  accessToken String @unique
-  tokenType   String
-  expiresAt   String
-  userId      Int    @unique
-  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  id           Int    @id @default(autoincrement())
+  publicId     String @unique @default(uuid())
+  refreshToken String @unique
+  userId       Int
+  user         User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model User {
-  id                 Int        @id @default(autoincrement())
-  orderingExternalId Int        @unique
-  firstName          String
-  lastName           String
-  email              String     @unique
-  hash               String
-  level              Int?
-  publicId           String     @unique
-  refreshToken       String     @unique
-  sessions           Session[]
-  businesses         Business[] @relation("MyUserBusinessTable")
+  id                           Int        @id @default(autoincrement())
+  orderingUserId               Int        @unique
+  orderingAccessToken          String     @unique
+  orderingAccessTokenExpiredAt DateTime   @db.Timestamp()
+  firstName                    String
+  lastName                     String
+  email                        String     @unique
+  hash                         String
+  level                        Int?
+  publicId                     String     @unique @default(uuid())
+  sessions                     Session[]
+  businesses                   Business[] @relation("MyUserBusinessTable")
 
   @@map("user")
 }
 
 model Business {
   id                 Int    @id @default(autoincrement())
-  orderingExternalId Int    @unique
-  publicId           String @unique
+  orderingBusinessId Int    @unique
+  publicId           String @unique @default(uuid())
   name               String
   owners             User[] @relation("MyUserBusinessTable")
 
