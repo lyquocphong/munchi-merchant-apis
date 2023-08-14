@@ -9,6 +9,7 @@ import { OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
 import { OrderService } from './order.service';
 import { SessionService } from 'src/auth/session.service';
+import { GetOrderQueryDto, OrderProviderDto, OrderStatusDto } from './dto/order.dto';
 
 @UseGuards(JwtGuard)
 @ApiBearerAuth('JWT-auth')
@@ -19,8 +20,8 @@ export class OrderController {
     private utils: UtilsService,
     private orderService: OrderService,
     private sessionService: SessionService
-  ) {}
-  
+  ) { }
+
   @Get('filteredOrders')
   async getFilteredOrders(
     @Request() req: any,
@@ -34,10 +35,18 @@ export class OrderController {
   }
 
   @Get(':orderId')
-  async getOrderbyId(@Param('orderId') orderId: number, @Request() req: any) {    
+  async getOrderbyId(@Param('orderId') orderId: number, @Request() req: any) {
     const { sessionPublicId } = req.user;
     const user = await this.sessionService.getSessionUserBySessionPublicId(sessionPublicId);
     return this.orderService.getOrderbyId(user.orderingUserId, orderId);
+  }
+
+  @Get()
+  async getOrders(@Query() query: GetOrderQueryDto, @Request() req: any) {
+    const { sessionPublicId } = req.user;
+    return this.orderService.getOrders(query, sessionPublicId);
+
+    //return this.orderService.getOrderbyId(user.orderingUserId, orderId);
   }
 
   @Put(':orderId')

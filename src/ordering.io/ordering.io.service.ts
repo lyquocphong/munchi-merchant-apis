@@ -8,7 +8,7 @@ import { OrderingIoUser } from './ordering.io.type';
 
 @Injectable()
 export class OrderingIoService {
-  constructor(private utils: UtilsService) {}
+  constructor(private utils: UtilsService) { }
   // Auth service
   async signIn(credentials: AuthCredentials): Promise<OrderingIoUser> {
     const options = {
@@ -121,6 +121,62 @@ export class OrderingIoService {
       const response = await axios.request(options);
       const order = plainToClass(OrderDto, response.data.result);
       return order;
+    } catch (error) {
+      this.utils.logError(error);
+    }
+  }
+
+  async getOrders(
+    accessToken: string,
+    businessIds: number[],
+    statuses: number[],
+    orderBy: string = '-id'
+  ) {
+
+    const params = [
+      'id',
+      'business_id',
+      'prepared_in',
+      'customer_id',
+      'status',
+      'delivery_type',
+      'delivery_datetime',
+      'products',
+      'summary',
+      'customer',
+      'created_at',
+      'spot_number',
+      'history',
+      'delivery_datetime',
+    ];
+
+    const where = {
+      business_id: businessIds.join(','),
+      status: statuses.join(',')
+    }
+
+    //https://apiv4.ordering.co/v400/en/peperoni/orders?orderBy=-id&page=1&page_size=10&where={"conditions":[{"attribute":"status","value":[7,8,4,9,3,14,18,19,20,21,22,23]},{"conector":"AND","conditions":[{"attribute":"business_id","value":[51]}]}],"conector":"AND"}&mode=dashboard
+    const query = `
+    mode=dashboard
+    &params=${params}
+    &where=${JSON.stringify(where)}
+    orderBy=${orderBy}
+    `;
+
+    const options = {
+      method: 'GET',
+      url: `${this.utils.getEnvUrl(
+        'orders',
+      )}?${query}`,
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+    };
+
+    try {
+      const response = await axios.request(options);
+      return response.data.result;
     } catch (error) {
       this.utils.logError(error);
     }
