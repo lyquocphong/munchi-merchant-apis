@@ -8,11 +8,12 @@ datasource db {
 }
 
 model Session {
-  id           Int    @id @default(autoincrement())
-  publicId     String @unique @default(uuid())
-  refreshToken String @unique
+  id           Int        @id @default(autoincrement())
+  publicId     String     @unique @default(uuid())
+  refreshToken String     @unique
   userId       Int
-  user         User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  businesses   Business[] @relation("BusinessSessionTable")
 }
 
 model User {
@@ -33,11 +34,12 @@ model User {
 }
 
 model Business {
-  id                 Int    @id @default(autoincrement())
-  orderingBusinessId Int    @unique
-  publicId           String @unique @default(uuid())
+  id                 Int       @id @default(autoincrement())
+  orderingBusinessId Int       @unique
+  publicId           String    @unique @default(uuid())
   name               String
-  owners             User[] @relation("MyUserBusinessTable")
+  owners             User[]    @relation("MyUserBusinessTable")
+  sessions           Session[] @relation("BusinessSessionTable")
 
   @@map("business")
 }
