@@ -44,6 +44,10 @@ COPY --chown=node:node . .
 RUN apt-get update -y \
   && apt-get install -y openssl
 
+RUN chmod -R 777 ./node_modules/prisma
+
+RUN npx prisma generate
+
 # Run the build command which creates the production bundle
 RUN npm run build
 
@@ -81,7 +85,7 @@ RUN ls -al node_modules/prisma
 #RUN apk update && apk add bash
 #RUN apk add --no-cache bash
 
-#RUN npx prisma generate
+RUN npx prisma generate
 
 #RUN npx prisma migrate deploy
 
