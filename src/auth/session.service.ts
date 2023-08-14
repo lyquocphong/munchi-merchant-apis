@@ -1,4 +1,4 @@
-import { ForbiddenException, Inject, Injectable, forwardRef } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UtilsService } from 'src/utils/utils.service';
@@ -11,6 +11,7 @@ import { AuthCredentials } from 'src/type';
 import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
 import { Prisma } from '@prisma/client';
 import { JwtTokenPayload } from './session.type';
+import { ReportAppBusinessDto } from 'src/report/dto/report.dto';
 
 @Injectable()
 export class SessionService {
@@ -209,5 +210,54 @@ export class SessionService {
     })
 
     return session.user;
+  }
+
+  async setBusinessForSession(sessionPublicId: string, reportAppBusinessDto: ReportAppBusinessDto): Promise<void> {
+
+    // TODO: Create general type instead of create seperately
+    const findSessionArgs = Prisma.validator<Prisma.SessionFindFirstArgsBase>()({
+      select: {
+        id: true,
+        refreshToken: true,
+        user: {
+          select: {
+            id: true,
+            orderingUserId: true,
+            publicId: true,
+            email: true,
+            businesses: true
+          }
+        }
+      }
+    })
+
+    const session = await this.getSessionByPublcId<Prisma.SessionGetPayload<typeof findSessionArgs>>(sessionPublicId, findSessionArgs);
+
+    if (!session) {
+      throw new NotFoundException('Cannot find session by public Id');
+    }
+
+    const { user } = session;
+
+    const {businesses} = user;
+    const { businessIds, deviceId } = reportAppBusinessDto;
+
+    const match = businesses.every(business => businessIds.includes(business.publicId));
+
+    if (!match) {
+      throw new ForbiddenException('Cannot assign business not owned by user')
+    }
+
+    await this.prisma.session.update({
+      where: {
+        publicId: sessionPublicId
+      },
+      data: {
+        businesses: {
+          connect: businessIds.map<{ publicId: string }>(publicId => { return { publicId } })
+        },
+        deviceId: deviceId
+      }
+    })
   }
 }

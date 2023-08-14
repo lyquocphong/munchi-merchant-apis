@@ -14,6 +14,7 @@ model Session {
   userId       Int
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   businesses   Business[] @relation("BusinessSessionTable")
+  deviceId     String?     @unique
 }
 
 model User {
