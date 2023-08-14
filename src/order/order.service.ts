@@ -1,18 +1,22 @@
+import { OrderManager } from './order.manager';
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { plainToClass } from 'class-transformer';
 import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
 import { UtilsService } from 'src/utils/utils.service';
-import { OrderDto } from './dto/order.dto';
+import { GetOrderQueryDto, OrderDto, OrderProviderDto, OrderStatusDto } from './dto/order.dto';
 import { BusinessService } from 'src/business/business.service';
 import { OrderData } from 'src/type';
+import { OrderingOrderProvider } from './provider/ordering-provider';
 
 @Injectable()
-export class OrderService {
+export class OrderService {  
+
   constructor(
     private readonly orderingIo: OrderingIoService,
     private readonly utils: UtilsService,
     private readonly business: BusinessService,
-  ) {}
+    private readonly orderManager: OrderManager
+  ) { }
 
   async getFilteredOrders(
     userId: number,
@@ -67,5 +71,9 @@ export class OrderService {
     } catch (error) {
       this.utils.logError(error);
     }
+  }
+
+  async getOrders(query: GetOrderQueryDto, sessionPublicId: string) {
+    return await this.orderManager.getOrders(query, sessionPublicId);
   }
 }
