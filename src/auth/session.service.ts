@@ -212,6 +212,32 @@ export class SessionService {
     return session.user;
   }
 
+  async setSessionOnlineStatus(sessionPublicId: string, isOnline: boolean) {
+
+    // TODO: Create general type instead of create seperately
+    const findSessionArgs = Prisma.validator<Prisma.SessionFindFirstArgsBase>()({
+      select: {
+        id: true,
+        publicId: true
+      }
+    })
+
+    const session = await this.getSessionByPublcId<Prisma.SessionGetPayload<typeof findSessionArgs>>(sessionPublicId, findSessionArgs);
+
+    if (!session) {
+      throw new NotFoundException('Cannot find session by public Id');
+    }
+
+    await this.prisma.session.update({
+      where: {
+        publicId: sessionPublicId
+      },
+      data: {
+        isOnline
+      }
+    })
+  }
+
   async setBusinessForSession(sessionPublicId: string, reportAppBusinessDto: ReportAppBusinessDto): Promise<void> {
 
     // TODO: Create general type instead of create seperately

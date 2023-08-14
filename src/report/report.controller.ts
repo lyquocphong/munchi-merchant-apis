@@ -18,26 +18,21 @@ export class ReportController {
     private readonly sessionService: SessionService
   ) { }
 
-  // @ApiBearerAuth('JWT-auth')
-  // @UseGuards(JwtGuard)
-  // @Post('app-state')
-  // async reportAppState(@Body() reportAppStateDto: ReportAppStateDto, @Request() req: any) {
-  //   const { userId } = req.user;
-
-  //   if (reportAppStateDto.state === AppState.BACKGROUND) {
-  //     this.logger.warn(`create open app notification for user ${userId}, deviceId: ${reportAppStateDto.deviceId}` );
-  //     await this.notificationService.createOpenAppNotification(reportAppStateDto, userId);
-  //   } else if (reportAppStateDto.state === AppState.ACTIVE) {
-  //     this.logger.warn(`remove open app notification for device: ${reportAppStateDto.deviceId}` );
-  //     await this.notificationService.removeOpenAppNotifications(reportAppStateDto.deviceId);
-  //   }
-
-  //   return { message: 'App state reported successfully' };
-  // }
-
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtGuard)
   @Post('app-state')
+  async reportAppState(@Body() reportAppStateDto: ReportAppStateDto, @Request() req: any) {
+    const { sessionPublicId } = req.user;
+
+    const isOnline = reportAppStateDto.state !== AppState.BACKGROUND;
+    await this.sessionService.setSessionOnlineStatus(sessionPublicId, isOnline);
+
+    return { message: 'App state reported successfully' };
+  }
+
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtGuard)
+  @Post('app-business')
   async reportSelectedBusiness(@Body() reportAppBusinessDto: ReportAppBusinessDto, @Request() req: any) {
     const { sessionPublicId } = req.user;
     await this.sessionService.setBusinessForSession(sessionPublicId, reportAppBusinessDto);

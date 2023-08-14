@@ -14,7 +14,8 @@ model Session {
   userId       Int
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   businesses   Business[] @relation("BusinessSessionTable")
-  deviceId     String?     @unique
+  deviceId     String?    @unique
+  isOnline     Boolean    @default(true)
 }
 
 model User {

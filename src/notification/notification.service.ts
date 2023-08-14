@@ -21,48 +21,10 @@ export class NotificationService {
     private readonly configService: ConfigService
   ) { }
 
-  async createOpenAppNotification(reportAppStateDto: ReportAppStateDto, userId: number) {
-    const existingNotification = await this.prisma.notification.findFirst({
-      where: {
-        type: NotificationType.OPEN_APP,
-        deviceId: reportAppStateDto.deviceId,
-      },
-    });
-
-    this.logger.warn(`In service: create open app notification for user ${userId}, deviceId: ${reportAppStateDto.deviceId}` );
-
-    if (!existingNotification) {
-      const numberOfMinutesForSchedule = 2;
-      const scheduledAt = new Date();
-      scheduledAt.setMinutes(scheduledAt.getMinutes() + numberOfMinutesForSchedule);
-
-      await this.prisma.notification.create({
-        data: {
-          type: NotificationType.OPEN_APP,
-          deviceId: reportAppStateDto.deviceId,
-          businessId: reportAppStateDto.businessId,
-          scheduledAt,
-          userId
-        },
-      });
-    }
-  }
-
-  async removeOpenAppNotifications(deviceId: string) {
-
-    this.logger.warn(`In service: remove open app notification for device: ${deviceId}` );
-
-    await this.prisma.notification.deleteMany({
-      where: {
-        type: NotificationType.OPEN_APP,
-        deviceId: deviceId,
-      },
-    });
-  }
-
+  // TODO: Need to create notification from session table not notification
   @Interval(60000) // Make push notification in every mins
   async createOpenAppPushNotification() {
-
+    return;
     const ignore = this.configService.get<boolean>('IGNORE_SENDING_OPEN_APP_NOTIFICATION');
 
     if (ignore) {
