@@ -36,5 +36,6 @@ export class ReportAppBusinessDto {
         example: ['2af4ad2f-bd96-4e54-95a3-dfa473a65a06', '2af4ad2f-bd96-4e54-95a3-dfa473a65a07'],
     })
     @Expose()
+    @IsArray()
     businessIds: string[]
 }

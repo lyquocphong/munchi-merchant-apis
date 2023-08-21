@@ -19,6 +19,7 @@ export class BusinessService {
   async createBusiness(businsessData: any, orderingUserId: number) {
     return await this.prisma.business.create({
       data: {
+        logo: businsessData.logo,
         orderingBusinessId: businsessData.id,
         name: businsessData.name,        
         owners: {
@@ -26,6 +27,11 @@ export class BusinessService {
             orderingUserId: orderingUserId,
           },
         },
+      },
+      select: {
+        name: true,
+        publicId: true,
+        logo: true
       },
     });
   }
@@ -148,6 +154,7 @@ export class BusinessService {
       select: {
         name: true,
         publicId: true,
+        logo: true
       },
     });
   }

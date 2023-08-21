@@ -21,6 +21,7 @@ export class OrderController {
     private sessionService: SessionService
   ) {}
   
+  //TODO: Need to refactor publicBussinessId use later, right now it come from session
   @Get('filteredOrders')
   async getFilteredOrders(
     @Request() req: any,
@@ -29,8 +30,7 @@ export class OrderController {
     @Query('publicBusinessId') publicBusinessId: string,
   ) {
     const { sessionPublicId } = req.user;
-    const user = await this.sessionService.getSessionUserBySessionPublicId(sessionPublicId);
-    return this.orderService.getFilteredOrders(user.orderingUserId, query, paramsQuery, publicBusinessId);
+    return this.orderService.getFilteredOrdersForSession(sessionPublicId, query, paramsQuery);
   }
 
   @Get(':orderId')
