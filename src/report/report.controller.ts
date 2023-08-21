@@ -35,6 +35,7 @@ export class ReportController {
   @Post('app-business')
   async reportSelectedBusiness(@Body() reportAppBusinessDto: ReportAppBusinessDto, @Request() req: any) {
     const { sessionPublicId } = req.user;
+    console.log(reportAppBusinessDto)
     await this.sessionService.setBusinessForSession(sessionPublicId, reportAppBusinessDto);
     return { message: 'App businesses reported successfully' };
   }

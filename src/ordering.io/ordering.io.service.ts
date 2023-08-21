@@ -55,7 +55,7 @@ export class OrderingIoService {
   async getAllBusiness(accessToken: string) {
     const options = {
       method: 'GET',
-      url: `${this.utils.getEnvUrl('business')}?type=1&params=zones%2Cname&mode=dashboard`,
+      url: `${this.utils.getEnvUrl('business')}?type=1&params=zones%2Cname,logo&mode=dashboard`,
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
@@ -126,6 +126,33 @@ export class OrderingIoService {
     }
   }
 
+  async getOrderForBusinesses(
+    accessToken: string,
+    businessIds: number[],
+    query: string,
+    paramsQuery: string[],
+  ) {
+    const options = {
+      method: 'GET',
+      url: `${this.utils.getEnvUrl(
+        'orders',
+      )}?mode=dashboard&where={${query},"business_id":[${businessIds}]}&params=${paramsQuery}`,
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+    };
+
+    console.log(options.url)
+
+    try {
+      const response = await axios.request(options);
+      return response.data.result;
+    } catch (error) {
+      this.utils.logError(error);
+    }
+  }
+  
   async getFilteredOrders(
     accessToken: string,
     businessId: number,

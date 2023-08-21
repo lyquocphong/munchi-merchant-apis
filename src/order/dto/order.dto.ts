@@ -3,6 +3,7 @@ import { CustomerDto } from './customer.dto';
 import { ProductDto } from './product.dto';
 import { SummaryDto } from './summary.dto';
 import { HistoryDto } from './history.dto';
+import { BusinessDto } from 'src/business/dto/business.dto';
 
 @Exclude()
 export class OrderDto {
@@ -51,6 +52,9 @@ export class OrderDto {
   @Expose()
   @Type(() => HistoryDto)
   history: HistoryDto[];
+
+  @Expose()
+  business: BusinessDto
 
   constructor(partial: Partial<OrderDto>) {
     Object.assign(this, partial);

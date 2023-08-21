@@ -42,6 +42,7 @@ model Business {
   name               String
   owners             User[]    @relation("MyUserBusinessTable")
   sessions           Session[] @relation("BusinessSessionTable")
+  logo               String?
 
   @@map("business")
 }

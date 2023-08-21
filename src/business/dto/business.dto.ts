@@ -103,6 +103,14 @@ export class AllBusinessDto {
   })
   @Expose()
   name: string;
+
+  @ApiProperty({
+    description: 'The logo of business',
+    example: 'logo url',
+  })
+  @Expose()
+  logo: string;
+  
   // @Expose() timezone: string;
   constructor(partial: Partial<AllBusinessDto>) {
     Object.assign(this, partial);
