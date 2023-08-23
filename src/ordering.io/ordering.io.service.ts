@@ -55,7 +55,7 @@ export class OrderingIoService {
   async getAllBusiness(accessToken: string) {
     const options = {
       method: 'GET',
-      url: `${this.utils.getEnvUrl('business')}?type=1&params=zones%2Cname,logo&mode=dashboard`,
+      url: `${this.utils.getEnvUrl('business')}?type=1&params=name,logo,metafields,today,schedule,owners&mode=dashboard`,
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,

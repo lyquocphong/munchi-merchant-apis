@@ -16,6 +16,65 @@ class Session {
     expires_in: number;
 }
 
+export class OrderingIoBusiness {
+    @Expose()
+    id: number;
+
+    @Expose()
+    name: string;
+
+    @Expose()
+    slug: string;
+
+    @Expose()
+    email: string;
+
+    @Expose()
+    description: string;
+
+    @Expose()
+    logo: string;
+
+    @Expose()
+    header: string;
+
+    // @Expose()
+    // phone: string;
+
+    // @Expose()
+    // cellphone: string;
+    // login_type: number;
+    // social_id: string | null;
+    // photo: string | null;
+    // birthdate: string | null;
+    // phone: string;
+    // cellphone: string;
+    // city_id: number;
+    // dropdown_option_id: number;
+    // address: string;
+    // address_notes: string;
+    // zipcode: string;
+    // location: Address;
+
+    @Expose()
+    timezone: string;
+
+    @Expose()
+    today: number;
+
+    @Expose()
+    open: boolean;
+    //push_notifications: boolean;
+    //busy: boolean;
+    //available: boolean;
+    //enabled: boolean;
+    // created_at: string;
+    // updated_at: string;
+    // deleted_at: string | null;
+
+    owners: OrderingIoUser[];
+}
+
 export class OrderingIoUser {
     @Expose()
     id: number;
