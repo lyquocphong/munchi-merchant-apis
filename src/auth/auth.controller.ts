@@ -1,5 +1,5 @@
 import { Controller, Post, Body, UseGuards, Get, Request } from '@nestjs/common';
-import { ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse } from '@nestjs/swagger';
+import { ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
 import { AuthCredentials } from 'src/type';
 import { AuthService } from './auth.service';
 import { AuthReponseDto } from './dto/auth.dto';
@@ -8,6 +8,7 @@ import { JwtGuard } from './guard/jwt.guard';
 import { SessionService } from './session.service';
 
 @Controller('auth')
+@ApiTags('auth')
 export class AuthController {
   constructor(private authService: AuthService, private sessionService: SessionService) { }
 

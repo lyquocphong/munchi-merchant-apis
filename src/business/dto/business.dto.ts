@@ -1,9 +1,9 @@
 /* eslint-disable prettier/prettier */
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Exclude, Expose, Type } from 'class-transformer';
 import { OwnerDto } from './owner.dto';
-// import { Schedule } from 'src/ordering.io/ordering.io.type';
-import { IsBoolean, IsString } from 'class-validator';
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { Schedule } from 'src/ordering.io/ordering.io.type';
 
 @Exclude()
 export class BusinessDto {
@@ -67,8 +67,8 @@ export class BusinessDto {
       ]
     },
   })
-  // @Expose()
-  // today: Schedule;
+  @Expose()
+  today: Schedule;
 
   @ApiProperty({
     description: 'The owners of business',
@@ -80,7 +80,7 @@ export class BusinessDto {
       level: 2,
     },
   })
-  @Expose()
+  @Expose({ groups: ['included_owners'] })
   @Type(() => OwnerDto)
   owners: OwnerDto[];
   constructor(partial: Partial<OwnerDto>) {
@@ -131,4 +131,17 @@ export class SetOnlineStatusDto {
   })
   @IsBoolean()
   status: boolean;
+
+  @ApiProperty({
+    description: 'Duration in minute(s) you want it to be offline in case status is false',
+    example: 20,
+  })
+  @IsBoolean()
+  @IsOptional()
+  @ApiPropertyOptional()
+  duration?: number;
+}
+
+export class GetOnlineStatusDto {
+  
 }

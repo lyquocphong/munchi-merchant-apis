@@ -256,7 +256,6 @@ export class SessionService {
         }
       }
     })
-
     const session = await this.getSessionByPublcId<Prisma.SessionGetPayload<typeof findSessionArgs>>(sessionPublicId, findSessionArgs);
 
     if (!session) {
@@ -265,22 +264,37 @@ export class SessionService {
 
     const { user } = session;
 
-    const {businesses} = user;
+    const { businesses } = user;
     const { businessIds, deviceId } = reportAppBusinessDto;
+    
+    const validIds = businesses
+      .filter(business => businessIds.includes(business.publicId))
+      .map<{ publicId: string }>(validBusiness => ({publicId: validBusiness.publicId}));
 
-    const match = businesses.every(business => businessIds.includes(business.publicId));
-
-    if (!match) {
+    if (validIds.length !== businessIds.length) {
       throw new ForbiddenException('Cannot assign business not owned by user')
     }
 
+    // Disconnect all
     await this.prisma.session.update({
       where: {
         publicId: sessionPublicId
       },
       data: {
         businesses: {
-          connect: businessIds.map<{ publicId: string }>(publicId => { return { publicId } })
+          set: []
+        }
+      }
+    })
+
+    // Reconnect
+    await this.prisma.session.update({
+      where: {
+        publicId: sessionPublicId
+      },
+      data: {
+        businesses: {
+          connect: validIds
         },
         deviceId: deviceId
       }
