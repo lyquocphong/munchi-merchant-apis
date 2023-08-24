@@ -197,7 +197,8 @@ export class SessionService {
     const select = Prisma.validator<Prisma.SessionSelect>()({
       user: {
         select: {
-          orderingUserId: true
+          orderingUserId: true,
+          publicId: true
         }
       }
     })

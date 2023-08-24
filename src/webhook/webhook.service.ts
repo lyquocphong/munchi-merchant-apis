@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { ForbiddenException, Injectable, OnModuleInit } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, OnModuleInit, forwardRef } from '@nestjs/common';
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets/decorators';
 import { Server } from 'socket.io';
 import { BusinessService } from 'src/business/business.service';
@@ -9,7 +9,10 @@ import { UtilsService } from 'src/utils/utils.service';
 @Injectable()
 export class WebhookService implements OnModuleInit {
   @WebSocketServer() public server: Server;
-  constructor(private business: BusinessService, private utils: UtilsService) {}
+  constructor(
+    @Inject(forwardRef(() => BusinessService)) private business: BusinessService,
+    private utils: UtilsService
+  ) { }
 
   onModuleInit() {
     const ioServer = this.server;
@@ -41,5 +44,11 @@ export class WebhookService implements OnModuleInit {
     } catch (error) {
       this.utils.logError(error);
     }
+  }
+
+  async notifyCheckBusinessStatus(businessPublicId: string) {
+    const business = await this.business.findBusinessByPublicId(businessPublicId);
+    console.log(`emit business_status_change because of ${businessPublicId}`);
+    this.server.to(business.orderingBusinessId.toString()).emit('business_status_change');
   }
 }

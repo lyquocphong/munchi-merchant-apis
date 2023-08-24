@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, Post, Query, Request, UseGuards } from '@nestjs/common';
-import { ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
+import { BadRequestException, Body, Controller, Get, Param, Post, Query, Request, UseGuards } from '@nestjs/common';
+import { ApiAcceptedResponse, ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
 import { JwtGuard } from 'src/auth/guard/jwt.guard';
 import { BusinessService } from './business.service';
 import { AllBusinessDto, BusinessDto, SetOnlineStatusDto } from './dto/business.dto';
@@ -20,12 +20,11 @@ export class BusinessController {
   ) { }
 
 
-  @ApiCreatedResponse({
-    description: 'Get all businesses',
-    type: AllBusinessDto,
+  @ApiAcceptedResponse({
+    description: 'Get all businesses'
   })
   @Get('allbusiness')
-  async getAllBusiness(@Request() req: any) {
+  async getAllBusiness(@Request() req: any): Promise<BusinessDto[]> {
     const { sessionPublicId } = req.user;
     const user = await this.sessionService.getSessionUserBySessionPublicId(sessionPublicId);
     return this.businessService.getAllBusiness(user.orderingUserId);
@@ -51,9 +50,13 @@ export class BusinessController {
     @Request() req: any,
     @Body() body: SetOnlineStatusDto
   ) {
-    const { publicBusinessId, status } = body;
-    const { sessionPublicId } = req.user;
-    const user = await this.sessionService.getSessionUserBySessionPublicId(sessionPublicId);
-    return this.businessService.setTodayScheduleStatus(user.orderingUserId, publicBusinessId, status);
+    const {status, duration, id: publicBusinessId} = body;
+    console.log(duration);
+    if (status === false && !duration) {
+      throw new BadRequestException('duration is needed when status is false');
+    }
+
+    const { userPublicId } = req.user;
+    return this.businessService.setOnlineStatusByPublicId(userPublicId, publicBusinessId, status, duration);
   }
 }
