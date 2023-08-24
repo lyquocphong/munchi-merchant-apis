@@ -60,13 +60,18 @@ export class UserService {
     return deleteUser;
   };
 
-  async getUserByPublicId<S extends Prisma.UserSelect = UserInfoSelectBase>(publicUserId: string, select?: S): Promise<S> {  
-    return await this.prisma.user.findUnique({
+  async getUserByPublicId<S extends Prisma.UserSelect>(
+    publicId: string,
+    select?: S
+  ): Promise<
+    Prisma.UserGetPayload<{ select: S }>
+  > {
+    return await this.prisma.user.findFirst({
       where: {
-        publicId: publicUserId,
+        publicId
       },
       select
-    }) as S;
+    });
   }
 
   async getUserByOrderingUserId<S extends Prisma.UserSelect = UserInfoSelectBase>(orderingUserId: number, select: S) {

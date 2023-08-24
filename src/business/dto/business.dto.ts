@@ -1,8 +1,8 @@
 /* eslint-disable prettier/prettier */
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Exclude, Expose, Type } from 'class-transformer';
+import { Exclude, Expose, Transform, Type } from 'class-transformer';
 import { OwnerDto } from './owner.dto';
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Schedule } from 'src/ordering.io/ordering.io.type';
 
 @Exclude()
@@ -49,26 +49,29 @@ export class BusinessDto {
   @Expose()
   enabled: boolean;
 
-  @ApiProperty({
-    description: 'Schedule for today',
-    example: {
-      "enabled": true,
-      "lapses": [
-        {
-          "open": {
-            "hour": 0,
-            "minute": 0
-          },
-          "close": {
-            "hour": 23,
-            "minute": 30
-          }
-        }
-      ]
-    },
-  })
   @Expose()
-  today: Schedule;
+  open: boolean;
+
+  // @ApiProperty({
+  //   description: 'Schedule for today',
+  //   example: {
+  //     "enabled": true,
+  //     "lapses": [
+  //       {
+  //         "open": {
+  //           "hour": 0,
+  //           "minute": 0
+  //         },
+  //         "close": {
+  //           "hour": 23,
+  //           "minute": 30
+  //         }
+  //       }
+  //     ]
+  //   },
+  // })
+  // @Expose()
+  // today: Schedule;
 
   @ApiProperty({
     description: 'The owners of business',
@@ -95,8 +98,9 @@ export class AllBusinessDto {
     description: 'The id of business',
     example: '123456',
   })
-  @Expose({ name: 'id' })
-  businessId: string;
+  @Expose({ name: 'id' })  
+  id: string;
+
   @ApiProperty({
     description: 'The name of business',
     example: 'Juicy Burger',
@@ -110,7 +114,7 @@ export class AllBusinessDto {
   })
   @Expose()
   logo: string;
-  
+
   // @Expose() timezone: string;
   constructor(partial: Partial<AllBusinessDto>) {
     Object.assign(this, partial);
@@ -123,8 +127,8 @@ export class SetOnlineStatusDto {
     example: '123456',
   })
   @IsString()
-  publicBusinessId: string;
-  
+  id: string;
+
   @ApiProperty({
     description: 'Status want to set. true for on and false for off',
     example: false,
@@ -136,12 +140,12 @@ export class SetOnlineStatusDto {
     description: 'Duration in minute(s) you want it to be offline in case status is false',
     example: 20,
   })
-  @IsBoolean()
+  @IsNumber()
   @IsOptional()
   @ApiPropertyOptional()
-  duration?: number;
+  duration: number;
 }
 
 export class GetOnlineStatusDto {
-  
+
 }

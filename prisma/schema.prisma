@@ -57,3 +57,14 @@ model Notification {
 
   @@map("notification")
 }
+
+model ActiveStatusQueue {
+  id               Int      @id @default(autoincrement())
+  userPublicId     String   @unique
+  businessPublicId String   @unique
+  time             DateTime @db.Timestamp()
+  provider         String
+  processing       Boolean  @default(false)
+
+  @@map("active_status_queue")
+}
