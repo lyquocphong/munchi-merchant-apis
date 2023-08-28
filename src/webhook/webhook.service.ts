@@ -27,6 +27,16 @@ export class WebhookService implements OnModuleInit {
           socket.join(business.orderingBusinessId.toString());
         }
       });
+
+      socket.on('leave', async (room: string) => {
+        console.log(`Try to leave room ${room}`);
+        const business = await this.business.findBusinessByPublicId(room);
+        if (!business) {
+          throw new ForbiddenException(403, `No business found for ${room}`);
+        } else {
+          socket.leave(business.orderingBusinessId.toString());
+        }
+      });
     });
   }
 
