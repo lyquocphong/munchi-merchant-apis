@@ -228,6 +228,29 @@ export class SessionService {
     return session.user;
   }
 
+  async getOfflineSession() {
+    return await this.prisma.session.findMany({
+      where: {
+        isOnline: false,
+      },
+      select: {
+        id: true,
+        deviceId: true,
+        businesses: {
+          select: {
+            publicId: true,
+            orderingBusinessId: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+          },
+        },
+      },
+    });
+  }
+
   async setSessionOnlineStatus(sessionPublicId: string, isOnline: boolean) {
     // TODO: Create general type instead of create seperately
     const findSessionArgs = Prisma.validator<Prisma.SessionFindFirstArgsBase>()(
