@@ -25,17 +25,22 @@ export class SessionService {
     @Inject(forwardRef(() => AuthService)) private authService: AuthService,
     @Inject(forwardRef(() => UtilsService)) readonly utils: UtilsService,
     @Inject(forwardRef(() => UserService)) private userService: UserService,
-    @Inject(forwardRef(() => OrderingIoService)) private readonly orderingIo: OrderingIoService,
+    @Inject(forwardRef(() => OrderingIoService))
+    private readonly orderingIo: OrderingIoService,
     private readonly jwt: JwtService,
     private config: ConfigService,
-    private readonly prisma: PrismaService,
+    private readonly prisma: PrismaService
   ) {}
 
   async hashData(data: string) {
     return argon2.hash(data);
   }
 
-  async updateTokensOld(orderingUserId: number, refreshToken?: string, session?: SessionDto) {
+  async updateTokensOld(
+    orderingUserId: number,
+    refreshToken?: string,
+    session?: SessionDto
+  ) {
     const data: any = {};
 
     if (refreshToken) {
@@ -74,7 +79,7 @@ export class SessionService {
 
     await this.userService.upsertUserFromOrderingInfo<typeof userSelect>(
       { ...orderingUserInfo, password: credentials.password },
-      userSelect,
+      userSelect
     );
   }
 
@@ -86,20 +91,22 @@ export class SessionService {
    * @returns
    */
   async refreshTokens(refreshToken: string, sessionPublicId: string) {
-    const findSessionArgs = Prisma.validator<Prisma.SessionFindFirstArgsBase>()({
-      select: {
-        id: true,
-        refreshToken: true,
-        user: {
-          select: {
-            id: true,
-            orderingUserId: true,
-            publicId: true,
-            email: true,
+    const findSessionArgs = Prisma.validator<Prisma.SessionFindFirstArgsBase>()(
+      {
+        select: {
+          id: true,
+          refreshToken: true,
+          user: {
+            select: {
+              id: true,
+              orderingUserId: true,
+              publicId: true,
+              email: true,
+            },
           },
         },
-      },
-    });
+      }
+    );
 
     const session = await this.getSessionByPublcId<
       Prisma.SessionGetPayload<typeof findSessionArgs>
@@ -110,7 +117,10 @@ export class SessionService {
       throw new ForbiddenException('Access Denied');
     }
 
-    const refreshTokenMatches = await argon2.verify(session.refreshToken, refreshToken);
+    const refreshTokenMatches = await argon2.verify(
+      session.refreshToken,
+      refreshToken
+    );
 
     if (!refreshTokenMatches) {
       throw new ForbiddenException('Invalid Token');
@@ -158,7 +168,7 @@ export class SessionService {
   }
 
   async getTokens(
-    payload: JwtTokenPayload,
+    payload: JwtTokenPayload
   ): Promise<{ verifyToken: string; refreshToken: string }> {
     return {
       verifyToken: await this.generateJwtToken(payload),
@@ -168,7 +178,7 @@ export class SessionService {
 
   async createSession<
     I extends Prisma.SessionCreateInput | Prisma.SessionUncheckedCreateInput,
-    S extends Prisma.SessionSelect,
+    S extends Prisma.SessionSelect
   >(createInput: I, select: S) {
     createInput.refreshToken = await this.hashData(createInput.refreshToken);
 
@@ -218,14 +228,39 @@ export class SessionService {
     return session.user;
   }
 
-  async setSessionOnlineStatus(sessionPublicId: string, isOnline: boolean) {
-    // TODO: Create general type instead of create seperately
-    const findSessionArgs = Prisma.validator<Prisma.SessionFindFirstArgsBase>()({
+  async getOfflineSession() {
+    return await this.prisma.session.findMany({
+      where: {
+        isOnline: false,
+      },
       select: {
         id: true,
-        publicId: true,
+        deviceId: true,
+        businesses: {
+          select: {
+            publicId: true,
+            orderingBusinessId: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+          },
+        },
       },
     });
+  }
+
+  async setSessionOnlineStatus(sessionPublicId: string, isOnline: boolean) {
+    // TODO: Create general type instead of create seperately
+    const findSessionArgs = Prisma.validator<Prisma.SessionFindFirstArgsBase>()(
+      {
+        select: {
+          id: true,
+          publicId: true,
+        },
+      }
+    );
 
     const session = await this.getSessionByPublcId<
       Prisma.SessionGetPayload<typeof findSessionArgs>
@@ -247,24 +282,26 @@ export class SessionService {
 
   async setBusinessForSession(
     sessionPublicId: string,
-    reportAppBusinessDto: ReportAppBusinessDto,
+    reportAppBusinessDto: ReportAppBusinessDto
   ): Promise<void> {
     // TODO: Create general type instead of create seperately
-    const findSessionArgs = Prisma.validator<Prisma.SessionFindFirstArgsBase>()({
-      select: {
-        id: true,
-        refreshToken: true,
-        user: {
-          select: {
-            id: true,
-            orderingUserId: true,
-            publicId: true,
-            email: true,
-            businesses: true,
+    const findSessionArgs = Prisma.validator<Prisma.SessionFindFirstArgsBase>()(
+      {
+        select: {
+          id: true,
+          refreshToken: true,
+          user: {
+            select: {
+              id: true,
+              orderingUserId: true,
+              publicId: true,
+              email: true,
+              businesses: true,
+            },
           },
         },
-      },
-    });
+      }
+    );
     const session = await this.getSessionByPublcId<
       Prisma.SessionGetPayload<typeof findSessionArgs>
     >(sessionPublicId, findSessionArgs);
@@ -280,7 +317,9 @@ export class SessionService {
 
     const validIds = businesses
       .filter((business) => businessIds.includes(business.publicId))
-      .map<{ publicId: string }>((validBusiness) => ({ publicId: validBusiness.publicId }));
+      .map<{ publicId: string }>((validBusiness) => ({
+        publicId: validBusiness.publicId,
+      }));
 
     if (validIds.length !== businessIds.length) {
       throw new ForbiddenException('Cannot assign business not owned by user');
