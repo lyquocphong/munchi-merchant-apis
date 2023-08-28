@@ -61,6 +61,7 @@ export class AuthService {
       publicId: sessionPublicId,
       refreshToken: tokens.refreshToken,
       userId: user.id,
+      lastAccessTs: moment.utc().toDate(),
     });
 
     const sessionSelect = Prisma.validator<Prisma.SessionSelect>()({

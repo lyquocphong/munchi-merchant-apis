@@ -18,6 +18,7 @@ import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
 import { Prisma } from '@prisma/client';
 import { JwtTokenPayload } from './session.type';
 import { ReportAppBusinessDto } from 'src/report/dto/report.dto';
+import moment from 'moment';
 
 @Injectable()
 export class SessionService {
@@ -29,45 +30,11 @@ export class SessionService {
     private readonly orderingIo: OrderingIoService,
     private readonly jwt: JwtService,
     private config: ConfigService,
-    private readonly prisma: PrismaService
+    private readonly prisma: PrismaService,
   ) {}
 
   async hashData(data: string) {
     return argon2.hash(data);
-  }
-
-  async updateTokensOld(
-    orderingUserId: number,
-    refreshToken?: string,
-    session?: SessionDto
-  ) {
-    const data: any = {};
-
-    if (refreshToken) {
-      const hashedRefreshToken = await this.hashData(refreshToken);
-      data.refreshToken = hashedRefreshToken;
-    }
-
-    if (session) {
-      data.session = {
-        update: {
-          accessToken: session.accessToken,
-          expiresAt: session.expiresAt,
-          tokenType: session.tokenType,
-        },
-      };
-    }
-
-    try {
-      await this.prisma.user.update({
-        where: {
-          orderingUserId,
-        },
-        data: data,
-      });
-    } catch (error) {
-      this.utils.logError(error);
-    }
   }
 
   async updateOrderingIoAccessToken(credentials: AuthCredentials) {
@@ -79,7 +46,7 @@ export class SessionService {
 
     await this.userService.upsertUserFromOrderingInfo<typeof userSelect>(
       { ...orderingUserInfo, password: credentials.password },
-      userSelect
+      userSelect,
     );
   }
 
@@ -91,22 +58,20 @@ export class SessionService {
    * @returns
    */
   async refreshTokens(refreshToken: string, sessionPublicId: string) {
-    const findSessionArgs = Prisma.validator<Prisma.SessionFindFirstArgsBase>()(
-      {
-        select: {
-          id: true,
-          refreshToken: true,
-          user: {
-            select: {
-              id: true,
-              orderingUserId: true,
-              publicId: true,
-              email: true,
-            },
+    const findSessionArgs = Prisma.validator<Prisma.SessionFindFirstArgsBase>()({
+      select: {
+        id: true,
+        refreshToken: true,
+        user: {
+          select: {
+            id: true,
+            orderingUserId: true,
+            publicId: true,
+            email: true,
           },
         },
-      }
-    );
+      },
+    });
 
     const session = await this.getSessionByPublcId<
       Prisma.SessionGetPayload<typeof findSessionArgs>
@@ -117,10 +82,7 @@ export class SessionService {
       throw new ForbiddenException('Access Denied');
     }
 
-    const refreshTokenMatches = await argon2.verify(
-      session.refreshToken,
-      refreshToken
-    );
+    const refreshTokenMatches = await argon2.verify(session.refreshToken, refreshToken);
 
     if (!refreshTokenMatches) {
       throw new ForbiddenException('Invalid Token');
@@ -141,6 +103,7 @@ export class SessionService {
       },
       data: {
         refreshToken: await this.hashData(token.refreshToken),
+        lastAccessTs: moment.utc().toDate(),
       },
     });
 
@@ -168,7 +131,7 @@ export class SessionService {
   }
 
   async getTokens(
-    payload: JwtTokenPayload
+    payload: JwtTokenPayload,
   ): Promise<{ verifyToken: string; refreshToken: string }> {
     return {
       verifyToken: await this.generateJwtToken(payload),
@@ -178,7 +141,7 @@ export class SessionService {
 
   async createSession<
     I extends Prisma.SessionCreateInput | Prisma.SessionUncheckedCreateInput,
-    S extends Prisma.SessionSelect
+    S extends Prisma.SessionSelect,
   >(createInput: I, select: S) {
     createInput.refreshToken = await this.hashData(createInput.refreshToken);
 
@@ -251,16 +214,25 @@ export class SessionService {
     });
   }
 
+  async updateAccessTime(sessionPublicId: string) {
+    await this.prisma.session.update({
+      where: {
+        publicId: sessionPublicId,
+      },
+      data: {
+        lastAccessTs: moment.utc().toDate(),
+      },
+    });
+  }
+
   async setSessionOnlineStatus(sessionPublicId: string, isOnline: boolean) {
     // TODO: Create general type instead of create seperately
-    const findSessionArgs = Prisma.validator<Prisma.SessionFindFirstArgsBase>()(
-      {
-        select: {
-          id: true,
-          publicId: true,
-        },
-      }
-    );
+    const findSessionArgs = Prisma.validator<Prisma.SessionFindFirstArgsBase>()({
+      select: {
+        id: true,
+        publicId: true,
+      },
+    });
 
     const session = await this.getSessionByPublcId<
       Prisma.SessionGetPayload<typeof findSessionArgs>
@@ -282,26 +254,24 @@ export class SessionService {
 
   async setBusinessForSession(
     sessionPublicId: string,
-    reportAppBusinessDto: ReportAppBusinessDto
+    reportAppBusinessDto: ReportAppBusinessDto,
   ): Promise<void> {
     // TODO: Create general type instead of create seperately
-    const findSessionArgs = Prisma.validator<Prisma.SessionFindFirstArgsBase>()(
-      {
-        select: {
-          id: true,
-          refreshToken: true,
-          user: {
-            select: {
-              id: true,
-              orderingUserId: true,
-              publicId: true,
-              email: true,
-              businesses: true,
-            },
+    const findSessionArgs = Prisma.validator<Prisma.SessionFindFirstArgsBase>()({
+      select: {
+        id: true,
+        refreshToken: true,
+        user: {
+          select: {
+            id: true,
+            orderingUserId: true,
+            publicId: true,
+            email: true,
+            businesses: true,
           },
         },
-      }
-    );
+      },
+    });
     const session = await this.getSessionByPublcId<
       Prisma.SessionGetPayload<typeof findSessionArgs>
     >(sessionPublicId, findSessionArgs);
