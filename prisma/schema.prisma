@@ -16,6 +16,7 @@ model Session {
   businesses   Business[] @relation("BusinessSessionTable")
   deviceId     String?    @unique
   isOnline     Boolean    @default(true)
+  lastAccessTs DateTime   @db.Timestamp()
 }
 
 model User {
