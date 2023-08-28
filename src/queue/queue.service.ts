@@ -34,8 +34,7 @@ export class QueueService {
     });
   }
 
-  // TODO: Need to create notification from session table not notification
-  //@Interval(2000) // Make push notification in every mins
+  @Interval(60000) // Make push notification in every mins
   async activeBusinessStatus() {
     // 1. Get queue
     const now = moment.utc();
