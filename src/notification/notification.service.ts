@@ -18,8 +18,8 @@ export class NotificationService {
     private readonly prisma: PrismaService,
     private readonly onesignal: OneSignalService,
     private readonly businessService: BusinessService,
-    private readonly configService: ConfigService
-  ) { }
+    private readonly configService: ConfigService,
+  ) {}
 
   // TODO: Need to create notification from session table not notification
   @Interval(60000) // Make push notification in every mins
@@ -29,14 +29,14 @@ export class NotificationService {
 
     if (ignore) {
       this.logger.log('Ignore the open app notification cron');
-      return;  
+      return;
     }
 
     this.logger.log('Start open app notification');
 
     const existingNotification = await this.prisma.notification.findMany({
       where: {
-        type: NotificationType.OPEN_APP
+        type: NotificationType.OPEN_APP,
       },
     });
 
@@ -45,37 +45,44 @@ export class NotificationService {
       this.logger.log('Do not need to make any push notification');
     } else {
       const deviceIds = [];
-      var schedules = {};
+      const schedules = {};
 
-      for(const notification of existingNotification) {
+      for (const notification of existingNotification) {
         // Check if bussiness is still open or not
-        const {userId, businessId} = notification;
+        const { userId, businessId } = notification;
 
         let schedule;
 
         if (!schedules[businessId]) {
-          schedule = await this.businessService.getBusinessTodayScheduleById(userId, notification.businessId);
+          schedule = await this.businessService.getBusinessTodayScheduleById(
+            userId,
+            notification.businessId,
+          );
           schedules[businessId] = schedule;
         } else {
           schedule = schedules[businessId];
-        }       
-        
+        }
+
         // If today is not enabled, do not make push notification
-        if (!schedule.today.enabled) {         
+        if (!schedule.today.enabled) {
           return false;
         }
 
-        
         // Get current time in business timezone
         const now = moment().tz(schedule.timezone);
 
-        let shouldPush = false;
-        schedule.today.lapses.forEach(lapse => {
-          const openTimeBusinessTimezone = moment.tz({ hour: lapse.open.hour, minute: lapse.open.minute }, schedule.timezone);
-          const closeTimeBusinessTimezone = moment.tz({ hour: lapse.close.hour, minute: lapse.close.minute }, schedule.timezone);          
+        const shouldPush = false;
+        schedule.today.lapses.forEach((lapse) => {
+          const openTimeBusinessTimezone = moment.tz(
+            { hour: lapse.open.hour, minute: lapse.open.minute },
+            schedule.timezone,
+          );
+          const closeTimeBusinessTimezone = moment.tz(
+            { hour: lapse.close.hour, minute: lapse.close.minute },
+            schedule.timezone,
+          );
           const openTimeDiff = openTimeBusinessTimezone.diff(now, 'minutes');
           const closeTimeDiff = closeTimeBusinessTimezone.diff(now, 'minutes');
-
 
           // If current time is inside the business time, we should make push notification
           if (openTimeDiff < 0 && closeTimeDiff > 0) {
@@ -88,7 +95,7 @@ export class NotificationService {
       this.logger.log(`Make push notification to: ${JSON.stringify(deviceIds)}`);
 
       if (deviceIds.length > 0) {
-        this.onesignal.pushOpenAppNotification(deviceIds)
+        this.onesignal.pushOpenAppNotification(deviceIds);
       }
     }
   }

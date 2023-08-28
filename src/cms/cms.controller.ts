@@ -6,10 +6,7 @@ import { SessionService } from 'src/auth/session.service';
 @UseGuards(JwtGuard)
 @Controller('cms')
 export class CmsController {
-  constructor(
-    private cmsService: CmsService,
-    private sessionService: SessionService
-  ) {}
+  constructor(private cmsService: CmsService, private sessionService: SessionService) {}
 
   @Get('getPage')
   async getPage(@Request() req: any) {

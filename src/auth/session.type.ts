@@ -1,5 +1,5 @@
 export type JwtTokenPayload = {
-    userPublicId: string;
-    email: string;
-    sessionPublicId: string;
-}
+  userPublicId: string;
+  email: string;
+  sessionPublicId: string;
+};

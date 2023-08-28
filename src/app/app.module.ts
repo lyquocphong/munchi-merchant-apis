@@ -26,7 +26,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     WebhookModule,
     AuthModule,
     ReportModule,
-    ScheduleModule.forRoot()
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [AppService],

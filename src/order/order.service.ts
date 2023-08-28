@@ -14,7 +14,7 @@ export class OrderService {
     private readonly orderingIo: OrderingIoService,
     private readonly utils: UtilsService,
     private readonly business: BusinessService,
-    private readonly sessionService: SessionService
+    private readonly sessionService: SessionService,
   ) {}
 
   async getFilteredOrdersForSession(
@@ -22,19 +22,19 @@ export class OrderService {
     query: string,
     paramsQuery: string[],
     businessPublicId?: string[],
-  ) {    
+  ) {
     // TODO: Create general type instead of create seperately
     const findSessionArgs = Prisma.validator<Prisma.SessionFindFirstArgsBase>()({
       select: {
         id: true,
         refreshToken: true,
-        deviceId:true,
+        deviceId: true,
         businesses: {
           select: {
             id: true,
             publicId: true,
-            orderingBusinessId: true
-          }
+            orderingBusinessId: true,
+          },
         },
         user: {
           select: {
@@ -43,21 +43,23 @@ export class OrderService {
             publicId: true,
             email: true,
             businesses: true,
-            orderingAccessToken: true
-          }
-        }
-      }
-    })
+            orderingAccessToken: true,
+          },
+        },
+      },
+    });
 
-    const session = await this.sessionService.getSessionByPublcId<Prisma.SessionGetPayload<typeof findSessionArgs>>(sessionPublicId, findSessionArgs);
+    const session = await this.sessionService.getSessionByPublcId<
+      Prisma.SessionGetPayload<typeof findSessionArgs>
+    >(sessionPublicId, findSessionArgs);
 
     if (!session) {
       throw new NotFoundException('Cannot find session by public Id');
     }
 
     // TODO: Need to take from controller, now hardcode to use from session
-    const businessIds = session.businesses.map(business => business.orderingBusinessId)
-    const {user} = session;
+    const businessIds = session.businesses.map((business) => business.orderingBusinessId);
+    const { user } = session;
 
     try {
       const response = await this.orderingIo.getOrderForBusinesses(
@@ -66,9 +68,9 @@ export class OrderService {
         query,
         paramsQuery,
       );
-      
-      console.log(session)
-      console.log(response.length)
+
+      console.log(session);
+      console.log(response.length);
 
       return plainToClass(OrderDto, response);
     } catch (error) {

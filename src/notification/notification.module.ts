@@ -9,4 +9,4 @@ import { BusinessModule } from 'src/business/business.module';
   providers: [NotificationService, OneSignalService],
   exports: [NotificationService],
 })
-export class NotificationModule { }
+export class NotificationModule {}

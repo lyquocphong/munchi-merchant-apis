@@ -15,8 +15,8 @@ export class ReportController {
 
   constructor(
     private readonly notificationService: NotificationService,
-    private readonly sessionService: SessionService
-  ) { }
+    private readonly sessionService: SessionService,
+  ) {}
 
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtGuard)
@@ -33,9 +33,11 @@ export class ReportController {
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtGuard)
   @Post('app-business')
-  async reportSelectedBusiness(@Body() reportAppBusinessDto: ReportAppBusinessDto, @Request() req: any) {
+  async reportSelectedBusiness(
+    @Body() reportAppBusinessDto: ReportAppBusinessDto,
+    @Request() req: any,
+  ) {
     const { sessionPublicId } = req.user;
-    console.log(reportAppBusinessDto)
     await this.sessionService.setBusinessForSession(sessionPublicId, reportAppBusinessDto);
     return { message: 'App businesses reported successfully' };
   }

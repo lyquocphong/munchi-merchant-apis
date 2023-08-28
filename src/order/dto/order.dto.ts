@@ -54,7 +54,7 @@ export class OrderDto {
   history: HistoryDto[];
 
   @Expose()
-  business: BusinessDto
+  business: BusinessDto;
 
   constructor(partial: Partial<OrderDto>) {
     Object.assign(this, partial);

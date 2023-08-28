@@ -1,5 +1,21 @@
-import { BadRequestException, Body, Controller, Get, Param, Post, Query, Request, UseGuards } from '@nestjs/common';
-import { ApiAcceptedResponse, ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiAcceptedResponse,
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtGuard } from 'src/auth/guard/jwt.guard';
 import { BusinessService } from './business.service';
 import { AllBusinessDto, BusinessDto, SetOnlineStatusDto } from './dto/business.dto';
@@ -13,15 +29,10 @@ import { SessionService } from 'src/auth/session.service';
 })
 @ApiTags('business')
 export class BusinessController {
-
-  constructor(
-    private businessService: BusinessService,
-    private sessionService: SessionService
-  ) { }
-
+  constructor(private businessService: BusinessService, private sessionService: SessionService) {}
 
   @ApiAcceptedResponse({
-    description: 'Get all businesses'
+    description: 'Get all businesses',
   })
   @Get('allbusiness')
   async getAllBusiness(@Request() req: any): Promise<BusinessDto[]> {
@@ -44,19 +55,20 @@ export class BusinessController {
     description: 'Edit a specific business',
     type: BusinessDto,
   })
-
   @Post('online-status')
-  async setOnlineStatus(
-    @Request() req: any,
-    @Body() body: SetOnlineStatusDto
-  ) {
-    const {status, duration, id: publicBusinessId} = body;
+  async setOnlineStatus(@Request() req: any, @Body() body: SetOnlineStatusDto) {
+    const { status, duration, id: publicBusinessId } = body;
     console.log(duration);
     if (status === false && !duration) {
       throw new BadRequestException('duration is needed when status is false');
     }
 
     const { userPublicId } = req.user;
-    return this.businessService.setOnlineStatusByPublicId(userPublicId, publicBusinessId, status, duration);
+    return this.businessService.setOnlineStatusByPublicId(
+      userPublicId,
+      publicBusinessId,
+      status,
+      duration,
+    );
   }
 }

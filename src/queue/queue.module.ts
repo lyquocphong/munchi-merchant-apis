@@ -6,6 +6,6 @@ import { WebhookModule } from 'src/webhook/webhook.module';
 @Module({
   imports: [forwardRef(() => BusinessModule), forwardRef(() => WebhookModule)],
   providers: [QueueService],
-  exports: [QueueService]
+  exports: [QueueService],
 })
 export class QueueModule {}

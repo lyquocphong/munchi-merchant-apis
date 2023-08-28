@@ -1,4 +1,10 @@
-import { ForbiddenException, Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+  forwardRef,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UtilsService } from 'src/utils/utils.service';
@@ -23,7 +29,7 @@ export class SessionService {
     private readonly jwt: JwtService,
     private config: ConfigService,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   async hashData(data: string) {
     return argon2.hash(data);
@@ -63,24 +69,23 @@ export class SessionService {
     const orderingUserInfo = await this.orderingIo.signIn(credentials);
 
     const userSelect = Prisma.validator<Prisma.UserSelect>()({
-      id: true
-    })
+      id: true,
+    });
 
     await this.userService.upsertUserFromOrderingInfo<typeof userSelect>(
       { ...orderingUserInfo, password: credentials.password },
-      userSelect
+      userSelect,
     );
   }
 
   /**
    * * Has checked
-   * 
-   * @param refreshToken 
-   * @param sessionPublicId 
-   * @returns 
+   *
+   * @param refreshToken
+   * @param sessionPublicId
+   * @returns
    */
   async refreshTokens(refreshToken: string, sessionPublicId: string) {
-
     const findSessionArgs = Prisma.validator<Prisma.SessionFindFirstArgsBase>()({
       select: {
         id: true,
@@ -90,13 +95,15 @@ export class SessionService {
             id: true,
             orderingUserId: true,
             publicId: true,
-            email: true
-          }
-        }
-      }
-    })
+            email: true,
+          },
+        },
+      },
+    });
 
-    const session = await this.getSessionByPublcId<Prisma.SessionGetPayload<typeof findSessionArgs>>(sessionPublicId, findSessionArgs);
+    const session = await this.getSessionByPublcId<
+      Prisma.SessionGetPayload<typeof findSessionArgs>
+    >(sessionPublicId, findSessionArgs);
     const { user } = session;
 
     if (!user || !session || !session.refreshToken) {
@@ -112,20 +119,20 @@ export class SessionService {
     const jwtPayload: JwtTokenPayload = {
       userPublicId: user.publicId,
       email: user.email,
-      sessionPublicId: sessionPublicId
-    }
+      sessionPublicId: sessionPublicId,
+    };
 
     const token = await this.getTokens(jwtPayload);
 
     // Update refresh token back to session
     await this.prisma.session.update({
       where: {
-        publicId: sessionPublicId
+        publicId: sessionPublicId,
       },
       data: {
-        refreshToken: await this.hashData(token.refreshToken)
-      }
-    })
+        refreshToken: await this.hashData(token.refreshToken),
+      },
+    });
 
     return token;
   }
@@ -150,7 +157,9 @@ export class SessionService {
     });
   }
 
-  async getTokens(payload: JwtTokenPayload): Promise<{ verifyToken: string; refreshToken: string }> {
+  async getTokens(
+    payload: JwtTokenPayload,
+  ): Promise<{ verifyToken: string; refreshToken: string }> {
     return {
       verifyToken: await this.generateJwtToken(payload),
       refreshToken: await this.generateRefreshToken(payload),
@@ -159,38 +168,34 @@ export class SessionService {
 
   async createSession<
     I extends Prisma.SessionCreateInput | Prisma.SessionUncheckedCreateInput,
-    S extends Prisma.SessionSelect
+    S extends Prisma.SessionSelect,
   >(createInput: I, select: S) {
-
     createInput.refreshToken = await this.hashData(createInput.refreshToken);
 
     return await this.prisma.session.create({
       data: createInput,
-      select
+      select,
     });
   }
 
-  async getSessionByPublcId<T>(
-    publicId: string,
-    args?): Promise<T> {
-
+  async getSessionByPublcId<T>(publicId: string, args?): Promise<T> {
     let findArgs: Prisma.SessionFindUniqueArgsBase = {
       where: {
-        publicId: publicId
-      }
-    }
+        publicId: publicId,
+      },
+    };
 
     if (args) {
       findArgs = { ...findArgs, ...args };
     }
 
-    return await this.prisma.session.findUnique(findArgs) as T;
+    return (await this.prisma.session.findUnique(findArgs)) as T;
   }
 
   async deleteSession(where: Prisma.SessionWhereInput) {
     await this.prisma.session.deleteMany({
-      where
-    })
+      where,
+    });
   }
 
   async getSessionUserBySessionPublicId(sessionPublicId: string) {
@@ -198,32 +203,33 @@ export class SessionService {
       user: {
         select: {
           orderingUserId: true,
-          publicId: true
-        }
-      }
-    })
+          publicId: true,
+        },
+      },
+    });
 
     const session = await this.prisma.session.findFirst({
       where: {
-        publicId: sessionPublicId
+        publicId: sessionPublicId,
       },
-      select
-    })
+      select,
+    });
 
     return session.user;
   }
 
   async setSessionOnlineStatus(sessionPublicId: string, isOnline: boolean) {
-
     // TODO: Create general type instead of create seperately
     const findSessionArgs = Prisma.validator<Prisma.SessionFindFirstArgsBase>()({
       select: {
         id: true,
-        publicId: true
-      }
-    })
+        publicId: true,
+      },
+    });
 
-    const session = await this.getSessionByPublcId<Prisma.SessionGetPayload<typeof findSessionArgs>>(sessionPublicId, findSessionArgs);
+    const session = await this.getSessionByPublcId<
+      Prisma.SessionGetPayload<typeof findSessionArgs>
+    >(sessionPublicId, findSessionArgs);
 
     if (!session) {
       throw new NotFoundException('Cannot find session by public Id');
@@ -231,16 +237,18 @@ export class SessionService {
 
     await this.prisma.session.update({
       where: {
-        publicId: sessionPublicId
+        publicId: sessionPublicId,
       },
       data: {
-        isOnline
-      }
-    })
+        isOnline,
+      },
+    });
   }
 
-  async setBusinessForSession(sessionPublicId: string, reportAppBusinessDto: ReportAppBusinessDto): Promise<void> {
-
+  async setBusinessForSession(
+    sessionPublicId: string,
+    reportAppBusinessDto: ReportAppBusinessDto,
+  ): Promise<void> {
     // TODO: Create general type instead of create seperately
     const findSessionArgs = Prisma.validator<Prisma.SessionFindFirstArgsBase>()({
       select: {
@@ -252,12 +260,14 @@ export class SessionService {
             orderingUserId: true,
             publicId: true,
             email: true,
-            businesses: true
-          }
-        }
-      }
-    })
-    const session = await this.getSessionByPublcId<Prisma.SessionGetPayload<typeof findSessionArgs>>(sessionPublicId, findSessionArgs);
+            businesses: true,
+          },
+        },
+      },
+    });
+    const session = await this.getSessionByPublcId<
+      Prisma.SessionGetPayload<typeof findSessionArgs>
+    >(sessionPublicId, findSessionArgs);
 
     if (!session) {
       throw new NotFoundException('Cannot find session by public Id');
@@ -267,38 +277,38 @@ export class SessionService {
 
     const { businesses } = user;
     const { businessIds, deviceId } = reportAppBusinessDto;
-    
+
     const validIds = businesses
-      .filter(business => businessIds.includes(business.publicId))
-      .map<{ publicId: string }>(validBusiness => ({publicId: validBusiness.publicId}));
+      .filter((business) => businessIds.includes(business.publicId))
+      .map<{ publicId: string }>((validBusiness) => ({ publicId: validBusiness.publicId }));
 
     if (validIds.length !== businessIds.length) {
-      throw new ForbiddenException('Cannot assign business not owned by user')
+      throw new ForbiddenException('Cannot assign business not owned by user');
     }
 
     // Disconnect all
     await this.prisma.session.update({
       where: {
-        publicId: sessionPublicId
+        publicId: sessionPublicId,
       },
       data: {
         businesses: {
-          set: []
-        }
-      }
-    })
+          set: [],
+        },
+      },
+    });
 
     // Reconnect
     await this.prisma.session.update({
       where: {
-        publicId: sessionPublicId
+        publicId: sessionPublicId,
       },
       data: {
         businesses: {
-          connect: validIds
+          connect: validIds,
         },
-        deviceId: deviceId
-      }
-    })
+        deviceId: deviceId,
+      },
+    });
   }
 }

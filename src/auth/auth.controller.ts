@@ -10,7 +10,7 @@ import { SessionService } from './session.service';
 @Controller('auth')
 @ApiTags('auth')
 export class AuthController {
-  constructor(private authService: AuthService, private sessionService: SessionService) { }
+  constructor(private authService: AuthService, private sessionService: SessionService) {}
 
   @ApiCreatedResponse({
     description: 'Sign in new user',
@@ -33,7 +33,7 @@ export class AuthController {
   /**
    * Has checked
    */
-  async signOut(@Request() req: any) {    
+  async signOut(@Request() req: any) {
     const { sessionPublicId } = req.user;
     return this.authService.signOut(sessionPublicId);
   }

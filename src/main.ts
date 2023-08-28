@@ -10,7 +10,7 @@ declare const module: any;
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
-    logger: ['log', 'error', 'warn']
+    logger: ['log', 'error', 'warn'],
   });
 
   const config = new DocumentBuilder()

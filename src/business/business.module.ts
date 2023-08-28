@@ -8,14 +8,9 @@ import { AuthModule } from 'src/auth/auth.module';
 import { QueueModule } from 'src/queue/queue.module';
 
 @Module({
-  imports: [
-    OrderingIoModule, 
-    UserModule, 
-    AuthModule, 
-    forwardRef(() => QueueModule)
-  ],
+  imports: [OrderingIoModule, UserModule, AuthModule, forwardRef(() => QueueModule)],
   controllers: [BusinessController],
   providers: [BusinessService, JwtStrategy],
   exports: [BusinessService],
 })
-export class BusinessModule { }
+export class BusinessModule {}

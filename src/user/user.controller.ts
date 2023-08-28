@@ -7,6 +7,4 @@ import { UserService } from './user.service';
 @Controller('user')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtGuard)
-export class UserController {
-  
-}
+export class UserController {}

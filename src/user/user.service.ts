@@ -12,9 +12,9 @@ import { OrderingIoUser } from 'src/ordering.io/ordering.io.type';
 import { Prisma } from '@prisma/client';
 
 type UserInfoSelectBase = {
-  id: true,
-  firstName: true
-}
+  id: true;
+  firstName: true;
+};
 
 @Injectable()
 export class UserService {
@@ -62,32 +62,32 @@ export class UserService {
 
   async getUserByPublicId<S extends Prisma.UserSelect>(
     publicId: string,
-    select?: S
-  ): Promise<
-    Prisma.UserGetPayload<{ select: S }>
-  > {
+    select?: S,
+  ): Promise<Prisma.UserGetPayload<{ select: S }>> {
     return await this.prisma.user.findFirst({
       where: {
-        publicId
+        publicId,
       },
-      select
+      select,
     });
   }
 
-  async getUserByOrderingUserId<S extends Prisma.UserSelect = UserInfoSelectBase>(orderingUserId: number, select: S) {
+  async getUserByOrderingUserId<S extends Prisma.UserSelect = UserInfoSelectBase>(
+    orderingUserId: number,
+    select: S,
+  ) {
     return await this.prisma.user.findUnique({
       where: {
-        orderingUserId
+        orderingUserId,
       },
-      select
-    })
+      select,
+    });
   }
 
   async upsertUserFromOrderingInfo<S extends Prisma.UserSelect = UserInfoSelectBase>(
-    userInfo: OrderingIoUser & {password: string},
-    select: S
+    userInfo: OrderingIoUser & { password: string },
+    select: S,
   ) {
-    
     const expiredAt = moment().utc().add(userInfo.session.expires_in, 'milliseconds');
 
     const data = {
@@ -98,16 +98,16 @@ export class UserService {
       orderingAccessTokenExpiredAt: expiredAt.format(),
       email: userInfo.email,
       level: userInfo.level,
-      hash:  this.utils.getPassword(userInfo.password, true)
-    }
+      hash: this.utils.getPassword(userInfo.password, true),
+    };
 
     return await this.prisma.user.upsert({
       where: {
-        orderingUserId: userInfo.id
+        orderingUserId: userInfo.id,
       },
       create: data,
       update: data,
-      select
-    })
+      select,
+    });
   }
 }

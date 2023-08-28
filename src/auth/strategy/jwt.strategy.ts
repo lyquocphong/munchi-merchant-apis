@@ -20,7 +20,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     const user = await this.userService.getUserByPublicId(payload.userPublicId);
 
     if (!user) {
-      throw new ForbiddenException('Cannot find user from jwt token')
+      throw new ForbiddenException('Cannot find user from jwt token');
     }
 
     return { ...payload, ...user };

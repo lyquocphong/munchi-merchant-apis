@@ -18,16 +18,18 @@ export class RefreshTokenStrategy extends PassportStrategy(Strategy, 'jwt-refres
   }
 
   async validate(req: Request, payload: JwtTokenPayload) {
-
     const selectInfo = Prisma.validator<Prisma.UserSelect>()({
       id: true,
       orderingUserId: true,
-    })
+    });
 
-    const user = await this.userService.getUserByPublicId<typeof selectInfo>(payload.userPublicId, selectInfo);
-    
+    const user = await this.userService.getUserByPublicId<typeof selectInfo>(
+      payload.userPublicId,
+      selectInfo,
+    );
+
     if (!user) {
-      throw new ForbiddenException('Cannot find user from refresh token')
+      throw new ForbiddenException('Cannot find user from refresh token');
     }
 
     const refreshToken = req.get('Authorization').replace('Bearer', '').trim();

@@ -10,6 +10,6 @@ import { JwtModule } from '@nestjs/jwt';
 @Module({
   imports: [NotificationModule, AuthModule, UserModule, OrderingIoModule, JwtModule],
   controllers: [ReportController],
-  providers: [SessionService]
+  providers: [SessionService],
 })
 export class ReportModule {}

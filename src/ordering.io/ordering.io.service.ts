@@ -55,7 +55,9 @@ export class OrderingIoService {
   async getAllBusiness(accessToken: string) {
     const options = {
       method: 'GET',
-      url: `${this.utils.getEnvUrl('business')}?type=1&params=name,logo,metafields,today,schedule,owners,enabled&mode=dashboard`,
+      url: `${this.utils.getEnvUrl(
+        'business',
+      )}?type=1&params=name,logo,metafields,today,schedule,owners,enabled&mode=dashboard`,
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
@@ -143,7 +145,7 @@ export class OrderingIoService {
       },
     };
 
-    console.log(options.url)
+    console.log(options.url);
 
     try {
       const response = await axios.request(options);
@@ -152,7 +154,7 @@ export class OrderingIoService {
       this.utils.logError(error);
     }
   }
-  
+
   async getFilteredOrders(
     accessToken: string,
     businessId: number,
@@ -276,10 +278,10 @@ export class OrderingIoService {
 
   /**
    * Set schedule for business
-   * 
-   * @param accessToken 
+   *
+   * @param accessToken
    * @param schedule    Json string of schedule
-   * @returns 
+   * @returns
    */
   async setBusinessSchedule(accessToken: string, schedule: string) {
     const options = {
