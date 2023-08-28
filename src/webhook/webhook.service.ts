@@ -59,6 +59,7 @@ export class WebhookService implements OnModuleInit {
   async notifyCheckBusinessStatus(businessPublicId: string) {
     const business = await this.business.findBusinessByPublicId(businessPublicId);
     console.log(`emit business_status_change because of ${businessPublicId}`);
-    this.server.to(business.orderingBusinessId.toString()).emit('business_status_change');
+    const message = `${business.name} status changed`;
+    this.server.to(business.orderingBusinessId.toString()).emit('business_status_change', message);
   }
 }
