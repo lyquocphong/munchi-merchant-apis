@@ -20,14 +20,12 @@ export class NotificationService {
     private readonly onesignal: OneSignalService,
     private readonly businessService: BusinessService,
     private readonly configService: ConfigService,
-    private readonly sessionService: SessionService
+    private readonly sessionService: SessionService,
   ) {}
 
   @Interval(60000) // Make push notification in every mins
   async createOpenAppPushNotification() {
-    const ignore = this.configService.get<boolean>(
-      'IGNORE_SENDING_OPEN_APP_NOTIFICATION'
-    );
+    const ignore = this.configService.get<boolean>('IGNORE_SENDING_OPEN_APP_NOTIFICATION');
 
     if (ignore) {
       this.logger.log('Ignore the open app notification cron');
@@ -52,8 +50,8 @@ export class NotificationService {
 
         if (!schedules[businessId]) {
           schedule = await this.businessService.getBusinessTodayScheduleById(
-            session.user.id,
-            businessId
+            session.user.orderingUserId,
+            businessId,
           );
           schedules[businessId] = schedule;
         } else {
@@ -71,11 +69,11 @@ export class NotificationService {
         schedule.today.lapses.forEach((lapse) => {
           const openTimeBusinessTimezone = moment.tz(
             { hour: lapse.open.hour, minute: lapse.open.minute },
-            schedule.timezone
+            schedule.timezone,
           );
           const closeTimeBusinessTimezone = moment.tz(
             { hour: lapse.close.hour, minute: lapse.close.minute },
-            schedule.timezone
+            schedule.timezone,
           );
           const openTimeDiff = openTimeBusinessTimezone.diff(now, 'minutes');
           const closeTimeDiff = closeTimeBusinessTimezone.diff(now, 'minutes');

@@ -12,6 +12,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ReportModule } from 'src/report/report.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { NotificationModule } from 'src/notification/notification.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -27,6 +28,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     AuthModule,
     ReportModule,
     ScheduleModule.forRoot(),
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
