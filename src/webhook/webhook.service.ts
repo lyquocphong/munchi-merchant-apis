@@ -22,7 +22,8 @@ export class WebhookService implements OnModuleInit {
         console.log(`Try to join room ${room}`);
         const business = await this.business.findBusinessByPublicId(room);
         if (!business) {
-          throw new ForbiddenException(403, `No business found for ${room}`);
+          console.log(`No business found for ${room}`);
+          // throw new ForbiddenException(403, `No business found for ${room}`);
         } else {
           socket.join(business.orderingBusinessId.toString());
         }
@@ -32,7 +33,8 @@ export class WebhookService implements OnModuleInit {
         console.log(`Try to leave room ${room}`);
         const business = await this.business.findBusinessByPublicId(room);
         if (!business) {
-          throw new ForbiddenException(403, `No business found for ${room}`);
+          console.log(`No business found for ${room}`);
+          //throw new ForbiddenException(403, `No business found for ${room}`);
         } else {
           socket.leave(business.orderingBusinessId.toString());
         }

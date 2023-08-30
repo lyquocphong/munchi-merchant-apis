@@ -208,6 +208,7 @@ export class SessionService {
         user: {
           select: {
             id: true,
+            orderingUserId: true,
           },
         },
       },

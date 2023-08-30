@@ -162,8 +162,8 @@ export class BusinessService {
     return plainToClass(BusinessDto, business);
   }
 
-  async getBusinessTodayScheduleById(userId: number, publicBusinessId: string) {
-    const business = await this.getOrderingBusiness(userId, publicBusinessId);
+  async getBusinessTodayScheduleById(orderingUserId: number, publicBusinessId: string) {
+    const business = await this.getOrderingBusiness(orderingUserId, publicBusinessId);
     return { today: business.today, timezone: business.timezone };
   }
 
