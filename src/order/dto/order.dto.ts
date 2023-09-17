@@ -56,6 +56,9 @@ export class OrderDto {
   @Expose()
   business: BusinessDto;
 
+  @Expose()
+  comment: string;
+
   constructor(partial: Partial<OrderDto>) {
     Object.assign(this, partial);
   }

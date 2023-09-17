@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { OneSignalService } from 'src/onesignal/onesignal.service';
@@ -12,7 +12,7 @@ import { JwtModule } from '@nestjs/jwt';
 @Module({
   imports: [
     PrismaModule,
-    BusinessModule,
+    forwardRef(() => BusinessModule),
     AuthModule,
     UserModule,
     OrderingIoModule,

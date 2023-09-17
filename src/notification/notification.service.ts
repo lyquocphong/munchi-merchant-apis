@@ -1,14 +1,10 @@
 // notification/notification.service.ts
 
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { NotificationType } from './notification.type';
+import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
 import { OneSignalService } from 'src/onesignal/onesignal.service';
-import { ReportAppStateDto } from 'src/report/dto/report.dto';
 import { BusinessService } from 'src/business/business.service';
 import moment from 'moment-timezone';
-import { ConfigService } from '@nestjs/config';
 import { SessionService } from 'src/auth/session.service';
 
 @Injectable()
@@ -16,22 +12,39 @@ export class NotificationService {
   private readonly logger = new Logger(NotificationService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
     private readonly onesignal: OneSignalService,
-    private readonly businessService: BusinessService,
-    private readonly configService: ConfigService,
     private readonly sessionService: SessionService,
+    @Inject(forwardRef(() => BusinessService)) private businessService: BusinessService,
   ) {}
 
-  @Interval(60000) // Make push notification in every mins
-  async createOpenAppPushNotification() {
-    const ignore = this.configService.get<boolean>('IGNORE_SENDING_OPEN_APP_NOTIFICATION');
+  async sendNewOrderNotification(orderingBusinessId: number) {
+    this.logger.warn('Send new order push notification');
 
-    if (ignore) {
-      this.logger.log('Ignore the open app notification cron');
+    const business = await this.businessService.findBusinessByOrderingId(orderingBusinessId, {
+      include: {
+        sessions: true,
+      },
+    });
+
+    if (!business) {
       return;
     }
 
+    const deviceIds = [];
+    for (const session of business.sessions) {
+      deviceIds.push(session.deviceId);
+    }
+
+    console.log(`Make new order push notification to: ${deviceIds}`);
+
+    if (deviceIds.length > 0) {
+      this.onesignal.pushNewOrderNotification([...new Set(deviceIds)]);
+    }
+  }
+
+  @Interval(60000) // Make push notification in every mins
+  async createOpenAppPushNotification() {
+    this.logger.warn('Send open app push notification');
     // Get all offline session
     const offlineSessions = await this.sessionService.getOfflineSession();
 

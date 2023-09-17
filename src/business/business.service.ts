@@ -86,7 +86,7 @@ export class BusinessService {
 
       // TODO: Need to remove if owner has been remove
 
-      const convertData = {...business, id: existedBusiness.publicId};
+      const convertData = { ...business, id: existedBusiness.publicId };
       businessDtos.push(plainToClass(BusinessDto, convertData));
     }
 
@@ -190,16 +190,31 @@ export class BusinessService {
     });
   }
 
-  async findBusinessByOrderingId(orderingBusinessId: number) {
-    const business = await this.prisma.business.findUnique({
+  async findBusinessByOrderingId<P extends Prisma.BusinessArgs>(orderingBusinessId: number, getPayload: P): Promise<
+    Prisma.BusinessGetPayload<P>
+  > {
+
+    const options = {
       where: {
         orderingBusinessId
       },
-      include: {
-        owners: true,
-      },
+      ...getPayload,
+    };
+
+    return await this.prisma.business.findUnique(options) as Prisma.BusinessGetPayload<P>;
+  }
+
+  async getAssociateSessions(
+    condition: Prisma.BusinessWhereInput
+  ): Promise<
+    Prisma.BusinessGetPayload<{
+      include: { sessions: true }
+    }>[]
+  > {
+    return await this.prisma.business.findMany({
+      where: condition,
+      include: { sessions: true }
     });
-    return business;
   }
 
   async findAllBusiness<S extends Prisma.BusinessSelect>(
