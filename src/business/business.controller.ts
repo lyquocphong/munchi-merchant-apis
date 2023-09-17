@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import {
   BadRequestException,
   Body,
@@ -29,7 +30,7 @@ import { SessionService } from 'src/auth/session.service';
 })
 @ApiTags('business')
 export class BusinessController {
-  constructor(private businessService: BusinessService, private sessionService: SessionService) {}
+  constructor(private businessService: BusinessService, private sessionService: SessionService) { }
 
   @ApiAcceptedResponse({
     description: 'Get all businesses',
@@ -39,6 +40,29 @@ export class BusinessController {
     const { sessionPublicId } = req.user;
     const user = await this.sessionService.getSessionUserBySessionPublicId(sessionPublicId);
     return this.businessService.getAllBusiness(user.orderingUserId);
+  }
+
+  @ApiCreatedResponse({
+    description: 'Get business in session',
+  })
+  @Get('session-business')
+  async getBusinessInSession(@Request() req: any) {
+    const { sessionPublicId } = req.user;
+    const findSessionArgs = Prisma.validator<Prisma.SessionFindFirstArgsBase>()({
+      select: {
+        businesses: {
+          select: {
+            publicId: true,
+          },
+        },
+      },
+    });
+
+    const session = await this.sessionService.getSessionByPublicId<
+      Prisma.SessionGetPayload<typeof findSessionArgs>
+    >(sessionPublicId, findSessionArgs);
+
+    return session.businesses;
   }
 
   @ApiCreatedResponse({

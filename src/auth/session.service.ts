@@ -31,7 +31,7 @@ export class SessionService {
     private readonly jwt: JwtService,
     private config: ConfigService,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   async hashData(data: string) {
     return argon2.hash(data);
@@ -73,7 +73,7 @@ export class SessionService {
       },
     });
 
-    const session = await this.getSessionByPublcId<
+    const session = await this.getSessionByPublicId<
       Prisma.SessionGetPayload<typeof findSessionArgs>
     >(sessionPublicId, findSessionArgs);
     const { user } = session;
@@ -151,7 +151,7 @@ export class SessionService {
     });
   }
 
-  async getSessionByPublcId<T>(publicId: string, args?): Promise<T> {
+  async getSessionByPublicId<T>(publicId: string, args?): Promise<T> {
     let findArgs: Prisma.SessionFindUniqueArgsBase = {
       where: {
         publicId: publicId,
@@ -189,6 +189,14 @@ export class SessionService {
     });
 
     return session.user;
+  }
+
+  async getSessionByDeviceId(deviceId: string) {
+    return await this.prisma.session.findMany({
+      where: {
+        deviceId,
+      },
+    });
   }
 
   async getOfflineSession() {
@@ -235,7 +243,7 @@ export class SessionService {
       },
     });
 
-    const session = await this.getSessionByPublcId<
+    const session = await this.getSessionByPublicId<
       Prisma.SessionGetPayload<typeof findSessionArgs>
     >(sessionPublicId, findSessionArgs);
 
@@ -262,6 +270,7 @@ export class SessionService {
       select: {
         id: true,
         refreshToken: true,
+        deviceId: true,
         user: {
           select: {
             id: true,
@@ -273,7 +282,7 @@ export class SessionService {
         },
       },
     });
-    const session = await this.getSessionByPublcId<
+    const session = await this.getSessionByPublicId<
       Prisma.SessionGetPayload<typeof findSessionArgs>
     >(sessionPublicId, findSessionArgs);
 
@@ -308,17 +317,49 @@ export class SessionService {
       },
     });
 
+    const sessions = await this.getSessionByDeviceId(deviceId);
+
+    const invalidSessionIds = [];
+    sessions.forEach((session) => {
+      if (session.publicId === sessionPublicId) {
+        return true;
+      }
+
+      invalidSessionIds.push(session.id);
+    });
+
+    // Remove other sessions which has same deviceId
+    if (invalidSessionIds.length > 0) {
+      await this.prisma.session.deleteMany({
+        where: {
+          id: {
+            in: invalidSessionIds,
+          },
+        },
+      });
+    }
+
+    const data: Prisma.SessionUpdateInput = {
+      businesses: {
+        connect: validIds,
+      },
+    };
+
+    /**
+     * Normally we need to update deviceId for session
+     * but for some reason there is session has deviceId
+     * already so we need to check if session has or not
+     */
+    if (!session.deviceId) {
+      data.deviceId = deviceId;
+    }
+
     // Reconnect
     await this.prisma.session.update({
       where: {
         publicId: sessionPublicId,
       },
-      data: {
-        businesses: {
-          connect: validIds,
-        },
-        deviceId: deviceId,
-      },
+      data,
     });
   }
 }

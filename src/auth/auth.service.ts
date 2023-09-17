@@ -100,7 +100,7 @@ export class AuthService {
       },
     });
 
-    const session = await this.sessionService.getSessionByPublcId<
+    const session = await this.sessionService.getSessionByPublicId<
       Prisma.SessionGetPayload<typeof findSessionArgs>
     >(sessionPublicId, findSessionArgs);
     console.log(session.user);

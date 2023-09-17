@@ -1,3 +1,4 @@
+import { NotificationService } from './../notification/notification.service';
 /* eslint-disable prettier/prettier */
 import { ForbiddenException, Inject, Injectable, OnModuleInit, forwardRef } from '@nestjs/common';
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets/decorators';
@@ -11,7 +12,8 @@ export class WebhookService implements OnModuleInit {
   @WebSocketServer() public server: Server;
   constructor(
     @Inject(forwardRef(() => BusinessService)) private business: BusinessService,
-    private utils: UtilsService
+    private utils: UtilsService,
+    private notificationService: NotificationService
   ) { }
 
   onModuleInit() {
@@ -45,6 +47,7 @@ export class WebhookService implements OnModuleInit {
   async newOrderNotification(order: any) {
     try {
       this.server.to(order.business_id.toString()).emit('orders_register', order);
+      this.notificationService.sendNewOrderNotification(order.business_id);
     } catch (error) {
       this.utils.logError(error);
     }
