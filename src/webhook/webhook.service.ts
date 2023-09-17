@@ -41,6 +41,14 @@ export class WebhookService implements OnModuleInit {
           socket.leave(business.orderingBusinessId.toString());
         }
       });
+
+      /**
+       * Notify when new order popup is closed and server emit event
+       * back for other apps if avaiable to close the popup for same order
+       */
+      socket.on('order-popup-closed', async (orderId: string, businessId: string) => {
+        this.server.to(businessId).emit('close-order-popup', orderId);
+      })
     });
   }
 
