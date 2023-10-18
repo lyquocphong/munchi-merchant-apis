@@ -6,10 +6,12 @@ import { AuthModule } from 'src/auth/auth.module';
 import { UserModule } from 'src/user/user.module';
 import { OrderingIoModule } from 'src/ordering.io/ordering.io.module';
 import { JwtModule } from '@nestjs/jwt';
+import { ReportService } from './report.service';
+import { MailModule } from 'src/mail/mail.module';
 
 @Module({
-  imports: [NotificationModule, AuthModule, UserModule, OrderingIoModule, JwtModule],
+  imports: [NotificationModule, AuthModule, UserModule, OrderingIoModule, JwtModule, MailModule],
   controllers: [ReportController],
-  providers: [SessionService],
+  providers: [SessionService, ReportService],
 })
-export class ReportModule {}
+export class ReportModule { }

@@ -3,17 +3,18 @@
 import {
   Body,
   Controller,
-  Post,
-  UseGuards,
-  Request,
   Logger,
+  Post,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
-import { ReportAppBusinessDto, ReportAppStateDto } from './dto/report.dto';
-import { NotificationService } from '../notification/notification.service'; // Adjust the import path based on your file structure
-import { AppState } from './report.type';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtGuard } from 'src/auth/guard/jwt.guard';
 import { SessionService } from 'src/auth/session.service';
+import { NotificationService } from '../notification/notification.service'; // Adjust the import path based on your file structure
+import { ReportAppBusinessDto, ReportAppStateDto } from './dto/report.dto';
+import { ReportService } from './report.service';
+import { AppState } from './report.type';
 
 @ApiTags('report')
 @Controller('report')
@@ -22,8 +23,10 @@ export class ReportController {
 
   constructor(
     private readonly notificationService: NotificationService,
-    private readonly sessionService: SessionService
-  ) {}
+    private readonly sessionService: SessionService,
+    private readonly reportService: ReportService,
+
+  ) { }
 
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtGuard)
@@ -53,5 +56,14 @@ export class ReportController {
       reportAppBusinessDto
     );
     return { message: 'App businesses reported successfully' };
+  }
+
+  @Post('weekly-report')
+  async sendWeeklyReport() {
+    //Todo;get business or business  list here
+    //Todo: calculate data here as well
+    //Todo: pass business data and reportData to sendWeeklyReportEmail
+    await this.reportService.sendWeeklyReportEmail()
+    return { message: 'send email successully' };
   }
 }
