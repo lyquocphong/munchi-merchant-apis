@@ -15,17 +15,17 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       useFactory: async (configService: ConfigService) => ({
         transport: {
           host: configService.get<string>('MAIL_SERVICE'),
-          secure: false,
+          secure: configService.get<boolean>('MAIL_SECURE'),
           auth: {
             user: configService.get<string>('MAIL_USER'),
             pass: configService.get<string>('MAIL_PASS'),
           },
         },
         defaults: {
-          from: '"No Reply" <noreply@example.com>',
+          from: `"No Reply" ${configService.get<string>('DEFAULT_SENDER')}`,
         },
         template: {
-          dir: join(__dirname, 'templates'),
+          dir: join(__dirname, 'mail/templates'),
           adapter: new HandlebarsAdapter(),
           options: {
             strict: true,
@@ -39,4 +39,4 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
   providers: [MailService],
   exports: [MailService], // 👈 export for DI
 })
-export class MailModule {}
+export class MailModule { }
