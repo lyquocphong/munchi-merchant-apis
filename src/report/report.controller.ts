@@ -15,6 +15,8 @@ import { NotificationService } from '../notification/notification.service'; // A
 import { ReportAppBusinessDto, ReportAppStateDto } from './dto/report.dto';
 import { ReportService } from './report.service';
 import { AppState } from './report.type';
+import { BusinessService } from 'src/business/business.service';
+import { Business } from '@prisma/client';
 
 @ApiTags('report')
 @Controller('report')
@@ -25,6 +27,7 @@ export class ReportController {
     private readonly notificationService: NotificationService,
     private readonly sessionService: SessionService,
     private readonly reportService: ReportService,
+    private readonly businessService: BusinessService,
 
   ) { }
 
@@ -61,9 +64,12 @@ export class ReportController {
   @Post('weekly-report')
   async sendWeeklyReport() {
     //Todo;get business or business  list here
+
+    const juicyBurger = await this.businessService.findBusinessByOrderingId(351,null)
+    // console.log(juicyBurger)
     //Todo: calculate data here as well
     //Todo: pass business data and reportData to sendWeeklyReportEmail
-    await this.reportService.sendWeeklyReportEmail()
+    await this.reportService.sendWeeklyReportEmail(juicyBurger as Business)
     return { message: 'send email successully' };
   }
 }
