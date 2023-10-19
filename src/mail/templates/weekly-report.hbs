@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400&display=swap');
+
+    body {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-family: 'DM Sans';
+    }
+
+    p,
+    h2 {
+        padding: 0;
+        margin: 0;
+    }
+
+    a {
+        color: black;
+    }
+
+    .hero_container {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        margin-top: 3rem;
+    }
+
+    .report_container {
+        margin-top: 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .template_container {
+        width: 640px;
+        gap: 1rem;
+    }
+
+    .report_table {
+        display: flex;
+        justify-content: space-evenly;
+    }
+
+    .report_item {
+        display: flex;
+        flex-direction: column;
+        place-items: center;
+    }
+
+    .report {
+        font-size: 1.5rem;
+    }
+
+    .statistic {
+        font-size: 2.5rem;
+    }
+</style>
+
+<body>
+    <div class="template_container">
+        <div class="hero_container">
+            <img src="cid:hero-image" alt="hero"/>
+        </div>
+        <div class="report_container">
+            <div>Hi Mario</div>
+            <div>Your weekly digest is here!</div>
+            <div class="report_table">
+                <div class="report_item">
+                    <h2 class="statistic">{{orders}}</h2>
+                    <p class="report">Orders</p>
+                </div>
+                <div class="report_item">
+                    <h2 class="statistic">{{revenue}} €</h2>
+                    <p class="report">Revenue</p>
+                </div>
+                {{#if reviews}}
+                <div class="report_item">
+                    <h2 class="statistic">{{ reviews }}</h2>
+                    <p class="report">Reviews</p>
+                </div>
+                {{/if}}
+                {{#if avgRating}}
+                <div class="report_item">
+                    <h2 class="statistic">{{ avgRating }}</h2>
+                    <p class="report">Avg. rating</p>
+                </div>
+                {{/if}}
+            </div>
+
+            <div>Till date you have received <b>100 orders</b> and generated <b>14 540 € </b>in commission free sales.
+                Good job!</div>
+            <div>You can dive deeper into last week’s customer feedback in your <a href="#">review’s hub</a>. For more
+                sales
+                insights
+                you can head to your <a href="#">restaurant’s admin hub</a>.</div>
+        </div>
+    </div>
+</body>
+
+</html>
