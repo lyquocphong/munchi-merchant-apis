@@ -10,7 +10,20 @@ export class ReportService {
   constructor(private readonly mailService: MailService,
     private readonly orderingService: OrderingIoService
   ) { }
-  async sendWeeklyReportEmail(business: Business) {
+  async sendWeeklyReport(business: Business, apiKey:string) {
+    //default send for all business (type)
+
+    //build more reports weeklyReport chay de send weeklyreport
+
+    //phan biet giua chuc nang va report
+
+    //module name sendDailyReport? all b2b receive 
+
+    //another cron will take data from table report to check who is the recipient, title, invoice ?
+
+    //special case like momotoko
+    //go in to report to take type ('weekly')
+
     const filterData: any = {
       query: `"status":[11,15]`,
       paramsQuery: [
@@ -35,26 +48,27 @@ export class ReportService {
         'paymethod_id'
       ].join(','),
     }
-    const order = await this.orderingService.getFilteredOrders('', 351, filterData.query, filterData.paramsQuery)
-    const { orderQuantity, subTotal, subTotalWithDisount, total } = this.calculateReportData(order)
-    return await this.mailService.sendEmail({
-      recipient: 'test@test.com', data: {
-        orderTotal: orderQuantity,
-        subTotal: subTotal.toFixed(2),
-        subTotalWithDisount: subTotalWithDisount.toFixed(2),
-        total: total.toFixed(2)
-      }
-    })
+    // const order = await this.orderingService.getFilteredOrders('', filterData.query, filterData.paramsQuery,apiKey)
+    // const orderQuantity = order.length
+    // const { subTotal, subTotalWithDisount, total } = this.calculateReportData(order)
+    // return await this.mailService.sendEmail({
+    //   recipient, data: {
+    //     orderTotal: orderQuantity,
+    //     subTotal: subTotal.toFixed(2),
+    //     subTotalWithDisount: subTotalWithDisount.toFixed(2),
+    //     total: total.toFixed(2)
+    //   }
+    // })
   }
 
+  //TODO 
   calculateReportData(order: any) {
     //calculate order number here than return necessary values
-    const orderQuantity = order.length
+  
     const subTotal = order.reduce((a, b) => a + b.summary.subtotal, 0)
     const subTotalWithDisount = order.reduce((a, b) => a + b.summary.subtotal_with_discount, 0)
     const total = order.reduce((a, b) => a + b.summary.total, 0)
     return {
-      orderQuantity,
       subTotal,
       subTotalWithDisount,
       total
