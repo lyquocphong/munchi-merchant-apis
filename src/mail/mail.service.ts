@@ -1,9 +1,10 @@
-import { MailerService } from '@nestjs-modules/mailer';
+import { ISendMailOptions, MailerService } from '@nestjs-modules/mailer';
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import path from 'path';
 import { PdfService } from 'src/pdf/pdf.service';
 import { MailProps } from './mail.type';
+import { SendMailOptions } from 'nodemailer';
 @Injectable()
 export class MailService {
   constructor(
@@ -11,18 +12,17 @@ export class MailService {
     private readonly pdfService: PdfService,
     private readonly configService: ConfigService
   ) { }
-  async sendEmail({ from = this.configService.get('DEFAULT_SENDER'), recipient,data }: MailProps) {
-
+  async sendEmail({ sender,to: recipient,context: data }: ISendMailOptions) {
+    //sender , recipient
     const pdfBuffer = await this.pdfService.generatePdf()
     const heroImgPath = 'mail/templates/img/hero.png';
-
+    const templatePath = './weekly-report'
     try {
       await this.mailerService.sendMail({
         to: recipient, // list of receivers
-        from: from, // sender address
-        subject: 'Testing Nest MailerModule ✔', // Subject line
-        text: 'welcome', // plaintext body,
-        template: './weekly-report',
+        from: sender, // sender address
+        subject: 'Juicy burger weekly report', // Subject line
+        template: templatePath, //template path
         context: {
           orders: data.orderTotal,
           revenue: data.subTotal,
@@ -37,15 +37,19 @@ export class MailService {
 
           },
           {
-            filename: 'report-test.pdf',
+            filename: 'report.pdf',
             content: pdfBuffer
           }]
       })
     } catch (error) {
       console.log(error)
-      throw new ForbiddenException(error, '500')
+      throw new Error(error)
     }
 
+  }
+
+  async sendWeeklyEmail ({from,to, context}: ISendMailOptions) {
+    this.sendEmail({sender: from,  to: to, context:context})
   }
 }
 
