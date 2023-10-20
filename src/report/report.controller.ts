@@ -17,6 +17,8 @@ import { ReportService } from './report.service';
 import { AppState } from './report.type';
 import { BusinessService } from 'src/business/business.service';
 import { Business } from '@prisma/client';
+import { ConfigService } from '@nestjs/config';
+import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
 
 @ApiTags('report')
 @Controller('report')
@@ -28,7 +30,8 @@ export class ReportController {
     private readonly sessionService: SessionService,
     private readonly reportService: ReportService,
     private readonly businessService: BusinessService,
-
+    private readonly configService: ConfigService,
+    private readonly orderingService: OrderingIoService,
   ) { }
 
   @ApiBearerAuth('JWT-auth')
@@ -63,13 +66,16 @@ export class ReportController {
 
   @Post('weekly-report')
   async sendWeeklyReport() {
-    //Todo;get business or business  list here
+    //Get ordering api key
+    const orderingApiKey = this.configService.get('ORDERING_API_KEY');
 
-    const juicyBurger = await this.businessService.findBusinessByOrderingId(351,null)
+    //TODO:get business or business  list here
+    const businesses = await this.orderingService.getAllBusiness('',orderingApiKey); //business array
     // console.log(juicyBurger)
-    //Todo: calculate data here as well
-    //Todo: pass business data and reportData to sendWeeklyReportEmail
-    await this.reportService.sendWeeklyReportEmail(juicyBurger as Business)
+    //TODO: calculate data here as well
+    //TODO: pass business data and reportData to sendWeeklyReportEmail
+    // pass reportId into sendWeeklyReport
+    // await this.reportService.sendWeeklyReport()
     return { message: 'send email successully' };
   }
 }
