@@ -1,5 +1,5 @@
 export type MailProps = {
-    from?: string,
+    sender?: string,
     recipient: string,
     data?: ReportData
 }
