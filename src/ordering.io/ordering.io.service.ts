@@ -52,17 +52,22 @@ export class OrderingIoService {
   }
 
   //business services
-  async getAllBusiness(accessToken: string) {
+  async getAllBusiness(accessToken: string, apiKey?:string) {
     const options = {
       method: 'GET',
       url: `${this.utils.getEnvUrl(
         'business',
-      )}?type=1&params=name,logo,metafields,today,schedule,owners,enabled&mode=dashboard`,
+      )}?type=1&params=name,logo,metafields,today,schedule,owners,enabled,email&mode=dashboard`,
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
       },
     };
+
+    
+    if (apiKey) {
+      options.headers['x-api-key'] = apiKey;
+    }
 
     try {
       const response = await axios.request(options);
@@ -160,6 +165,7 @@ export class OrderingIoService {
     businessId: number,
     query: string,
     paramsQuery: string[],
+    apiKey?:string,
   ) {
     const options = {
       method: 'GET',
@@ -172,6 +178,10 @@ export class OrderingIoService {
       },
     };
 
+    if (apiKey) {
+      options.headers['x-api-key'] = apiKey;
+    }
+    
     try {
       const response = await axios.request(options);
       return response.data.result;
