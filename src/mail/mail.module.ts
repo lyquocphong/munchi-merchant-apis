@@ -1,11 +1,10 @@
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { Module } from '@nestjs/common';
-import { MailService } from './mail.service';
-import { join } from 'path';
-import { PdfService } from 'src/pdf/pdf.service';
-import { PdfModule } from 'src/pdf/pdf.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { join } from 'path';
+import { PdfModule } from 'src/pdf/pdf.module';
+import { MailService } from './mail.service';
 
 @Module({
   imports: [
@@ -15,14 +14,12 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       useFactory: async (configService: ConfigService) => ({
         transport: {
           host: configService.get<string>('MAIL_SERVICE'),
-          secure: configService.get<boolean>('MAIL_SECURE'),
+          secure: false,
+          port: 587,
           auth: {
             user: configService.get<string>('MAIL_USER'),
             pass: configService.get<string>('MAIL_PASS'),
           },
-        },
-        defaults: {
-          from: `"No Reply" ${configService.get<string>('DEFAULT_SENDER')}`,
         },
         template: {
           dir: join(__dirname, 'mail/templates'),
