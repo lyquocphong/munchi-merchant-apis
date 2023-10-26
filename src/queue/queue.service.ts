@@ -1,6 +1,6 @@
 import { WebhookService } from './../webhook/webhook.service';
 import { ActiveStatusQueue, Prisma } from '@prisma/client';
-import { Inject, Injectable, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Interval } from '@nestjs/schedule';
 import moment from 'moment';
@@ -8,11 +8,14 @@ import { BusinessService } from 'src/business/business.service';
 
 @Injectable()
 export class QueueService {
+
+  private readonly logger = new Logger(QueueService.name);
+
   constructor(
     private readonly prismaService: PrismaService,
     private readonly webhookService: WebhookService,
     @Inject(forwardRef(() => BusinessService)) private businessService: BusinessService,
-  ) {}
+  ) { }
 
   async upsertActiveStatusQueue(
     data: Prisma.ActiveStatusQueueCreateInput,
@@ -38,9 +41,9 @@ export class QueueService {
   async activeBusinessStatus() {
     // 1. Get queue
     const now = moment.utc();
-    console.log('now', now.toISOString());
+    // console.log('now', now.toISOString());
     const from = now.subtract(1, 'minutes');
-    console.log('from', from.toISOString());
+    // console.log('from', from.toISOString());
 
     const items = await this.prismaService.activeStatusQueue.findMany({
       where: {
@@ -52,10 +55,10 @@ export class QueueService {
       take: 10,
     });
 
-    console.log(`active queue items: ${items.length}`);
+    this.logger.warn(`active queue items: ${items.length}`);
 
     if (items.length == 0) {
-      console.log('Items is empty, return');
+      this.logger.warn('Items is empty, return');
       return;
     }
 

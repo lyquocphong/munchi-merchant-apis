@@ -8,15 +8,17 @@ datasource db {
 }
 
 model Session {
-  id           Int        @id @default(autoincrement())
-  publicId     String     @unique @default(uuid())
-  refreshToken String     @unique
-  userId       Int
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  businesses   Business[] @relation("BusinessSessionTable")
-  deviceId     String?    @unique
-  isOnline     Boolean    @default(true)
-  lastAccessTs DateTime   @db.Timestamp()
+  id                       Int        @id @default(autoincrement())
+  publicId                 String     @unique @default(uuid())
+  refreshToken             String     @unique
+  userId                   Int
+  user                     User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  businesses               Business[] @relation("BusinessSessionTable")
+  deviceId                 String?    @unique
+  isOnline                 Boolean    @default(true)
+  lastAccessTs             DateTime   @db.Timestamp()
+  openAppNotificationCount Int?       @default(0)
+  openAppNotifcationSending Boolean   @default(false)
 }
 
 model User {
