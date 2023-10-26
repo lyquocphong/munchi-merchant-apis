@@ -223,6 +223,45 @@ export class SessionService {
     });
   }
 
+  async incrementOpenAppNotificationCount(sessionIds: number[]) {
+    await this.prisma.session.updateMany({
+      where: {
+        id: {
+          in: sessionIds,
+        },
+      },
+      data: {
+        openAppNotificationCount: {
+          increment: 1,
+        },
+      },
+    });
+  }
+
+  async getSessionToEmitUpdateAppState() {
+    return await this.prisma.session.findMany({
+      where: {
+        openAppNotificationCount: {
+          gte: 2,
+        },
+      },
+    });
+  }
+
+  async setOpenAppNotificationSending(status: boolean, sessionIds: number[]) {
+    await this.prisma.session.updateMany({
+      where: {
+        isOnline: false,
+        id: {
+          in: sessionIds,
+        },
+      },
+      data: {
+        openAppNotifcationSending: status,
+      },
+    });
+  }
+
   async updateAccessTime(sessionPublicId: string) {
     await this.prisma.session.update({
       where: {
@@ -240,6 +279,7 @@ export class SessionService {
       select: {
         id: true,
         publicId: true,
+        openAppNotificationCount: true,
       },
     });
 
@@ -251,13 +291,17 @@ export class SessionService {
       throw new NotFoundException('Cannot find session by public Id');
     }
 
+    const data: Prisma.SessionUpdateInput = {
+      isOnline,
+    };
+
+    data.openAppNotificationCount = isOnline ? 0 : session.openAppNotificationCount + 1;
+
     await this.prisma.session.update({
       where: {
         publicId: sessionPublicId,
       },
-      data: {
-        isOnline,
-      },
+      data,
     });
   }
 

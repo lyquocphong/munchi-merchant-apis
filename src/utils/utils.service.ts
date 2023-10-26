@@ -1,18 +1,22 @@
 /* eslint-disable prettier/prettier */
-import { ForbiddenException, Injectable, Inject, forwardRef } from '@nestjs/common';
+import { ForbiddenException, Injectable, Inject, forwardRef, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import Cryptr from 'cryptr';
 import moment from 'moment';
 import { SessionService } from 'src/auth/session.service';
+import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UserService } from 'src/user/user.service';
 import { v4 as uuidv4 } from 'uuid';
 @Injectable()
 export class UtilsService {
+  private readonly logger = new Logger(UtilsService.name);
+
   constructor(
     @Inject(forwardRef(() => SessionService)) private readonly sessionService: SessionService,
     @Inject(forwardRef(() => UserService)) private readonly userService: UserService,
+    @Inject(forwardRef(() => OrderingIoService)) private readonly orderingIoService: OrderingIoService,
     private readonly prisma: PrismaService,
     private config: ConfigService,
   ) { }
@@ -37,7 +41,8 @@ export class UtilsService {
         hash: true,
         orderingAccessTokenExpiredAt: true,
         orderingAccessToken: true,
-        email: true
+        email: true,
+        orderingUserId: true,
     })
 
     let user = await this.userService.getUserByOrderingUserId<typeof selectArg>(orderingUserId, selectArg);
@@ -48,10 +53,10 @@ export class UtilsService {
 
     const decryptedPassword = this.getPassword(user.hash, false);
 
-    const expireAt = moment(user.orderingAccessTokenExpiredAt).format();
-    const diff = moment(expireAt).diff(moment(), 'minutes');
-
-    if (diff <= 60) {
+    try {
+      // Try to use accesstoken to get user key if no success, login again for new token
+      await this.orderingIoService.getUserKey(user.orderingAccessToken, user.orderingUserId);
+    } catch (error) {
       try {
         await this.sessionService.updateOrderingIoAccessToken({
           email: user.email,
@@ -83,8 +88,9 @@ export class UtilsService {
   }
 
   logError(error: any) {
+    this.logger.error(error);
     if (error.response) {
-      const errorMsg = error.response.data;
+      const errorMsg = error.response.data;      
       throw new ForbiddenException(errorMsg);
     } else {
       throw new ForbiddenException(error);

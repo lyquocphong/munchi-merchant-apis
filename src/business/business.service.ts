@@ -66,7 +66,6 @@ export class BusinessService {
   async getAllBusiness(orderingId: number): Promise<BusinessDto[]> {
     const accessToken = await this.utils.getOrderingAccessToken(orderingId);
     const response: OrderingIoBusiness[] = await this.orderingIo.getAllBusiness(accessToken);
-    console.log(response);
     const user = await this.userService.getUserInternally(orderingId, null);
 
     if (!user) {
@@ -128,8 +127,8 @@ export class BusinessService {
       throw new NotFoundException('Cannot find business to set today schedule');
     }
 
-    const { schedule } = business;
-    const numberOfToday = moment().weekday();
+    const { schedule, timezone } = business;
+    const numberOfToday = moment().tz(timezone).weekday();
     schedule[numberOfToday].enabled = status;
     const accessToken = await this.utils.getOrderingAccessToken(user.orderingUserId);
     const response = await this.orderingIo.editBusiness(accessToken, business.id, { schedule: JSON.stringify(schedule) });
@@ -164,7 +163,7 @@ export class BusinessService {
 
   async getBusinessTodayScheduleById(orderingUserId: number, publicBusinessId: string) {
     const business = await this.getOrderingBusiness(orderingUserId, publicBusinessId);
-    return { today: business.today, timezone: business.timezone };
+    return { today: business.today, timezone: business.timezone, name: business.name };
   }
 
   async updateBusinessOwners(businsessData: any, orderingUserId: number) {

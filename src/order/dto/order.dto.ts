@@ -4,6 +4,17 @@ import { ProductDto } from './product.dto';
 import { SummaryDto } from './summary.dto';
 import { HistoryDto } from './history.dto';
 import { BusinessDto } from 'src/business/dto/business.dto';
+import { OfferDto } from 'src/order/dto/offer.dto';
+
+class ReportingData {
+  @Expose()
+  at: Array<Record<string, string>>;
+
+  constructor(data: Array<Record<string, string>>) {
+    this.at = data;
+  }
+}
+
 
 @Exclude()
 export class OrderDto {
@@ -47,7 +58,7 @@ export class OrderDto {
 
   @Expose()
   @Type(() => CustomerDto)
-  customer: CustomerDto[];
+  customer: CustomerDto;
 
   @Expose()
   @Type(() => HistoryDto)
@@ -59,7 +70,15 @@ export class OrderDto {
   @Expose()
   comment: string;
 
+  @Expose()
+  @Type(() => OfferDto)
+  offers: OfferDto[];
+
+  @Expose()
+  reporting_data: ReportingData;
+
   constructor(partial: Partial<OrderDto>) {
     Object.assign(this, partial);
   }
 }
+

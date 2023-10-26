@@ -1,3 +1,4 @@
+import { WebhookService } from './../webhook/webhook.service';
 // notification/notification.service.ts
 
 import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
@@ -15,6 +16,7 @@ export class NotificationService {
     private readonly onesignal: OneSignalService,
     private readonly sessionService: SessionService,
     @Inject(forwardRef(() => BusinessService)) private businessService: BusinessService,
+    @Inject(forwardRef(() => WebhookService)) private webhookService: WebhookService,
   ) {}
 
   async sendNewOrderNotification(orderingBusinessId: number) {
@@ -35,7 +37,7 @@ export class NotificationService {
       deviceIds.push(session.deviceId);
     }
 
-    console.log(`Make new order push notification to: ${deviceIds}`);
+    this.logger.warn(`Make new order push notification to: ${deviceIds}`);
 
     if (deviceIds.length > 0) {
       this.onesignal.pushNewOrderNotification([...new Set(deviceIds)]);
@@ -49,10 +51,16 @@ export class NotificationService {
     const offlineSessions = await this.sessionService.getOfflineSession();
 
     if (offlineSessions.length == 0) {
-      this.logger.log('Do not need to make any push notification');
+      this.logger.warn('Do not need to make any push notification');
       return;
     }
 
+    const sessionIds = offlineSessions.map((session) => session.id);
+    this.logger.warn('Checking push notification for session '.concat(JSON.stringify(sessionIds)));
+
+    await this.sessionService.setOpenAppNotificationSending(true, sessionIds);
+
+    const sendingSessionIds = [];
     const deviceIds = [];
     const schedules = {};
     for (const session of offlineSessions) {
@@ -71,38 +79,81 @@ export class NotificationService {
           schedule = schedules[businessId];
         }
 
+        this.logger.warn(`Business ${schedule.name} has schedule ${JSON.stringify(schedule)}`);
+
         // If today is not enabled, do not make push notification
         if (!schedule.today.enabled) {
+          this.logger.warn(`Business ${schedule.name} does not enabled for today`);
+
           return false;
         }
 
         // Get current time in business timezone
-        const now = moment().tz(schedule.timezone);
+        const now = moment.utc().tz(schedule.timezone);
+        this.logger.warn(`Checking Business ${schedule.name} now ${now}`);
 
         schedule.today.lapses.forEach((lapse) => {
-          const openTimeBusinessTimezone = moment.tz(
-            { hour: lapse.open.hour, minute: lapse.open.minute },
-            schedule.timezone,
+          const openTimeBusinessTimezone = moment
+            .utc()
+            .tz(schedule.timezone)
+            .set({ hour: lapse.open.hour, minute: lapse.open.minute });
+
+          const closeTimeBusinessTimezone = moment
+            .utc()
+            .tz(schedule.timezone)
+            .set({ hour: lapse.close.hour, minute: lapse.close.minute });
+
+          const openTimeDiff = openTimeBusinessTimezone.diff(
+            moment.utc().tz(schedule.timezone),
+            'minutes',
           );
-          const closeTimeBusinessTimezone = moment.tz(
-            { hour: lapse.close.hour, minute: lapse.close.minute },
-            schedule.timezone,
+          const closeTimeDiff = closeTimeBusinessTimezone.diff(
+            moment.utc().tz(schedule.timezone),
+            'minutes',
           );
-          const openTimeDiff = openTimeBusinessTimezone.diff(now, 'minutes');
-          const closeTimeDiff = closeTimeBusinessTimezone.diff(now, 'minutes');
+
+          this.logger.warn(
+            `Business ${schedule.name} openTimeBusinessTimezone ${openTimeBusinessTimezone} , closeTimeBusinessTimezone ${closeTimeBusinessTimezone}`,
+          );
+
+          this.logger.warn(
+            `Business ${schedule.name} openTimeDiff ${openTimeDiff} , closeTimeDiff ${closeTimeDiff}`,
+          );
 
           // If current time is inside the business time, we should make push notification
           if (openTimeDiff < 0 && closeTimeDiff > 0) {
             deviceIds.push(session.deviceId);
+            sendingSessionIds.push(session.id);
+          } else {
+            this.logger.warn(`Business ${schedule.name} is not open now`);
           }
         });
       }
     }
 
-    this.logger.log(`Make push notification to: ${JSON.stringify(deviceIds)}`);
+    this.logger.warn(`Make push notification to: ${JSON.stringify(deviceIds)}`);
 
     if (deviceIds.length > 0) {
       this.onesignal.pushOpenAppNotification([...new Set(deviceIds)]);
+      await this.sessionService.incrementOpenAppNotificationCount(sendingSessionIds);
     }
+
+    await this.sessionService.setOpenAppNotificationSending(false, sessionIds);
   }
+
+  // @Interval(30000) // Emit update app state
+  // async emitUpdateAppState() {
+  //   this.logger.warn('emit update app state');
+
+  //   const sessions = await this.sessionService.getSessionToEmitUpdateAppState();
+
+  //   if (sessions.length == 0) {
+  //     this.logger.warn('no session need to emit update app state');
+  //   }
+
+  //   for (const session of sessions) {
+  //     this.logger.warn(`emit update app state for ${session.deviceId}`);
+  //     this.webhookService.emitUpdateAppState(session.deviceId);
+  //   }
+  // }
 }

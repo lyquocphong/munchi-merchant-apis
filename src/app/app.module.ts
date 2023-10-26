@@ -13,10 +13,22 @@ import { AppService } from './app.service';
 import { ReportModule } from 'src/report/report.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { NotificationModule } from 'src/notification/notification.module';
+import { LoggerModule } from 'nestjs-pino';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+    }),
+    LoggerModule.forRoot({
+      pinoHttp: {
+        transport: {
+          target: 'pino-pretty',
+          options: {
+            singleLine: true,
+          },
+        },
+      },
     }),
     CmsModule,
     BusinessModule,
@@ -33,4 +45,4 @@ import { NotificationModule } from 'src/notification/notification.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

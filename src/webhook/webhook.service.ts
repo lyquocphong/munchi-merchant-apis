@@ -1,6 +1,6 @@
 import { NotificationService } from './../notification/notification.service';
 /* eslint-disable prettier/prettier */
-import { ForbiddenException, Inject, Injectable, OnModuleInit, forwardRef } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, Logger, OnModuleInit, forwardRef } from '@nestjs/common';
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets/decorators';
 import { Server } from 'socket.io';
 import { BusinessService } from 'src/business/business.service';
@@ -9,6 +9,7 @@ import { UtilsService } from 'src/utils/utils.service';
 @WebSocketGateway({ cors: { origin: { origin: '*' } } })
 @Injectable()
 export class WebhookService implements OnModuleInit {
+  private readonly logger = new Logger(WebhookService.name);
   @WebSocketServer() public server: Server;
   constructor(
     @Inject(forwardRef(() => BusinessService)) private business: BusinessService,
@@ -21,23 +22,25 @@ export class WebhookService implements OnModuleInit {
 
     ioServer.on('connection', (socket) => {
       socket.on('join', async (room: string) => {
-        console.log(`Try to join room ${room}`);
+        this.logger.warn(`Try to join room ${room}`);
         const business = await this.business.findBusinessByPublicId(room);
         if (!business) {
-          console.log(`No business found for ${room}`);
+          this.logger.error(`No business found for ${room}`);
           // throw new ForbiddenException(403, `No business found for ${room}`);
         } else {
+          this.logger.warn(`join ${room} and business is ${business.name}`);
           socket.join(business.orderingBusinessId.toString());
         }
       });
 
       socket.on('leave', async (room: string) => {
-        console.log(`Try to leave room ${room}`);
+        this.logger.warn(`Try to leave room ${room}`);
         const business = await this.business.findBusinessByPublicId(room);
         if (!business) {
-          console.log(`No business found for ${room}`);
+          this.logger.error(`No business found for ${room}`);
           //throw new ForbiddenException(403, `No business found for ${room}`);
         } else {
+          this.logger.warn(`leave ${room} and business is ${business.name}`);
           socket.leave(business.orderingBusinessId.toString());
         }
       });
@@ -50,6 +53,10 @@ export class WebhookService implements OnModuleInit {
         this.server.to(businessId).emit('close-order-popup', orderId);
       })
     });
+  }
+
+  async emitUpdateAppState(deviceId: string) {
+    this.server.emit('update-app-state', deviceId)
   }
 
   async newOrderNotification(order: any) {
@@ -71,7 +78,7 @@ export class WebhookService implements OnModuleInit {
 
   async notifyCheckBusinessStatus(businessPublicId: string) {
     const business = await this.business.findBusinessByPublicId(businessPublicId);
-    console.log(`emit business_status_change because of ${businessPublicId}`);
+    this.logger.warn(`emit business_status_change because of ${businessPublicId}`);
     const message = `${business.name} status changed`;
     this.server.to(business.orderingBusinessId.toString()).emit('business_status_change', message);
   }

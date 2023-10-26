@@ -8,11 +8,13 @@ import { AuthModule } from 'src/auth/auth.module';
 import { UserModule } from 'src/user/user.module';
 import { OrderingIoModule } from 'src/ordering.io/ordering.io.module';
 import { JwtModule } from '@nestjs/jwt';
+import { WebhookModule } from 'src/webhook/webhook.module';
 
 @Module({
   imports: [
     PrismaModule,
     forwardRef(() => BusinessModule),
+    forwardRef(() => WebhookModule),
     AuthModule,
     UserModule,
     OrderingIoModule,
