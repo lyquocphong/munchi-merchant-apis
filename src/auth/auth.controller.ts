@@ -1,5 +1,5 @@
 import { Controller, Post, Body, UseGuards, Get, Request } from '@nestjs/common';
-import { ApiBadRequestResponse, ApiCreatedResponse } from '@nestjs/swagger';
+import { ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
 import { AuthCredentials } from 'src/type';
 import { AuthService } from './auth.service';
 import { AuthReponseDto } from './dto/auth.dto';
@@ -8,6 +8,7 @@ import { JwtGuard } from './guard/jwt.guard';
 import { SessionService } from './session.service';
 
 @Controller('auth')
+@ApiTags('auth')
 export class AuthController {
   constructor(private authService: AuthService, private sessionService: SessionService) {}
 
@@ -23,27 +24,28 @@ export class AuthController {
     return this.authService.signIn(credentials);
   }
 
-  @UseGuards(JwtGuard)
-  @Post('updateToken')
-  async autoSignIn(@Request() req: any) {
-    const { userId } = req.user;
-    return this.sessionService.updateToken(userId);
-  }
-
   @ApiCreatedResponse({
     description: 'Signed out',
   })
+  @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtGuard)
   @Post('signout')
+  /**
+   * Has checked
+   */
   async signOut(@Request() req: any) {
-    const { userId } = req.user;
-    return this.authService.signOut(userId);
+    const { sessionPublicId } = req.user;
+    return this.authService.signOut(sessionPublicId);
   }
+
   @UseGuards(RefreshJwt)
+  @ApiBearerAuth('JWT-auth')
   @Get('refreshToken')
+  /**
+   * Has checked
+   */
   getRefreshTokens(@Request() req: any) {
-    const userId = req.user['sub'];
-    const refreshToken = req.user['refreshToken'];
-    return this.sessionService.refreshTokens(userId, refreshToken);
+    const { refreshToken, sessionPublicId } = req.user;
+    return this.sessionService.refreshTokens(refreshToken, sessionPublicId);
   }
 }

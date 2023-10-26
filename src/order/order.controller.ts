@@ -8,6 +8,7 @@ import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
 import { OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
 import { OrderService } from './order.service';
+import { SessionService } from 'src/auth/session.service';
 
 @UseGuards(JwtGuard)
 @ApiBearerAuth('JWT-auth')
@@ -17,13 +18,10 @@ export class OrderController {
     private orderingIo: OrderingIoService,
     private utils: UtilsService,
     private orderService: OrderService,
+    private sessionService: SessionService
   ) {}
-  @Get('allOrders')
-  async getAllOrders(@Request() req: any) {
-    const { userId } = req.user;
-    const accessToken = await this.utils.getAccessToken(userId);
-    return this.orderingIo.getAllOrders(accessToken);
-  }
+  
+  //TODO: Need to refactor publicBussinessId use later, right now it come from session
   @Get('filteredOrders')
   async getFilteredOrders(
     @Request() req: any,
@@ -31,14 +29,15 @@ export class OrderController {
     @Query('paramsQuery') paramsQuery: string[],
     @Query('publicBusinessId') publicBusinessId: string,
   ) {
-    const { userId } = req.user;
-
-    return this.orderService.getFilteredOrders(userId, query, paramsQuery, publicBusinessId);
+    const { sessionPublicId } = req.user;
+    return this.orderService.getFilteredOrdersForSession(sessionPublicId, query, paramsQuery);
   }
+
   @Get(':orderId')
-  async getOrderbyId(@Param('orderId') orderId: number, @Request() req: any) {
-    const { userId } = req.user;
-    return this.orderService.getOrderbyId(userId, orderId);
+  async getOrderbyId(@Param('orderId') orderId: number, @Request() req: any) {    
+    const { sessionPublicId } = req.user;
+    const user = await this.sessionService.getSessionUserBySessionPublicId(sessionPublicId);
+    return this.orderService.getOrderbyId(user.orderingUserId, orderId);
   }
 
   @Put(':orderId')
@@ -47,13 +46,8 @@ export class OrderController {
     @Body() orderData: OrderData,
     @Request() req: any,
   ) {
-    const { userId } = req.user;
-    return this.orderService.updateOrder(userId, orderId, orderData);
-  }
-
-  @Delete(':orderId')
-  async removeOrder(@Param('orderId') orderId: number, @Request() req: any) {
-    const { userId } = req.user;
-    return this.orderService.deleteOrder(userId, orderId);
+    const { sessionPublicId } = req.user;
+    const user = await this.sessionService.getSessionUserBySessionPublicId(sessionPublicId);
+    return this.orderService.updateOrder(user.orderingUserId, orderId, orderData);
   }
 }

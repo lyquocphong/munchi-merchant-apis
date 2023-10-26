@@ -3,21 +3,6 @@ import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 
 export class AuthCredentials {
   @ApiProperty({
-    description: 'Input firstName provided',
-    example: 'John',
-  })
-  firstName?: string;
-  @ApiProperty({
-    description: 'Input lastname provided',
-    example: 'Doe',
-  })
-  lastname?: string;
-  @ApiProperty({
-    description: 'Input role provided',
-    example: '2',
-  })
-  role?: string | number;
-  @ApiProperty({
     description: 'Input email provided',
     example: 'johndoe@gmail.com',
   })
@@ -27,7 +12,7 @@ export class AuthCredentials {
   @ApiProperty({
     description: 'Input password provided',
     type: 'password',
-    example: '123456',
+    example: '3432asa',
   })
   @IsString()
   @IsNotEmpty()

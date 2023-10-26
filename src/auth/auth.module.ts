@@ -6,12 +6,14 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { RefreshTokenStrategy } from './strategy/refreshJwt.strategy';
 import { SessionService } from './session.service';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
     JwtModule.register({}),
     forwardRef(() => UserModule),
     forwardRef(() => OrderingIoModule),
+    forwardRef(() => ConfigModule),
   ],
   controllers: [AuthController],
   providers: [AuthService, RefreshTokenStrategy, SessionService],

@@ -1,15 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import { plainToClass } from 'class-transformer';
 import { OrderDto } from 'src/order/dto/order.dto';
 import { AuthCredentials, OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
+import { OrderingIoUser } from './ordering.io.type';
 
 @Injectable()
 export class OrderingIoService {
-  constructor(private utils: UtilsService) {}
+
+  private readonly logger = new Logger(OrderingIoService.name);
+
+  constructor(private utils: UtilsService) { }
   // Auth service
-  async signIn(credentials: AuthCredentials) {
+  async signIn(credentials: AuthCredentials): Promise<OrderingIoUser> {
     const options = {
       method: 'POST',
       url: this.utils.getEnvUrl('auth'),
@@ -25,7 +29,7 @@ export class OrderingIoService {
 
     try {
       const response = await axios.request(options);
-      return response.data.result;
+      return plainToClass(OrderingIoUser, response.data.result);
     } catch (error) {
       this.utils.logError(error);
     }
@@ -54,7 +58,9 @@ export class OrderingIoService {
   async getAllBusiness(accessToken: string) {
     const options = {
       method: 'GET',
-      url: `${this.utils.getEnvUrl('business')}?type=1&params=zones%2Cname&mode=dashboard`,
+      url: `${this.utils.getEnvUrl(
+        'business',
+      )}?type=1&params=name,logo,metafields,today,schedule,owners,enabled&mode=dashboard`,
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
@@ -86,16 +92,19 @@ export class OrderingIoService {
     }
   }
 
-  async editBusiness(accessToken: string, businessId: number, status: boolean) {
+  async editBusiness(accessToken: string, businessId: number, data: object) {
+
     const options = {
       method: 'POST',
       url: `${this.utils.getEnvUrl('business', businessId)}`,
-      data: { enabled: status },
+      data,
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
       },
     };
+
+    this.logger.warn('edit business', options.url, data);
 
     try {
       const response = await axios.request(options);
@@ -120,6 +129,31 @@ export class OrderingIoService {
       const response = await axios.request(options);
       const order = plainToClass(OrderDto, response.data.result);
       return order;
+    } catch (error) {
+      this.utils.logError(error);
+    }
+  }
+
+  async getOrderForBusinesses(
+    accessToken: string,
+    businessIds: number[],
+    query: string,
+    paramsQuery: string[],
+  ) {
+    const options = {
+      method: 'GET',
+      url: `${this.utils.getEnvUrl(
+        'orders',
+      )}?mode=dashboard&where={${query},"business_id":[${businessIds}]}&params=${paramsQuery}`,
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+    };
+
+    try {
+      const response = await axios.request(options);
+      return response.data.result;
     } catch (error) {
       this.utils.logError(error);
     }
@@ -168,6 +202,25 @@ export class OrderingIoService {
     }
   }
 
+  async getUserKey(accessToken: string, userId: number) {
+    const options = {
+      method: 'GET',
+      url: `https://apiv4.ordering.co/v400/language/peperoni/users/${userId}/keys
+      `,
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+    };
+
+    try {
+      const response = await axios.request(options);
+      return response.data.result;
+    } catch (error) {
+      this.utils.logError(error);
+    }
+  }
+
   async updateOrder(acessToken: string, orderId: number, orderData: OrderData) {
     const options = {
       method: 'PUT',
@@ -189,6 +242,7 @@ export class OrderingIoService {
       this.utils.logError(error);
     }
   }
+
 
   async deleteOrder(acessToken: string, orderId: number) {
     const options = {
@@ -229,6 +283,31 @@ export class OrderingIoService {
 
   //Page
   async getPage(accessToken: string) {
+    const options = {
+      method: 'GET',
+      url: this.utils.getEnvUrl('pages'),
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+    };
+
+    try {
+      const response = await axios.request(options);
+      return response.data.result;
+    } catch (error) {
+      this.utils.logError(error);
+    }
+  }
+
+  /**
+   * Set schedule for business
+   *
+   * @param accessToken
+   * @param schedule    Json string of schedule
+   * @returns
+   */
+  async setBusinessSchedule(accessToken: string, schedule: string) {
     const options = {
       method: 'GET',
       url: this.utils.getEnvUrl('pages'),
