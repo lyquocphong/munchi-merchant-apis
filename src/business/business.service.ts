@@ -66,7 +66,7 @@ export class BusinessService {
   async getAllBusiness(orderingId: number): Promise<BusinessDto[]> {
     const accessToken = await this.utils.getOrderingAccessToken(orderingId);
     const response: OrderingIoBusiness[] = await this.orderingIo.getAllBusiness(accessToken);
-    console.log(response);
+
     const user = await this.userService.getUserInternally(orderingId, null);
 
     if (!user) {

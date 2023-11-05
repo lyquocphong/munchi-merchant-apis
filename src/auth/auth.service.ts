@@ -21,7 +21,7 @@ export class AuthService {
     @Inject(forwardRef(() => SessionService)) private readonly sessionService: SessionService,
     private config: ConfigService,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   async signIn(credentials: AuthCredentials) {
     const orderingUserInfo = await this.orderingIo.signIn(credentials);
@@ -103,9 +103,11 @@ export class AuthService {
     const session = await this.sessionService.getSessionByPublicId<
       Prisma.SessionGetPayload<typeof findSessionArgs>
     >(sessionPublicId, findSessionArgs);
-    console.log(session.user);
+
     const accessToken = await this.utils.getOrderingAccessToken(session.user.orderingUserId);
+
     await this.orderingIo.signOut(accessToken);
+
     await this.sessionService.deleteSession({
       publicId: sessionPublicId,
     });

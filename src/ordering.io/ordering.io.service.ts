@@ -150,8 +150,6 @@ export class OrderingIoService {
       },
     };
 
-    console.log(options.url);
-
     try {
       const response = await axios.request(options);
       return response.data.result;

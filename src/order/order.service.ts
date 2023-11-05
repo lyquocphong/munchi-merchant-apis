@@ -69,10 +69,8 @@ export class OrderService {
         paramsQuery,
       );
 
-      console.log(session);
-      console.log(response.length);
-
       return plainToClass(OrderDto, response);
+      
     } catch (error) {
       this.utils.logError(error);
     }

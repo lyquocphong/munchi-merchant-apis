@@ -35,7 +35,6 @@ export class NotificationService {
       deviceIds.push(session.deviceId);
     }
 
-    console.log(`Make new order push notification to: ${deviceIds}`);
 
     if (deviceIds.length > 0) {
       this.onesignal.pushNewOrderNotification([...new Set(deviceIds)]);
