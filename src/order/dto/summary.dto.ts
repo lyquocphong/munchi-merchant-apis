@@ -7,8 +7,12 @@ export class SummaryDto {
 
   @Expose()
   total: number;
+
   @Expose()
   discount: number;
+
+  @Expose({ name: 'subtotal' })
+  subTotal: number;
 
   @Expose({ name: 'delivery_price' })
   deliveryPrice: number;

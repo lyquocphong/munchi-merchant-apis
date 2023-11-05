@@ -59,6 +59,10 @@ export class OrderDto {
   @Expose()
   comment: string;
 
+
+  @Expose()
+  offers: any;
+
   constructor(partial: Partial<OrderDto>) {
     Object.assign(this, partial);
   }
