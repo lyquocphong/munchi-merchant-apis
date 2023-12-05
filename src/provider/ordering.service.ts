@@ -4,7 +4,7 @@ import { plainToClass } from 'class-transformer';
 import { OrderDto } from 'src/order/dto/order.dto';
 import { AuthCredentials, OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
-import { OrderingUser } from './ordering.type';
+import { OrderingUser } from '../ordering/ordering.type';
 
 @Injectable()
 export class OrderingService {

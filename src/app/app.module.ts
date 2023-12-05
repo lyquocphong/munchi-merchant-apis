@@ -4,7 +4,7 @@ import { AuthModule } from 'src/auth/auth.module';
 import { BusinessModule } from 'src/business/business.module';
 import { CmsModule } from 'src/cms/cms.module';
 import { OrderModule } from 'src/order/order.module';
-import { OrderingModule } from 'src/ordering/ordering.module';
+
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { UserModule } from 'src/user/user.module';
 import { WebhookModule } from 'src/webhook/webhook.module';
@@ -14,6 +14,7 @@ import { ReportModule } from 'src/report/report.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { NotificationModule } from 'src/notification/notification.module';
 import { LoggerModule } from 'nestjs-pino';
+import { ProviderModule } from 'src/provider/provider.module';
 
 @Module({
   imports: [
@@ -32,7 +33,7 @@ import { LoggerModule } from 'nestjs-pino';
     }),
     CmsModule,
     BusinessModule,
-    OrderingModule,
+    ProviderModule,
     PrismaModule,
     OrderModule,
     UserModule,

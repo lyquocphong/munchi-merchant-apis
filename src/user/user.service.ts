@@ -1,7 +1,7 @@
 import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import moment from 'moment';
 import { UserResponse } from 'src/auth/dto/auth.dto';
-import { OrderingService } from 'src/ordering/ordering.service';
+import { OrderingService } from 'src/provider/ordering.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AuthTokens } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';

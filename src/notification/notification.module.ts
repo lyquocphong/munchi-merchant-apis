@@ -6,9 +6,9 @@ import { BusinessModule } from 'src/business/business.module';
 import { SessionService } from 'src/auth/session.service';
 import { AuthModule } from 'src/auth/auth.module';
 import { UserModule } from 'src/user/user.module';
-import { OrderingModule } from 'src/ordering/ordering.module';
 import { JwtModule } from '@nestjs/jwt';
 import { WebhookModule } from 'src/webhook/webhook.module';
+import { ProviderModule } from 'src/provider/provider.module';
 
 @Module({
   imports: [
@@ -17,7 +17,7 @@ import { WebhookModule } from 'src/webhook/webhook.module';
     forwardRef(() => WebhookModule),
     AuthModule,
     UserModule,
-    OrderingModule,
+    ProviderModule,
     JwtModule,
   ],
   providers: [NotificationService, OneSignalService, SessionService],

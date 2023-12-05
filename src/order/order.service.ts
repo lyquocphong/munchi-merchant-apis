@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { plainToClass } from 'class-transformer';
-import { OrderingService } from 'src/ordering/ordering.service';
+import { OrderingService } from 'src/provider/ordering.service';
 import { UtilsService } from 'src/utils/utils.service';
 import { OrderDto } from './dto/order.dto';
 import { BusinessService } from 'src/business/business.service';
