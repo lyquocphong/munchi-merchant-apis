@@ -76,6 +76,10 @@ export class WebhookService implements OnModuleInit {
     }
   }
 
+  async newWoltOrderNotification() {
+    this.notificationService.sendWoltNotifiaction();
+  }
+
   async notifyCheckBusinessStatus(businessPublicId: string) {
     const business = await this.business.findBusinessByPublicId(businessPublicId);
     this.logger.warn(`emit business_status_change because of ${businessPublicId}`);

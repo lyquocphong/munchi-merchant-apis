@@ -141,6 +141,10 @@ export class NotificationService {
     await this.sessionService.setOpenAppNotificationSending(false, sessionIds);
   }
 
+  async sendWoltNotifiaction () {
+   
+  }
+
   // @Interval(30000) // Emit update app state
   // async emitUpdateAppState() {
   //   this.logger.warn('emit update app state');
