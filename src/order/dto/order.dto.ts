@@ -80,3 +80,23 @@ export class OrderDto {
     Object.assign(this, partial);
   }
 }
+
+export type OrderResponse = {
+  provider: number;
+  data: {
+    id: string;
+    business: {
+      publicId: string;
+      id: string;
+      name: string;
+      logo: string;
+    };
+    status: number;
+    deliveryType: number;
+    createdAt: string;
+    comment: string;
+    offers: OfferDto[];
+    products: ProductDto[];
+    summary: SummaryDto[];
+  };
+};
