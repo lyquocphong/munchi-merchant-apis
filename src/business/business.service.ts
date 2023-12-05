@@ -25,7 +25,7 @@ export class BusinessService {
     private readonly prisma: PrismaService,
     private readonly userService: UserService,
     @Inject(forwardRef(() => QueueService)) private queueService: QueueService,
-    @Inject(forwardRef(() => OrderingService)) private Ordering: OrderingService,
+    @Inject(forwardRef(() => OrderingService)) private orderingService: OrderingService,
   ) {}
   async createBusiness(businsessData: any, orderingUserId: number) {
     return await this.prisma.business.create({
@@ -69,7 +69,8 @@ export class BusinessService {
 
   async getAllBusiness(orderingId: number): Promise<BusinessDto[]> {
     const accessToken = await this.utils.getOrderingAccessToken(orderingId);
-    const response: OrderingBusiness[] = await this.Ordering.getAllBusiness(accessToken);
+    const response = await this.orderingService.getAllBusiness(accessToken);
+    const mappedBusiness = plainToClass(OrderingBusiness, response);
     const user = await this.userService.getUserInternally(orderingId, null);
 
     if (!user) {
@@ -79,7 +80,7 @@ export class BusinessService {
     // Need to update each business into our db
     const selectInfo = { ...BusinessInfoSelectBase, owners: true };
     const businessDtos: BusinessDto[] = [];
-    for (const business of response) {
+    for (const business of mappedBusiness) {
       const existedBusiness = await this.upsertBusinessFromOrderingInfo(business, selectInfo);
       const owner = existedBusiness.owners.filter(
         (owner) => owner.orderingUserId === user.orderingUserId,
@@ -105,7 +106,7 @@ export class BusinessService {
     if (!business) {
       throw new ForbiddenException(`we need this: ${publicBusinessId}`);
     }
-    return await this.Ordering.getBusinessById(accessToken, business.orderingBusinessId);
+    return await this.orderingService.getBusinessById(accessToken, business.orderingBusinessId);
   }
 
   /**
@@ -137,7 +138,7 @@ export class BusinessService {
     const numberOfToday = moment().tz(timezone).weekday();
     schedule[numberOfToday].enabled = status;
     const accessToken = await this.utils.getOrderingAccessToken(user.orderingUserId);
-    const response = await this.Ordering.editBusiness(accessToken, business.id, {
+    const response = await this.orderingService.editBusiness(accessToken, business.id, {
       schedule: JSON.stringify(schedule),
     });
 

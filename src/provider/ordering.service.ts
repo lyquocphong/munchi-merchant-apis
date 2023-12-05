@@ -5,7 +5,7 @@ import { OrderDto } from 'src/order/dto/order.dto';
 import { AuthCredentials, OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
 import { OrderingUser } from '../ordering/ordering.type';
-
+import { Business, Order } from 'ordering-api-sdk';
 @Injectable()
 export class OrderingService {
   private readonly logger = new Logger(OrderingService.name);
@@ -54,7 +54,7 @@ export class OrderingService {
   }
 
   //business services
-  async getAllBusiness(accessToken: string) {
+  async getAllBusiness(accessToken: string): Promise<Business[]> {
     const options = {
       method: 'GET',
       url: `${this.utils.getEnvUrl(
@@ -91,7 +91,7 @@ export class OrderingService {
     }
   }
 
-  async editBusiness(accessToken: string, businessId: number, data: object) {
+  async editBusiness(accessToken: string, businessId: number, data: object): Promise<Business> {
     const options = {
       method: 'POST',
       url: `${this.utils.getEnvUrl('business', businessId)}`,
@@ -107,26 +107,6 @@ export class OrderingService {
     try {
       const response = await axios.request(options);
       return response.data.result;
-    } catch (error) {
-      this.utils.logError(error);
-    }
-  }
-
-  //Order service
-  async getAllOrders(acessToken: string) {
-    const options = {
-      method: 'GET',
-      url: `${this.utils.getEnvUrl('orders')}?status=0&mode=dashboard`,
-      headers: {
-        accept: 'application/json',
-        Authorization: `Bearer ${acessToken}`,
-      },
-    };
-
-    try {
-      const response = await axios.request(options);
-      const order = plainToClass(OrderDto, response.data.result);
-      return order;
     } catch (error) {
       this.utils.logError(error);
     }
@@ -219,7 +199,7 @@ export class OrderingService {
     }
   }
 
-  async updateOrder(acessToken: string, orderId: number, orderData: OrderData) {
+  async updateOrder(acessToken: string, orderId: number, orderData: OrderData): Promise<Order> {
     const options = {
       method: 'PUT',
       url: `${this.utils.getEnvUrl('orders', orderId)}`,
