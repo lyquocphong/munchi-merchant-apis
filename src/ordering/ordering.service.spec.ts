@@ -1,19 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { OrderingIoService } from './ordering.io.service';
+import { OrderingService } from './ordering.service';
 
 describe('Ordering Service', () => {
-  let service: OrderingIoService;
+  let service: OrderingService;
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         {
-          provide: OrderingIoService,
+          provide: OrderingService,
           useValue: {},
         },
       ],
     }).compile();
 
-    service = module.get<OrderingIoService>(OrderingIoService);
+    service = module.get<OrderingService>(OrderingService);
   });
   afterEach(() => {
     jest.resetAllMocks();

@@ -3,7 +3,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Exclude, Expose, Transform, Type } from 'class-transformer';
 import { OwnerDto } from './owner.dto';
 import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
-import { Schedule } from 'src/ordering.io/ordering.io.type';
+import { Schedule } from 'src/ordering/ordering.type';
 
 @Exclude()
 export class BusinessDto {

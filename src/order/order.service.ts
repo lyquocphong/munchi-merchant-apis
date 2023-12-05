@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { plainToClass } from 'class-transformer';
-import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
+import { OrderingService } from 'src/ordering/ordering.service';
 import { UtilsService } from 'src/utils/utils.service';
 import { OrderDto } from './dto/order.dto';
 import { BusinessService } from 'src/business/business.service';
@@ -11,7 +11,7 @@ import { SessionService } from 'src/auth/session.service';
 @Injectable()
 export class OrderService {
   constructor(
-    private readonly orderingIo: OrderingIoService,
+    private readonly Ordering: OrderingService,
     private readonly utils: UtilsService,
     private readonly business: BusinessService,
     private readonly sessionService: SessionService,
@@ -62,7 +62,7 @@ export class OrderService {
     const { user } = session;
 
     try {
-      const response = await this.orderingIo.getOrderForBusinesses(
+      const response = await this.Ordering.getOrderForBusinesses(
         user.orderingAccessToken,
         businessIds,
         query,
@@ -89,7 +89,7 @@ export class OrderService {
       throw new ForbiddenException('Something wrong happened');
     }
     try {
-      const response = await this.orderingIo.getFilteredOrders(
+      const response = await this.Ordering.getFilteredOrders(
         accessToken,
         business.orderingBusinessId,
         query,
@@ -104,7 +104,7 @@ export class OrderService {
   async getOrderbyId(userId: number, orderId: number) {
     const accessToken = await this.utils.getOrderingAccessToken(userId);
     try {
-      const response = await this.orderingIo.getOrderbyId(accessToken, orderId);
+      const response = await this.Ordering.getOrderbyId(accessToken, orderId);
       return plainToClass(OrderDto, response);
     } catch (error) {
       this.utils.logError(error);
@@ -114,7 +114,7 @@ export class OrderService {
   async updateOrder(userId: number, orderId: number, orderData: OrderData) {
     const accessToken = await this.utils.getOrderingAccessToken(userId);
     try {
-      const response = await this.orderingIo.updateOrder(accessToken, orderId, orderData);
+      const response = await this.Ordering.updateOrder(accessToken, orderId, orderData);
       return plainToClass(OrderDto, response);
     } catch (error) {
       this.utils.logError(error);
@@ -124,7 +124,7 @@ export class OrderService {
   async deleteOrder(userId: number, orderId: number) {
     const accessToken = await this.utils.getOrderingAccessToken(userId);
     try {
-      const response = await this.orderingIo.deleteOrder(accessToken, orderId);
+      const response = await this.Ordering.deleteOrder(accessToken, orderId);
       return response;
     } catch (error) {
       this.utils.logError(error);

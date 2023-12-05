@@ -1,6 +1,6 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
-import { OrderingIoModule } from 'src/ordering.io/ordering.io.module';
+import { OrderingModule } from 'src/ordering/ordering.module';
 import { UserModule } from 'src/user/user.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -12,7 +12,7 @@ import { ConfigModule } from '@nestjs/config';
   imports: [
     JwtModule.register({}),
     forwardRef(() => UserModule),
-    forwardRef(() => OrderingIoModule),
+    forwardRef(() => OrderingModule),
     forwardRef(() => ConfigModule),
   ],
   controllers: [AuthController],

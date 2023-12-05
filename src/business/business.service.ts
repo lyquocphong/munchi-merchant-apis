@@ -1,15 +1,21 @@
 import { QueueService } from './../queue/queue.service';
-/* eslint-disable prettier/prettier */
-import { Injectable, Inject, forwardRef, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  forwardRef,
+  ForbiddenException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { plainToClass } from 'class-transformer';
-import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
+import { OrderingService } from 'src/ordering/ordering.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UtilsService } from 'src/utils/utils.service';
 import { BusinessDto } from './dto/business.dto';
 import { UserService } from 'src/user/user.service';
 import moment from 'moment-timezone';
 import { Prisma } from '@prisma/client';
-import { OrderingIoBusiness } from 'src/ordering.io/ordering.io.type';
+import { OrderingBusiness } from 'src/ordering/ordering.type';
 import { BusinessInfoSelectBase } from './business.type';
 
 @Injectable()
@@ -19,8 +25,8 @@ export class BusinessService {
     private readonly prisma: PrismaService,
     private readonly userService: UserService,
     @Inject(forwardRef(() => QueueService)) private queueService: QueueService,
-    @Inject(forwardRef(() => OrderingIoService)) private orderingIo: OrderingIoService,
-  ) { }
+    @Inject(forwardRef(() => OrderingService)) private Ordering: OrderingService,
+  ) {}
   async createBusiness(businsessData: any, orderingUserId: number) {
     return await this.prisma.business.create({
       data: {
@@ -36,36 +42,34 @@ export class BusinessService {
       select: {
         name: true,
         publicId: true,
-        logo: true
+        logo: true,
       },
     });
   }
 
   async upsertBusinessFromOrderingInfo<S extends Prisma.BusinessSelect>(
-    businessInfo: OrderingIoBusiness,
-    select: S
-  ): Promise<
-    Prisma.BusinessGetPayload<{ select: S }>
-  > {
+    businessInfo: OrderingBusiness,
+    select: S,
+  ): Promise<Prisma.BusinessGetPayload<{ select: S }>> {
     const data = {
       name: businessInfo.name,
       logo: businessInfo.logo,
-      orderingBusinessId: businessInfo.id
-    }
+      orderingBusinessId: businessInfo.id,
+    };
 
     return await this.prisma.business.upsert({
       where: {
-        orderingBusinessId: businessInfo.id
+        orderingBusinessId: businessInfo.id,
       },
       create: data,
       update: data,
-      select
-    })
+      select,
+    });
   }
 
   async getAllBusiness(orderingId: number): Promise<BusinessDto[]> {
     const accessToken = await this.utils.getOrderingAccessToken(orderingId);
-    const response: OrderingIoBusiness[] = await this.orderingIo.getAllBusiness(accessToken);
+    const response: OrderingBusiness[] = await this.Ordering.getAllBusiness(accessToken);
     const user = await this.userService.getUserInternally(orderingId, null);
 
     if (!user) {
@@ -77,7 +81,9 @@ export class BusinessService {
     const businessDtos: BusinessDto[] = [];
     for (const business of response) {
       const existedBusiness = await this.upsertBusinessFromOrderingInfo(business, selectInfo);
-      const owner = existedBusiness.owners.filter((owner) => owner.orderingUserId === user.orderingUserId);
+      const owner = existedBusiness.owners.filter(
+        (owner) => owner.orderingUserId === user.orderingUserId,
+      );
       // If no ownership then add and update it to business
       if (owner.length < 1) {
         await this.updateBusinessOwners(business, user.orderingUserId);
@@ -99,26 +105,26 @@ export class BusinessService {
     if (!business) {
       throw new ForbiddenException(`we need this: ${publicBusinessId}`);
     }
-    return await this.orderingIo.getBusinessById(accessToken, business.orderingBusinessId);
+    return await this.Ordering.getBusinessById(accessToken, business.orderingBusinessId);
   }
 
   /**
    * This function is used to set status for today on or off
-   * 
+   *
    * This is used to set business is closed or not
-   * 
+   *
    * TODO: Now only handle for Munchi, maybe later need to do for Wolt and other
-   * 
-   * @param orderingUserId 
-   * @param businessPublicId 
-   * @param status 
-   * @returns 
+   *
+   * @param orderingUserId
+   * @param businessPublicId
+   * @param status
+   * @returns
    */
   async setOnlineStatusByPublicId(
     userPublicId: string,
     businessPublicId: string,
     status: boolean,
-    duration: number = undefined
+    duration: number = undefined,
   ) {
     const user = await this.userService.getUserByPublicId(userPublicId);
     const business = await this.getOrderingBusiness(user.orderingUserId, businessPublicId);
@@ -131,7 +137,9 @@ export class BusinessService {
     const numberOfToday = moment().tz(timezone).weekday();
     schedule[numberOfToday].enabled = status;
     const accessToken = await this.utils.getOrderingAccessToken(user.orderingUserId);
-    const response = await this.orderingIo.editBusiness(accessToken, business.id, { schedule: JSON.stringify(schedule) });
+    const response = await this.Ordering.editBusiness(accessToken, business.id, {
+      schedule: JSON.stringify(schedule),
+    });
 
     // The response from edit business Ordering Co does not return today so I need to set it from schedule
     response.today = response.schedule[numberOfToday];
@@ -147,8 +155,8 @@ export class BusinessService {
         provider: 'munchi',
         businessPublicId,
         userPublicId,
-        time
-      })
+        time,
+      });
     } else {
       this.queueService.removeActiveStatusQueue(businessPublicId);
     }
@@ -174,7 +182,7 @@ export class BusinessService {
       data: {
         owners: {
           connect: {
-            orderingUserId
+            orderingUserId,
           },
         },
       },
@@ -189,39 +197,35 @@ export class BusinessService {
     });
   }
 
-  async findBusinessByOrderingId<P extends Prisma.BusinessArgs>(orderingBusinessId: number, getPayload: P): Promise<
-    Prisma.BusinessGetPayload<P>
-  > {
-
+  async findBusinessByOrderingId<P extends Prisma.BusinessArgs>(
+    orderingBusinessId: number,
+    getPayload: P,
+  ): Promise<Prisma.BusinessGetPayload<P>> {
     const options = {
       where: {
-        orderingBusinessId
+        orderingBusinessId,
       },
       ...getPayload,
     };
 
-    return await this.prisma.business.findUnique(options) as Prisma.BusinessGetPayload<P>;
+    return (await this.prisma.business.findUnique(options)) as Prisma.BusinessGetPayload<P>;
   }
 
-  async getAssociateSessions(
-    condition: Prisma.BusinessWhereInput
-  ): Promise<
+  async getAssociateSessions(condition: Prisma.BusinessWhereInput): Promise<
     Prisma.BusinessGetPayload<{
-      include: { sessions: true }
+      include: { sessions: true };
     }>[]
   > {
     return await this.prisma.business.findMany({
       where: condition,
-      include: { sessions: true }
+      include: { sessions: true },
     });
   }
 
   async findAllBusiness<S extends Prisma.BusinessSelect>(
     orderingUserId: number,
-    select: S
-  ): Promise<
-    Prisma.BusinessGetPayload<{ select: S }>[]
-  > {
+    select: S,
+  ): Promise<Prisma.BusinessGetPayload<{ select: S }>[]> {
     return await this.prisma.business.findMany({
       where: {
         owners: {
@@ -230,7 +234,7 @@ export class BusinessService {
           },
         },
       },
-      select
+      select,
     });
   }
 }

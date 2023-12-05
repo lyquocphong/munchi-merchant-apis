@@ -4,16 +4,15 @@ import { plainToClass } from 'class-transformer';
 import { OrderDto } from 'src/order/dto/order.dto';
 import { AuthCredentials, OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
-import { OrderingIoUser } from './ordering.io.type';
+import { OrderingUser } from './ordering.type';
 
 @Injectable()
-export class OrderingIoService {
+export class OrderingService {
+  private readonly logger = new Logger(OrderingService.name);
 
-  private readonly logger = new Logger(OrderingIoService.name);
-
-  constructor(private utils: UtilsService) { }
+  constructor(private utils: UtilsService) {}
   // Auth service
-  async signIn(credentials: AuthCredentials): Promise<OrderingIoUser> {
+  async signIn(credentials: AuthCredentials): Promise<OrderingUser> {
     const options = {
       method: 'POST',
       url: this.utils.getEnvUrl('auth'),
@@ -29,7 +28,7 @@ export class OrderingIoService {
 
     try {
       const response = await axios.request(options);
-      return plainToClass(OrderingIoUser, response.data.result);
+      return plainToClass(OrderingUser, response.data.result);
     } catch (error) {
       this.utils.logError(error);
     }
@@ -93,7 +92,6 @@ export class OrderingIoService {
   }
 
   async editBusiness(accessToken: string, businessId: number, data: object) {
-
     const options = {
       method: 'POST',
       url: `${this.utils.getEnvUrl('business', businessId)}`,
@@ -242,7 +240,6 @@ export class OrderingIoService {
       this.utils.logError(error);
     }
   }
-
 
   async deleteOrder(acessToken: string, orderId: number) {
     const options = {

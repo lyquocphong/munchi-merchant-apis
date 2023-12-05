@@ -16,7 +16,7 @@ class Session {
   expires_in: number;
 }
 
-export class OrderingIoBusiness {
+export class OrderingBusiness {
   @Expose()
   id: number;
 
@@ -72,10 +72,10 @@ export class OrderingIoBusiness {
   // updated_at: string;
   // deleted_at: string | null;
 
-  owners: OrderingIoUser[];
+  owners: OrderingUser[];
 }
 
-export class OrderingIoUser {
+export class OrderingUser {
   @Expose()
   id: number;
 

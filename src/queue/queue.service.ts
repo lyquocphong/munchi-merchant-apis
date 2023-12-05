@@ -8,14 +8,13 @@ import { BusinessService } from 'src/business/business.service';
 
 @Injectable()
 export class QueueService {
-
   private readonly logger = new Logger(QueueService.name);
 
   constructor(
     private readonly prismaService: PrismaService,
     private readonly webhookService: WebhookService,
     @Inject(forwardRef(() => BusinessService)) private businessService: BusinessService,
-  ) { }
+  ) {}
 
   async upsertActiveStatusQueue(
     data: Prisma.ActiveStatusQueueCreateInput,

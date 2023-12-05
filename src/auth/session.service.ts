@@ -14,7 +14,7 @@ import * as argon2 from 'argon2';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { AuthCredentials } from 'src/type';
-import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
+import { OrderingService } from 'src/ordering/ordering.service';
 import { Prisma } from '@prisma/client';
 import { JwtTokenPayload } from './session.type';
 import { ReportAppBusinessDto } from 'src/report/dto/report.dto';
@@ -26,19 +26,19 @@ export class SessionService {
     @Inject(forwardRef(() => AuthService)) private authService: AuthService,
     @Inject(forwardRef(() => UtilsService)) readonly utils: UtilsService,
     @Inject(forwardRef(() => UserService)) private userService: UserService,
-    @Inject(forwardRef(() => OrderingIoService))
-    private readonly orderingIo: OrderingIoService,
+    @Inject(forwardRef(() => OrderingService))
+    private readonly Ordering: OrderingService,
     private readonly jwt: JwtService,
     private config: ConfigService,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   async hashData(data: string) {
     return argon2.hash(data);
   }
 
-  async updateOrderingIoAccessToken(credentials: AuthCredentials) {
-    const orderingUserInfo = await this.orderingIo.signIn(credentials);
+  async updateOrderingAccessToken(credentials: AuthCredentials) {
+    const orderingUserInfo = await this.Ordering.signIn(credentials);
 
     const userSelect = Prisma.validator<Prisma.UserSelect>()({
       id: true,

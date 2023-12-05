@@ -4,7 +4,7 @@ import { AuthModule } from 'src/auth/auth.module';
 import { BusinessModule } from 'src/business/business.module';
 import { CmsModule } from 'src/cms/cms.module';
 import { OrderModule } from 'src/order/order.module';
-import { OrderingIoModule } from 'src/ordering.io/ordering.io.module';
+import { OrderingModule } from 'src/ordering/ordering.module';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { UserModule } from 'src/user/user.module';
 import { WebhookModule } from 'src/webhook/webhook.module';
@@ -32,7 +32,7 @@ import { LoggerModule } from 'nestjs-pino';
     }),
     CmsModule,
     BusinessModule,
-    OrderingIoModule,
+    OrderingModule,
     PrismaModule,
     OrderModule,
     UserModule,
@@ -45,4 +45,4 @@ import { LoggerModule } from 'nestjs-pino';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

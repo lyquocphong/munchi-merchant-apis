@@ -4,7 +4,7 @@ import { Query } from '@nestjs/common/decorators';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { JwtGuard } from 'src/auth/guard/jwt.guard';
 
-import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
+import { OrderingService } from 'src/ordering/ordering.service';
 import { OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
 import { OrderService } from './order.service';
@@ -15,7 +15,7 @@ import { SessionService } from 'src/auth/session.service';
 @Controller('orders')
 export class OrderController {
   constructor(
-    private orderingIo: OrderingIoService,
+    private Ordering: OrderingService,
     private utils: UtilsService,
     private orderService: OrderService,
     private sessionService: SessionService

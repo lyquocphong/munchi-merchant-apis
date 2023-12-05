@@ -15,7 +15,6 @@ class ReportingData {
   }
 }
 
-
 @Exclude()
 export class OrderDto {
   @Expose()
@@ -81,4 +80,3 @@ export class OrderDto {
     Object.assign(this, partial);
   }
 }
-

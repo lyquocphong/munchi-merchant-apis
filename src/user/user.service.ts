@@ -1,14 +1,14 @@
 import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import moment from 'moment';
 import { UserResponse } from 'src/auth/dto/auth.dto';
-import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
+import { OrderingService } from 'src/ordering/ordering.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AuthTokens } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
 import { UserDto } from './dto/user.dto';
 import { plainToClass } from 'class-transformer';
 import { SessionService } from 'src/auth/session.service';
-import { OrderingIoUser } from 'src/ordering.io/ordering.io.type';
+import { OrderingUser } from 'src/ordering/ordering.type';
 import { Prisma } from '@prisma/client';
 
 type UserInfoSelectBase = {
@@ -22,7 +22,7 @@ export class UserService {
     private prisma: PrismaService,
     @Inject(forwardRef(() => UtilsService)) private readonly utils: UtilsService,
     @Inject(forwardRef(() => SessionService)) private readonly sessionService: SessionService,
-    @Inject(forwardRef(() => OrderingIoService)) private readonly orderingIo: OrderingIoService,
+    @Inject(forwardRef(() => OrderingService)) private readonly Ordering: OrderingService,
   ) {}
 
   getUserInternally = async (orderingUserId: number, publicUserId: string) => {
@@ -85,7 +85,7 @@ export class UserService {
   }
 
   async upsertUserFromOrderingInfo<S extends Prisma.UserSelect = UserInfoSelectBase>(
-    userInfo: OrderingIoUser & { password: string },
+    userInfo: OrderingUser & { password: string },
     select: S,
   ) {
     const expiredAt = moment().utc().add(userInfo.session.expires_in, 'milliseconds');

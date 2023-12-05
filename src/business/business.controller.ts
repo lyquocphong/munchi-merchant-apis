@@ -1,4 +1,3 @@
-import { Prisma } from '@prisma/client';
 import {
   BadRequestException,
   Body,
@@ -6,7 +5,6 @@ import {
   Get,
   Param,
   Post,
-  Query,
   Request,
   UseGuards,
 } from '@nestjs/common';
@@ -17,10 +15,11 @@ import {
   ApiCreatedResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { Prisma } from '@prisma/client';
 import { JwtGuard } from 'src/auth/guard/jwt.guard';
-import { BusinessService } from './business.service';
-import { AllBusinessDto, BusinessDto, SetOnlineStatusDto } from './dto/business.dto';
 import { SessionService } from 'src/auth/session.service';
+import { BusinessService } from './business.service';
+import { BusinessDto, SetOnlineStatusDto } from './dto/business.dto';
 
 @UseGuards(JwtGuard)
 @Controller('business')
@@ -30,7 +29,7 @@ import { SessionService } from 'src/auth/session.service';
 })
 @ApiTags('business')
 export class BusinessController {
-  constructor(private businessService: BusinessService, private sessionService: SessionService) { }
+  constructor(private businessService: BusinessService, private sessionService: SessionService) {}
 
   @ApiAcceptedResponse({
     description: 'Get all businesses',

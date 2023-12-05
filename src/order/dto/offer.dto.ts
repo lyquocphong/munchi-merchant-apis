@@ -5,7 +5,6 @@ enum OfferType {
   Coupon = 2,
 }
 
-
 class SummaryData {
   @Expose()
   discount: number;
@@ -14,7 +13,6 @@ class SummaryData {
     this.discount = data;
   }
 }
-
 
 @Exclude()
 export class OfferDto {

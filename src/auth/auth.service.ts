@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import Cryptr from 'cryptr';
 import moment from 'moment';
 import { UserResponse } from 'src/auth/dto/auth.dto';
-import { OrderingIoService } from 'src/ordering.io/ordering.io.service';
+import { OrderingService } from 'src/ordering/ordering.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AuthCredentials } from 'src/type';
 import { UserService } from 'src/user/user.service';
@@ -16,7 +16,7 @@ import { JwtTokenPayload } from './session.type';
 export class AuthService {
   constructor(
     @Inject(forwardRef(() => UserService)) private user: UserService,
-    @Inject(forwardRef(() => OrderingIoService)) private readonly orderingIo: OrderingIoService,
+    @Inject(forwardRef(() => OrderingService)) private readonly Ordering: OrderingService,
     @Inject(forwardRef(() => UtilsService)) readonly utils: UtilsService,
     @Inject(forwardRef(() => SessionService)) private readonly sessionService: SessionService,
     private config: ConfigService,
@@ -24,7 +24,7 @@ export class AuthService {
   ) {}
 
   async signIn(credentials: AuthCredentials) {
-    const orderingUserInfo = await this.orderingIo.signIn(credentials);
+    const orderingUserInfo = await this.Ordering.signIn(credentials);
 
     const userSelect = Prisma.validator<Prisma.UserSelect>()({
       id: true,
@@ -104,7 +104,7 @@ export class AuthService {
       Prisma.SessionGetPayload<typeof findSessionArgs>
     >(sessionPublicId, findSessionArgs);
     const accessToken = await this.utils.getOrderingAccessToken(session.user.orderingUserId);
-    await this.orderingIo.signOut(accessToken);
+    await this.Ordering.signOut(accessToken);
     await this.sessionService.deleteSession({
       publicId: sessionPublicId,
     });
