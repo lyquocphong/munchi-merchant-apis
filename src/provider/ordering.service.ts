@@ -1,11 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
-import { plainToClass } from 'class-transformer';
-import { OrderDto } from 'src/order/dto/order.dto';
+import { plainToInstance } from 'class-transformer';
+import { Business, Order } from 'ordering-api-sdk';
 import { AuthCredentials, OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
 import { OrderingUser } from '../ordering/ordering.type';
-import { Business, Order } from 'ordering-api-sdk';
 @Injectable()
 export class OrderingService {
   private readonly logger = new Logger(OrderingService.name);
@@ -28,7 +27,7 @@ export class OrderingService {
 
     try {
       const response = await axios.request(options);
-      return plainToClass(OrderingUser, response.data.result);
+      return plainToInstance(OrderingUser, response.data.result);
     } catch (error) {
       this.utils.logError(error);
     }
@@ -59,7 +58,7 @@ export class OrderingService {
       method: 'GET',
       url: `${this.utils.getEnvUrl(
         'business',
-      )}?type=1&params=name,logo,metafields,today,schedule,owners,enabled&mode=dashboard`,
+      )}?type=1&params=name,email,phone,address,logo,metafields,description,today,schedule,owners,enabled&mode=dashboard`,
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,

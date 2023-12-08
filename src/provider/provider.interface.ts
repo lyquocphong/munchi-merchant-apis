@@ -8,10 +8,9 @@ export interface Provider {
   mapToOrderResponse<T, U>(order: U): Promise<T>;
 }
 
-
 /**
- * This wolt actions take from wolt develop document to make it dynamic 
- * 
+ * This wolt actions take from wolt develop document to make it dynamic
+ *
  * Reference: https://developer.wolt.com/docs/api/order
  */
 export type WOLT_ACTIONS =

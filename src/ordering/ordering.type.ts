@@ -30,6 +30,12 @@ export class OrderingBusiness {
   email: string;
 
   @Expose()
+  address: string;
+
+  @Expose()
+  phone: string;
+
+  @Expose()
   description: string;
 
   @Expose()

@@ -1,15 +1,11 @@
-import { Injectable, Inject, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, forwardRef } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import moment from 'moment';
-import { UserResponse } from 'src/auth/dto/auth.dto';
-import { OrderingService } from 'src/provider/ordering.service';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { AuthTokens } from 'src/type';
-import { UtilsService } from 'src/utils/utils.service';
-import { UserDto } from './dto/user.dto';
-import { plainToClass } from 'class-transformer';
 import { SessionService } from 'src/auth/session.service';
 import { OrderingUser } from 'src/ordering/ordering.type';
-import { Prisma } from '@prisma/client';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { OrderingService } from 'src/provider/ordering.service';
+import { UtilsService } from 'src/utils/utils.service';
 
 type UserInfoSelectBase = {
   id: true;

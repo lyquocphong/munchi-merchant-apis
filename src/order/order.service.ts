@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { plainToClass } from 'class-transformer';
+import { plainToInstance } from 'class-transformer';
 import { OrderingService } from 'src/provider/ordering.service';
 import { UtilsService } from 'src/utils/utils.service';
 import { OrderDto } from './dto/order.dto';
@@ -69,7 +69,7 @@ export class OrderService {
         paramsQuery,
       );
 
-      return plainToClass(OrderDto, response);
+      return plainToInstance(OrderDto, response);
     } catch (error) {
       this.utils.logError(error);
     }
@@ -95,7 +95,7 @@ export class OrderService {
         query,
         paramsQuery,
       );
-      return plainToClass(OrderDto, response);
+      return plainToInstance(OrderDto, response);
     } catch (error) {
       this.utils.logError(error);
     }
@@ -105,7 +105,7 @@ export class OrderService {
     const accessToken = await this.utils.getOrderingAccessToken(userId);
     try {
       const response = await this.Ordering.getOrderbyId(accessToken, orderId);
-      return plainToClass(OrderDto, response);
+      return plainToInstance(OrderDto, response);
     } catch (error) {
       this.utils.logError(error);
     }
@@ -115,7 +115,7 @@ export class OrderService {
     const accessToken = await this.utils.getOrderingAccessToken(userId);
     try {
       const response = await this.Ordering.updateOrder(accessToken, orderId, orderData);
-      return plainToClass(OrderDto, response);
+      return plainToInstance(OrderDto, response);
     } catch (error) {
       this.utils.logError(error);
     }
