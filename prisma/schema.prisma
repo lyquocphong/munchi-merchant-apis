@@ -8,17 +8,17 @@ datasource db {
 }
 
 model Session {
-  id                       Int        @id @default(autoincrement())
-  publicId                 String     @unique @default(uuid())
-  refreshToken             String     @unique
-  userId                   Int
-  user                     User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  businesses               Business[] @relation("BusinessSessionTable")
-  deviceId                 String?    @unique
-  isOnline                 Boolean    @default(true)
-  lastAccessTs             DateTime   @db.Timestamp()
-  openAppNotificationCount Int?       @default(0)
-  openAppNotifcationSending Boolean   @default(false)
+  id                        Int        @id @default(autoincrement())
+  publicId                  String     @unique @default(uuid())
+  refreshToken              String     @unique
+  userId                    Int
+  user                      User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  businesses                Business[] @relation("BusinessSessionTable")
+  deviceId                  String?    @unique
+  isOnline                  Boolean    @default(true)
+  lastAccessTs              DateTime   @db.Timestamp()
+  openAppNotificationCount  Int?       @default(0)
+  openAppNotifcationSending Boolean    @default(false)
 }
 
 model User {
@@ -39,15 +39,28 @@ model User {
 }
 
 model Business {
-  id                 Int       @id @default(autoincrement())
-  orderingBusinessId Int       @unique
-  publicId           String    @unique @default(uuid())
-  name               String
-  owners             User[]    @relation("MyUserBusinessTable")
-  sessions           Session[] @relation("BusinessSessionTable")
-  logo               String?
+  id                   Int                   @id @default(autoincrement())
+  orderingBusinessId   Int                   @unique
+  publicId             String                @unique @default(uuid())
+  name                 String
+  owners               User[]                @relation("MyUserBusinessTable")
+  sessions             Session[]             @relation("BusinessSessionTable")
+  logo                 String?
+  email                String?
+  phone                String?
+  address              String?
+  description          String?
+  businessExtraSetting BusinessExtraSetting? @relation("BusinessExtraSettings")
 
   @@map("business")
+}
+
+model BusinessExtraSetting {
+  id                 Int      @unique @default(autoincrement())
+  orderingBusinessId Int      @unique
+  business           Business @relation("BusinessExtraSettings", fields: [orderingBusinessId], references: [orderingBusinessId])
+  name               String
+  value              String
 }
 
 model Notification {
