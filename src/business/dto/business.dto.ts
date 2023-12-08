@@ -29,7 +29,21 @@ export class BusinessDto {
   email: string;
 
   @ApiProperty({
-    description: 'The id of business',
+    description: 'A short description of the business',
+    example: 'The restaurant is easy is easy to find.',
+  })
+  @Expose()
+  description: string;
+
+  @ApiProperty({
+    description: 'The phone number of the business',
+    example: '0123456789',
+  })
+  @Expose()
+  phone: string;
+
+  @ApiProperty({
+    description: 'The address of business',
     example: 'Helsinkikatu 100C, Helsinki, Finland',
   })
   @Expose()
@@ -98,7 +112,7 @@ export class AllBusinessDto {
     description: 'The id of business',
     example: '123456',
   })
-  @Expose({ name: 'id' })  
+  @Expose({ name: 'id' })
   id: string;
 
   @ApiProperty({
@@ -146,6 +160,27 @@ export class SetOnlineStatusDto {
   duration: number;
 }
 
-export class GetOnlineStatusDto {
+export class GetOnlineStatusDto {}
 
+export class BusinessExtraConfigDto {
+  @ApiProperty({
+    description: 'The public id of business',
+    example: '123456',
+  })
+  @IsString()
+  id: string;
+
+  @ApiProperty({
+    description: 'The name of the config',
+    example: 'Status',
+  })
+  @IsString()
+  name: string;
+
+  @ApiProperty({
+    description: 'The value of the config',
+    example: '0,1',
+  })
+  @IsString()
+  value: string;
 }

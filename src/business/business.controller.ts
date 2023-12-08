@@ -19,7 +19,7 @@ import { Prisma } from '@prisma/client';
 import { JwtGuard } from 'src/auth/guard/jwt.guard';
 import { SessionService } from 'src/auth/session.service';
 import { BusinessService } from './business.service';
-import { BusinessDto, SetOnlineStatusDto } from './dto/business.dto';
+import { BusinessDto, BusinessExtraConfigDto, SetOnlineStatusDto } from './dto/business.dto';
 
 @UseGuards(JwtGuard)
 @Controller('business')
@@ -93,5 +93,22 @@ export class BusinessController {
       status,
       duration,
     );
+  }
+
+  @ApiCreatedResponse({
+    description: 'Add an extra business config for a specific extra business',
+  })
+  @Post('extra-config')
+  async setExtraConfig(@Request() req: any, @Body() body: BusinessExtraConfigDto) {
+    const { name, value, id: businessPublicId } = body;
+
+    if (!name || !value) {
+      throw new BadRequestException('Missing inputs');
+    }
+
+    return this.businessService.addBusinessExtraSetting(businessPublicId, {
+      name: name,
+      value: value,
+    });
   }
 }
