@@ -4,7 +4,7 @@ import { plainToInstance } from 'class-transformer';
 import { Business, Order } from 'ordering-api-sdk';
 import { AuthCredentials, OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
-import { OrderingUser } from '../ordering/ordering.type';
+import { OrderingUser } from '../../ordering/ordering.type';
 @Injectable()
 export class OrderingService {
   private readonly logger = new Logger(OrderingService.name);

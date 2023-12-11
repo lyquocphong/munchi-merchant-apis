@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { Provider, WOLT_ACTIONS } from './provider.interface';
 import { ConfigService } from '@nestjs/config';
+import axios, { AxiosHeaders } from 'axios';
 import { PrismaService } from 'src/prisma/prisma.service';
-import axios, { AxiosHeaders, AxiosRequestConfig } from 'axios';
 import { UtilsService } from 'src/utils/utils.service';
+import { Provider, WOLT_ACTIONS } from '../provider.type';
 
 @Injectable()
 export class WoltService implements Provider {
