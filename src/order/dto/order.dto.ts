@@ -82,21 +82,28 @@ export class OrderDto {
 }
 
 export type OrderResponse = {
-  provider: number;
-  data: {
-    id: string;
-    business: {
-      publicId: string;
-      id: string;
-      name: string;
-      logo: string;
-    };
-    status: number;
-    deliveryType: number;
-    createdAt: string;
-    comment: string;
-    offers: OfferDto[];
-    products: ProductDto[];
-    summary: SummaryDto[];
+  id: string | number;
+  provider: string;
+
+  business: {
+    publicId: string;
+    name: string;
+    logo: string;
+    email: string;
+    address: string;
+  };
+
+  status: number;
+  deliveryType: number;
+  createdAt: string;
+  comment: string;
+  preorder: {
+    status: string;
+    preorderTime: string;
+  };
+  products: ProductDto[];
+  summary: {
+    subTotal: number;
+    deliveryPrice: number;
   };
 };
