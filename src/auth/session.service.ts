@@ -14,7 +14,7 @@ import * as argon2 from 'argon2';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { AuthCredentials } from 'src/type';
-import { OrderingService } from 'src/provider/ordering.service';
+import { OrderingService } from 'src/provider/ordering/ordering.service';
 import { Prisma } from '@prisma/client';
 import { JwtTokenPayload } from './session.type';
 import { ReportAppBusinessDto } from 'src/report/dto/report.dto';

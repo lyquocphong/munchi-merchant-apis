@@ -1,7 +1,7 @@
 /* eslint-disable prettier/prettier */
 import { Module } from '@nestjs/common';
 
-import { OrderingService } from '../provider/ordering.service';
+import { OrderingService } from '../provider/ordering/ordering.service';
 
 @Module({
   providers: [OrderingService],

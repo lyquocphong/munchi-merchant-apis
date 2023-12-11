@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import Cryptr from 'cryptr';
 import { SessionService } from 'src/auth/session.service';
-import { OrderingService } from 'src/provider/ordering.service';
+import { OrderingService } from 'src/provider/ordering/ordering.service';
 import { UserService } from 'src/user/user.service';
 import { v4 as uuidv4 } from 'uuid';
 @Injectable()

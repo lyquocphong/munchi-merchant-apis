@@ -4,7 +4,7 @@ import moment from 'moment';
 import { SessionService } from 'src/auth/session.service';
 import { OrderingUser } from 'src/ordering/ordering.type';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { OrderingService } from 'src/provider/ordering.service';
+import { OrderingService } from 'src/provider/ordering/ordering.service';
 import { UtilsService } from 'src/utils/utils.service';
 
 type UserInfoSelectBase = {

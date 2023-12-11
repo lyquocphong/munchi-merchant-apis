@@ -8,7 +8,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
-import { OrderingService } from 'src/provider/ordering.service';
+import { OrderingService } from 'src/provider/ordering/ordering.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UtilsService } from 'src/utils/utils.service';
 import { BusinessDto, BusinessExtraConfigDto } from './dto/business.dto';
