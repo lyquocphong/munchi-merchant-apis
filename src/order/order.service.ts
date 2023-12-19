@@ -182,29 +182,29 @@ export class OrderService {
     woltOrder.delivery.type === 'eatin' ? deliverytype = 3 :   woltOrder.delivery.type === 'homedelivery' ? deliverytype = 1 : deliverytype = 2
 
     return {
-      id: woltOrder.id,
-      business: {
-        logo: business.logo,
-        name: business.name,
-        publicId: business.publicId,
-        address: business.address,
-        email: business.email,
-      },
-      deliveryType: deliverytype,
-      comment: woltOrder.consumer_comment,
-      summary: {
-        deliveryPrice: woltOrder.delivery.fee.amount,
-        subTotal: woltOrder.price.amount,
-      },
-      provider: ProviderEnum.Wolt,
-      status: woltOrder.order_status,
-      createdAt: woltOrder.created_at,
-      preorder: {
-        status: woltOrder.pre_order.pre_order_status ,
-        preorderTime: woltOrder.pre_order.preorder_time,
-      },
-      products: woltOrder.items,
-    };
+    //   id: woltOrder.id,
+    //   business: {
+    //     logo: business.logo,
+    //     name: business.name,
+    //     publicId: business.publicId,
+    //     address: business.address,
+    //     email: business.email,
+    //   },
+    //   deliveryType: deliverytype,
+    //   comment: woltOrder.consumer_comment,
+    //   summary: {
+    //     deliveryPrice: woltOrder.delivery.fee.amount,
+    //     subTotal: woltOrder.price.amount,
+    //   },
+    //   provider: ProviderEnum.Wolt,
+    //   status: woltOrder.order_status,
+    //   createdAt: woltOrder.created_at,
+    //   preorder: {
+    //     status: woltOrder.pre_order.pre_order_status ,
+    //     preorderTime: woltOrder.pre_order.preorder_time,
+    //   },
+    //   products: woltOrder.items,
+    // };
     };
   }
 }
