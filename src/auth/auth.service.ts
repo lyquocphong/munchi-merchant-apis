@@ -103,10 +103,12 @@ export class AuthService {
     const session = await this.sessionService.getSessionByPublicId<
       Prisma.SessionGetPayload<typeof findSessionArgs>
     >(sessionPublicId, findSessionArgs);
+
     const accessToken = await this.utils.getOrderingAccessToken(session.user.orderingUserId);
     await this.Ordering.signOut(accessToken);
     await this.sessionService.deleteSession({
       publicId: sessionPublicId,
     });
   }
+
 }

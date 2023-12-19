@@ -7,6 +7,8 @@ import { RefreshTokenStrategy } from './strategy/refreshJwt.strategy';
 import { SessionService } from './session.service';
 import { ConfigModule } from '@nestjs/config';
 import { ProviderModule } from 'src/provider/provider.module';
+import { ApiKeyStrategy } from './strategy/apiKey.strategy';
+import { ApiKeyService } from './apiKey.service';
 
 @Module({
   imports: [
@@ -16,7 +18,7 @@ import { ProviderModule } from 'src/provider/provider.module';
     forwardRef(() => ConfigModule),
   ],
   controllers: [AuthController],
-  providers: [AuthService, RefreshTokenStrategy, SessionService],
+  providers: [AuthService, RefreshTokenStrategy, SessionService, ApiKeyStrategy, ApiKeyService],
   exports: [AuthService, SessionService],
 })
 export class AuthModule {}

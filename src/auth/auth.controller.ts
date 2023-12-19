@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get, Request } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Request, Delete } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
 import { AuthCredentials } from 'src/type';
 import { AuthService } from './auth.service';
@@ -6,6 +6,7 @@ import { AuthReponseDto } from './dto/auth.dto';
 import { RefreshJwt } from './guard/refreshJwt.guard';
 import { JwtGuard } from './guard/jwt.guard';
 import { SessionService } from './session.service';
+import { ApiKeyGuard } from './guard/apiKey.guard';
 
 @Controller('auth')
 @ApiTags('auth')
@@ -47,5 +48,25 @@ export class AuthController {
   getRefreshTokens(@Request() req: any) {
     const { refreshToken, sessionPublicId } = req.user;
     return this.sessionService.refreshTokens(refreshToken, sessionPublicId);
+  }
+
+  @UseGuards(ApiKeyGuard)
+  @ApiBearerAuth('JWT-auth')
+  @Get('session')
+  /**
+   * Has checked
+   */
+  getSession() {
+    return this.sessionService.getAllUserSession();
+  }
+
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth('JWT-auth')
+  @Delete('session')
+  /**
+   * Has checked
+   */
+  deleteSession(sessionPublicId: string[]) {
+    return this.sessionService.deleteUserSessions(sessionPublicId);
   }
 }
