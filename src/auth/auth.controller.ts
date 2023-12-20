@@ -1,4 +1,14 @@
-import { Controller, Post, Body, UseGuards, Get, Request, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Get,
+  Request,
+  Delete,
+  Req,
+  Param,
+} from '@nestjs/common';
 import { ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
 import { AuthCredentials } from 'src/type';
 import { AuthService } from './auth.service';
@@ -56,8 +66,25 @@ export class AuthController {
   /**
    * Has checked
    */
-  getSession() {
-    return this.sessionService.getAllUserSession();
+  getSession(@Req() request: any) {
+    const page = request.query.page;
+    const rowPerPage = request.query.rowPerPage;
+    return this.sessionService.getAllUserSession(parseInt(page), parseInt(rowPerPage));
+  }
+
+  @UseGuards(ApiKeyGuard)
+  @Get('session/:publicUserId')
+  /**
+   * Has checked
+   */
+  getUserSessions(@Param('publicUserId') publicUserId: string, @Req() request: any) {
+    const page = request.query.page;
+    const rowPerPage = request.query.rowPerPage;
+    return this.sessionService.getSessionByPublicUserId(
+      publicUserId,
+      parseInt(page),
+      parseInt(rowPerPage),
+    );
   }
 
   @UseGuards(JwtGuard)
