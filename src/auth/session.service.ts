@@ -412,7 +412,7 @@ export class SessionService {
     });
   }
 
-  async getAllUserSession() {
+  async getAllUserSession(page: number, row: number) {
     const sessionSelectArgs = Prisma.validator<Prisma.UserSelect>()({
       publicId: true,
       firstName: true,
@@ -421,6 +421,7 @@ export class SessionService {
 
       businesses: {
         select: {
+          publicId: true,
           logo: true,
           name: true,
           email: true,
@@ -429,6 +430,7 @@ export class SessionService {
       },
       sessions: {
         select: {
+          publicId: true,
           isOnline: true,
           openAppNotifcationSending: true,
           lastAccessTs: true,
@@ -439,12 +441,59 @@ export class SessionService {
       },
     });
 
-    return await this.prismaService.user.findMany({
+    const users = await this.prismaService.user.findMany();
+
+    const userPerPage = await this.prismaService.user.findMany({
       orderBy: {
         id: 'asc',
       },
+      skip: page === 1 ? 0 : row * (page - 1),
+      take: row,
       select: sessionSelectArgs,
     });
+
+    return {
+      data: userPerPage,
+      total: users.length,
+    };
+  }
+
+  async getSessionByPublicUserId(publicUserId: string, page: number, row: number) {
+    const userSelectArgs = Prisma.validator<Prisma.UserSelect>()({
+      sessions: {
+        select: {
+          publicId: true,
+          isOnline: true,
+          openAppNotifcationSending: true,
+          lastAccessTs: true,
+        },
+        orderBy: {
+          lastAccessTs: 'desc',
+        },
+        skip: page === 1 ? 0 : row * (page - 1),
+        take: row,
+      },
+    });
+
+    const totalSession = await this.prismaService.session.findMany({
+      where: {
+        user: {
+          publicId: publicUserId,
+        },
+      },
+    });
+
+    const { sessions } = await this.prismaService.user.findUnique({
+      where: {
+        publicId: publicUserId,
+      },
+      select: userSelectArgs,
+    });
+
+    return {
+      data: sessions,
+      total: totalSession.length,
+    };
   }
 
   async deleteUserSessions(sessionPublicId: string[]) {
