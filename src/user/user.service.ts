@@ -1,4 +1,4 @@
-import { Inject, Injectable, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import moment from 'moment';
 import { SessionService } from 'src/auth/session.service';
@@ -15,7 +15,7 @@ type UserInfoSelectBase = {
 @Injectable()
 export class UserService {
   constructor(
-    private prisma: PrismaService,
+    private prismaService: PrismaService,
     @Inject(forwardRef(() => UtilsService)) private readonly utils: UtilsService,
     @Inject(forwardRef(() => SessionService)) private readonly sessionService: SessionService,
     @Inject(forwardRef(() => OrderingService)) private readonly Ordering: OrderingService,
@@ -23,7 +23,7 @@ export class UserService {
 
   getUserInternally = async (orderingUserId: number, publicUserId: string) => {
     if (orderingUserId === null) {
-      const user = await this.prisma.user.findUnique({
+      const user = await this.prismaService.user.findUnique({
         where: {
           publicId: publicUserId,
         },
@@ -33,7 +33,7 @@ export class UserService {
       });
       return user;
     } else {
-      const user = await this.prisma.user.findUnique({
+      const user = await this.prismaService.user.findUnique({
         where: {
           orderingUserId: orderingUserId,
         },
@@ -47,7 +47,7 @@ export class UserService {
 
   deleteUser = async (userId: number) => {
     const user = await this.getUserInternally(userId, null);
-    const deleteUser = await this.prisma.user.delete({
+    const deleteUser = await this.prismaService.user.delete({
       where: {
         id: user.id,
       },
@@ -60,7 +60,7 @@ export class UserService {
     publicId: string,
     select?: S,
   ): Promise<Prisma.UserGetPayload<{ select: S }>> {
-    return await this.prisma.user.findFirst({
+    return await this.prismaService.user.findFirst({
       where: {
         publicId,
       },
@@ -72,7 +72,7 @@ export class UserService {
     orderingUserId: number,
     select: S,
   ) {
-    return await this.prisma.user.findUnique({
+    return await this.prismaService.user.findUnique({
       where: {
         orderingUserId,
       },
@@ -97,7 +97,7 @@ export class UserService {
       hash: this.utils.getPassword(userInfo.password, true),
     };
 
-    return await this.prisma.user.upsert({
+    return await this.prismaService.user.upsert({
       where: {
         orderingUserId: userInfo.id,
       },
@@ -105,5 +105,20 @@ export class UserService {
       update: data,
       select,
     });
+  }
+
+  async validateUser(userId: string | number) {
+    const searchField = typeof userId === 'number' ? 'orderingUserId' : 'publicId';
+    const whereClause: any = {};
+    whereClause[searchField] = userId;
+    const user = await this.prismaService.user.findMany({
+      where: whereClause,
+    });
+
+    if (!user || user.length === 0) {
+      throw new NotFoundException('No user found');
+    }
+
+    return user;
   }
 }
