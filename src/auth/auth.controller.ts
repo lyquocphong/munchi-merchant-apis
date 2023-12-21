@@ -8,6 +8,7 @@ import {
   Delete,
   Req,
   Param,
+  Put,
 } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
 import { AuthCredentials } from 'src/type';
@@ -87,13 +88,14 @@ export class AuthController {
     );
   }
 
-  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
   @ApiBearerAuth('JWT-auth')
-  @Delete('session')
-  /**
-   * Has checked
-   */
-  deleteSession(sessionPublicId: string[]) {
-    return this.sessionService.deleteUserSessions(sessionPublicId);
+  @Put('session/:publicUserId')
+  deleteSession(
+    @Param('publicUserId') publicUserId: string,
+    @Body('sessionIds') sessionIds: string[],
+  ) {
+    
+    return this.sessionService.deleteUserSessions(publicUserId, sessionIds);
   }
 }
