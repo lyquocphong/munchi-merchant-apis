@@ -496,14 +496,16 @@ export class SessionService {
     };
   }
 
-  async deleteUserSessions(sessionPublicId: string[]) {
-    const deleteSessionArgs = Prisma.validator<Prisma.SessionWhereInput>()({
-      publicId: {
-        in: sessionPublicId,
+  async deleteUserSessions(publicUserId: string, sessionPublicId: string[]) {
+    await this.userService.validateUser(publicUserId);
+
+    await this.prismaService.session.deleteMany({
+      where: {
+        publicId: {
+          in: sessionPublicId,
+        },
       },
     });
-
-    await this.deleteSession(deleteSessionArgs);
 
     return 'Delete sessions successfully';
   }
