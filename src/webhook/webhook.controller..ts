@@ -3,6 +3,7 @@ import { Body, Controller, Post, Req } from '@nestjs/common';
 import { WebhookService } from './webhook.service';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
+import { WoltOrderNotification } from 'src/provider/wolt/wolt.type';
 
 @Controller('webhook')
 export class WebhookController {
@@ -19,7 +20,7 @@ export class WebhookController {
   }
 
   @Post('wolt/newOrder')
-  woltNewOrder(@Body() order: any, @Req() request: Request) {
-    return this.webhookService.newWoltOrderNotification();
+  woltNewOrder(@Body() woltWebhookdata: WoltOrderNotification, @Req() request: Request) {
+    return this.webhookService.newWoltOrderNotification(woltWebhookdata);
   }
 }

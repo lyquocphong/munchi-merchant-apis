@@ -1,9 +1,18 @@
 import { NotificationService } from './../notification/notification.service';
 /* eslint-disable prettier/prettier */
-import { ForbiddenException, Inject, Injectable, Logger, OnModuleInit, forwardRef } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Inject,
+  Injectable,
+  Logger,
+  OnModuleInit,
+  forwardRef,
+} from '@nestjs/common';
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets/decorators';
 import { Server } from 'socket.io';
 import { BusinessService } from 'src/business/business.service';
+import { WoltService } from 'src/provider/wolt/wolt.service';
+import { WoltOrderNotification } from 'src/provider/wolt/wolt.type';
 import { UtilsService } from 'src/utils/utils.service';
 
 @WebSocketGateway({ cors: { origin: { origin: '*' } } })
@@ -14,8 +23,9 @@ export class WebhookService implements OnModuleInit {
   constructor(
     @Inject(forwardRef(() => BusinessService)) private business: BusinessService,
     private utils: UtilsService,
-    private notificationService: NotificationService
-  ) { }
+    private notificationService: NotificationService,
+    private woltService: WoltService,
+  ) {}
 
   onModuleInit() {
     const ioServer = this.server;
@@ -51,12 +61,12 @@ export class WebhookService implements OnModuleInit {
        */
       socket.on('order-popup-closed', async (orderId: string, businessId: string) => {
         this.server.to(businessId).emit('close-order-popup', orderId);
-      })
+      });
     });
   }
 
   async emitUpdateAppState(deviceId: string) {
-    this.server.emit('update-app-state', deviceId)
+    this.server.emit('update-app-state', deviceId);
   }
 
   async newOrderNotification(order: any) {
@@ -71,13 +81,21 @@ export class WebhookService implements OnModuleInit {
   async changeOrderNotification(order: any) {
     try {
       this.server.to(order.business_id.toString()).emit('order_change', order);
+      this.notificationService.sendWoltNotifiaction();
     } catch (error) {
       this.utils.logError(error);
     }
   }
 
-  async newWoltOrderNotification() {
-    this.notificationService.sendWoltNotifiaction();
+  async newWoltOrderNotification(woltWebhookdata: WoltOrderNotification) {
+    //Get order data from the web hook data
+    const woltOrder = this.woltService.getOrderById(woltWebhookdata.id);
+
+    try {
+      this.server.to(woltWebhookdata.order.venue_id).emit('order_change', woltOrder);
+    } catch (error) {
+      this.utils.logError(error);
+    }
   }
 
   async notifyCheckBusinessStatus(businessPublicId: string) {

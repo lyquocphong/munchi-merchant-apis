@@ -65,8 +65,7 @@ model BusinessExtraSetting {
   id                 Int      @unique @default(autoincrement())
   orderingBusinessId Int      @unique
   business           Business @relation("BusinessExtraSettings", fields: [orderingBusinessId], references: [orderingBusinessId])
-  name               String
-  value              String
+  woltVenueId        String   @unique
 }
 
 model Notification {
