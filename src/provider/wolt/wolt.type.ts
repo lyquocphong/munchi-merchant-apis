@@ -119,3 +119,15 @@ export interface WoltOrder {
   company_tax_id: string;
   loyalty_card_number: string;
 }
+
+export interface WoltOrderNotification {
+  id: string;
+  type: string;
+  order: {
+    id: string;
+    venue_id: string;
+    status: string;
+    resource_url: string;
+  };
+  created_at: string;
+}
