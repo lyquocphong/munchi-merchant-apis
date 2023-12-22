@@ -21,6 +21,12 @@ model Session {
   openAppNotifcationSending Boolean    @default(false)
 }
 
+model ApiKey {
+  id    Int    @id @default(autoincrement())
+  name  String
+  value String
+}
+
 model User {
   id                           Int        @id @default(autoincrement())
   orderingUserId               Int        @unique
