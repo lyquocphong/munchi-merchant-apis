@@ -215,6 +215,17 @@ export class BusinessService {
     return (await this.prismaService.business.findUnique(options)) as Prisma.BusinessGetPayload<P>;
   }
 
+  async findBusinessByWoltVenueid(woltVenueId: string) {
+    return await this.prismaService.businessExtraSetting.findUnique({
+      where: {
+        woltVenueId: woltVenueId,
+      },
+      include: {
+        business: true,
+      },
+    });
+  }
+
   async getAssociateSessions(condition: Prisma.BusinessWhereInput): Promise<
     Prisma.BusinessGetPayload<{
       include: { sessions: true };
@@ -257,8 +268,7 @@ export class BusinessService {
         orderingBusinessId: business.orderingBusinessId,
       },
       data: {
-        name: data.name,
-        value: data.value,
+        woltVenueId: data.value,
       },
     });
   }
