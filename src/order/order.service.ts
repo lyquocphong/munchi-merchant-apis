@@ -1,15 +1,15 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
+import { SessionService } from 'src/auth/session.service';
+import { BusinessService } from 'src/business/business.service';
 import { OrderingService } from 'src/provider/ordering/ordering.service';
+import { OrderingOrderStatus } from 'src/provider/ordering/ordering.type';
+import { ProviderEnum } from 'src/provider/provider.type';
+import { WoltOrder } from 'src/provider/wolt/wolt.type';
+import { OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
 import { OrderDto, OrderResponse } from './dto/order.dto';
-import { BusinessService } from 'src/business/business.service';
-import { OrderData } from 'src/type';
-import { Prisma } from '@prisma/client';
-import { SessionService } from 'src/auth/session.service';
-import { Order } from 'ordering-api-sdk';
-import { WoltOrder } from 'src/provider/wolt/wolt.type';
-import { ProviderEnum } from 'src/provider/provider.type';
 
 @Injectable()
 export class OrderService {
@@ -173,38 +173,79 @@ export class OrderService {
     };
   }
 
-  async mapWoltOrderToOrderResponse(woltOrder: WoltOrder,  businessOrderingId: number,): Promise<OrderResponse> {
-    
+  async mapWoltOrderToOrderResponse(
+    woltOrder: WoltOrder,
+    businessOrderingId: number,
+  ): Promise<OrderResponse> {
     const business = await this.businessService.findBusinessByOrderingId(businessOrderingId, {});
-    
-    let deliverytype:number;
 
-    woltOrder.delivery.type === 'eatin' ? deliverytype = 3 :   woltOrder.delivery.type === 'homedelivery' ? deliverytype = 1 : deliverytype = 2
+    let deliverytype: number;
+
+    woltOrder.delivery.type === 'eatin'
+      ? (deliverytype = 3)
+      : woltOrder.delivery.type === 'homedelivery'
+      ? (deliverytype = 1)
+      : (deliverytype = 2);
+
+    const orderStatusMapping = {
+      received: OrderingOrderStatus.AcceptedByBusiness,
+      fetched: OrderingOrderStatus.PickupCompletedByCustomer,
+      acknowledged: OrderingOrderStatus.AcceptedByBusiness,
+      production: OrderingOrderStatus.AcceptedByBusiness,
+      ready: OrderingOrderStatus.PreparationCompleted,
+      delivered: OrderingOrderStatus.DeliveryCompletedByDriver,
+      rejected: OrderingOrderStatus.RejectedByBusiness,
+      refunded: 25,
+    };
+
+    //     const mappedProducted:ProductDto[] = woltOrder.items.map((item) => {
+    //       let optionData
+    //       const options:OptionDto[] = item.options.map((option) =>{
+
+    //         return optionData.push({
+    //           id: option.id,
+    //           image: 0,
+    // name: option.name,
+    // price: option.price.amount
+    // ,suboptions: []
+    //         })
+
+    //         }
+    //        )
+    //         return [{
+    //           comment:null,
+    //           id: item.id,
+    //           name:item.name,
+    //           price:item.base_price.amount,
+    //           quantity: item.count,
+    //           options: options
+    //         }]
+
+    //     })
 
     return {
-    //   id: woltOrder.id,
-    //   business: {
-    //     logo: business.logo,
-    //     name: business.name,
-    //     publicId: business.publicId,
-    //     address: business.address,
-    //     email: business.email,
-    //   },
-    //   deliveryType: deliverytype,
-    //   comment: woltOrder.consumer_comment,
-    //   summary: {
-    //     deliveryPrice: woltOrder.delivery.fee.amount,
-    //     subTotal: woltOrder.price.amount,
-    //   },
-    //   provider: ProviderEnum.Wolt,
-    //   status: woltOrder.order_status,
-    //   createdAt: woltOrder.created_at,
-    //   preorder: {
-    //     status: woltOrder.pre_order.pre_order_status ,
-    //     preorderTime: woltOrder.pre_order.preorder_time,
-    //   },
-    //   products: woltOrder.items,
-    // };
+      id: woltOrder.id,
+      business: {
+        logo: business.logo,
+        name: business.name,
+        publicId: business.publicId,
+        address: business.address,
+        email: business.email,
+      },
+      deliveryType: deliverytype,
+      comment: woltOrder.consumer_comment,
+      summary: {
+        deliveryPrice: woltOrder.delivery.fee.amount,
+        subTotal: woltOrder.price.amount,
+      },
+      provider: ProviderEnum.Wolt,
+      status: orderStatusMapping[woltOrder.order_status],
+      createdAt: woltOrder.created_at,
+      preorder: {
+        status: woltOrder.pre_order.pre_order_status,
+        preorderTime: woltOrder.pre_order.preorder_time,
+      },
+      products: [],
     };
   }
 }
