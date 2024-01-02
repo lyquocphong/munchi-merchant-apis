@@ -156,18 +156,16 @@ export class SessionService {
         publicId: publicId,
       },
     };
-
     if (args) {
       findArgs = { ...findArgs, ...args };
     }
 
     const session = (await this.prismaService.session.findUnique(findArgs)) as T;
-
     if (!session) {
       throw new NotFoundException('No user found');
     }
 
-    return;
+    return session;
   }
 
   async deleteSession(where: Prisma.SessionWhereInput) {
@@ -334,7 +332,6 @@ export class SessionService {
     const session = await this.getSessionByPublicId<
       Prisma.SessionGetPayload<typeof findSessionArgs>
     >(sessionPublicId, findSessionArgs);
-
     if (!session) {
       throw new NotFoundException('Cannot find session by public Id');
     }
