@@ -48,16 +48,6 @@ export interface WoltPrice {
   currency: string;
 }
 
-export interface WoltOption {
-  id: string;
-  name: string;
-  value: string;
-  price: WoltPrice;
-  pos_id: string;
-  count: number;
-  value_pos_id: string;
-}
-
 export interface WoltCategory {
   id: string;
   name: string;
@@ -91,6 +81,16 @@ export interface WoltItem {
   item_type: string;
 }
 
+export interface WoltOption {
+  id: string;
+  name: string;
+  value: string;
+  price: WoltPrice;
+  pos_id: string;
+  count: number;
+  value_pos_id: string;
+}
+
 export interface WoltPreOrder {
   preorder_time: string;
   pre_order_status: string;
@@ -114,7 +114,7 @@ export interface WoltOrder {
   consumer_name: string;
   consumer_phone_number: string;
   order_number: string;
-  order_status: string;
+  order_status: WoltOrderStatus;
   modified_at: string;
   company_tax_id: string;
   loyalty_card_number: string;
