@@ -4,7 +4,11 @@ import { plainToInstance } from 'class-transformer';
 import { Business, Order } from 'ordering-api-sdk';
 import { AuthCredentials, OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
-import { OrderingUser } from '../../ordering/ordering.type';
+import { OrderingOrder, OrderingUser } from './ordering.type';
+import { ProviderEnum } from '../provider.type';
+import { OrderResponse } from 'src/order/dto/order.dto';
+import { ProductDto } from 'src/order/dto/product.dto';
+
 @Injectable()
 export class OrderingService {
   private readonly logger = new Logger(OrderingService.name);
@@ -299,5 +303,39 @@ export class OrderingService {
     } catch (error) {
       this.utils.logError(error);
     }
+  }
+
+  //Transform ordering response to order resposne
+  async mapOrderingOrderToOrderResponse(orderingOrder: OrderingOrder): Promise<OrderResponse> {
+    const preorder: boolean = orderingOrder.reporting_data.at.hasOwnProperty(`status:13`);
+    const productDto = plainToInstance(ProductDto, orderingOrder.products);
+    return {
+      id: orderingOrder.id,
+      business: {
+        logo: orderingOrder.business.logo,
+        name: orderingOrder.business.name,
+        publicId: orderingOrder.business.publicId,
+        address: orderingOrder.business.address,
+        email: orderingOrder.business.email,
+      },
+      deliveryType: orderingOrder.delivery_type,
+      comment: orderingOrder.comment,
+      summary: {
+        deliveryPrice: orderingOrder.delivery,
+        subTotal: orderingOrder.subTotal,
+      },
+      provider: ProviderEnum.Munchi,
+      status: orderingOrder.status,
+      createdAt: orderingOrder.created_at,
+      preorder: {
+        status: preorder ? 'confirmed' : 'waiting',
+        preorderTime: orderingOrder.delivery_datetime,
+      },
+      products: productDto,
+    };
+  }
+
+  async saveWoltOrderToDataBase(formattedWoltOrder: OrderResponse) {
+    
   }
 }
