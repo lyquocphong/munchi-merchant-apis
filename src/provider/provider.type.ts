@@ -1,3 +1,6 @@
+import { OrderingOrder } from './ordering/ordering.type';
+import { WoltOrder } from './wolt/wolt.type';
+
 export interface Provider {
   getAllOrder(): Promise<void>;
 
@@ -5,7 +8,7 @@ export interface Provider {
 
   updateOrder<T>(orderId: string, action: WOLT_ACTIONS): Promise<T>;
 
-  mapToOrderResponse<T, U>(order: U): Promise<T>;
+  mapToOrderResponse(order: WoltOrder | OrderingOrder): Promise<any>;
 }
 
 /**
