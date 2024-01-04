@@ -89,7 +89,7 @@ export class WebhookService implements OnModuleInit {
 
   async newWoltOrderNotification(woltWebhookdata: WoltOrderNotification) {
     //Get order data from the web hook data
-    const woltOrder = this.woltService.getOrderById(woltWebhookdata.id);
+    await this.woltService.getOrderDataAndSaveToDb(woltWebhookdata);
 
     try {
       this.server.to(woltWebhookdata.order.venue_id).emit('order_change', woltOrder);
