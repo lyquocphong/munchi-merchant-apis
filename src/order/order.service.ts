@@ -10,11 +10,13 @@ import { WoltOrder } from 'src/provider/wolt/wolt.type';
 import { OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
 import { OrderDto, OrderResponse } from './dto/order.dto';
+import { WoltService } from 'src/provider/wolt/wolt.service';
 
 @Injectable()
 export class OrderService {
   constructor(
-    private readonly Ordering: OrderingService,
+    private readonly orderingService: OrderingService,
+    private readonly woltService: WoltService,
     private readonly utils: UtilsService,
     private readonly businessService: BusinessService,
     private readonly sessionService: SessionService,
@@ -65,7 +67,7 @@ export class OrderService {
     const { user } = session;
 
     try {
-      const response = await this.Ordering.getOrderForBusinesses(
+      const response = await this.orderingService.getOrderForBusinesses(
         user.orderingAccessToken,
         businessIds,
         query,
@@ -96,7 +98,7 @@ export class OrderService {
       throw new ForbiddenException('Something wrong happened');
     }
     try {
-      const response = await this.Ordering.getFilteredOrders(
+      const response = await this.orderingService.getFilteredOrders(
         accessToken,
         business.orderingBusinessId,
         query,
@@ -111,7 +113,7 @@ export class OrderService {
   async getOrderbyId(userId: number, orderId: number) {
     const accessToken = await this.utils.getOrderingAccessToken(userId);
     try {
-      const response = await this.Ordering.getOrderbyId(accessToken, orderId);
+      const response = await this.orderingService.getOrderbyId(accessToken, orderId);
       return plainToInstance(OrderDto, response);
     } catch (error) {
       this.utils.logError(error);
@@ -121,7 +123,7 @@ export class OrderService {
   async updateOrder(userId: number, orderId: number, orderData: OrderData) {
     const accessToken = await this.utils.getOrderingAccessToken(userId);
     try {
-      const response = await this.Ordering.updateOrder(accessToken, orderId, orderData);
+      const response = await this.orderingService.updateOrder(accessToken, orderId, orderData);
       return plainToInstance(OrderDto, response);
     } catch (error) {
       this.utils.logError(error);
@@ -131,121 +133,10 @@ export class OrderService {
   async deleteOrder(userId: number, orderId: number) {
     const accessToken = await this.utils.getOrderingAccessToken(userId);
     try {
-      const response = await this.Ordering.deleteOrder(accessToken, orderId);
+      const response = await this.orderingService.deleteOrder(accessToken, orderId);
       return response;
     } catch (error) {
       this.utils.logError(error);
     }
-  }
-
-  //Transform ordering response to order resposne
-  async mapOrderingOrderToOrderResponse(
-    orderingOrder: any,
-    businessOrderingId: number,
-  ): Promise<OrderResponse> {
-    const business = await this.businessService.findBusinessByOrderingId(businessOrderingId, {});
-
-    const preorder: boolean = orderingOrder.reporting_data.at.hasOwnProperty(`status:13`);
-
-    return {
-      id: orderingOrder.id,
-      business: {
-        logo: business.logo,
-        name: business.name,
-        publicId: business.publicId,
-        address: business.address,
-        email: business.email,
-      },
-      deliveryType: orderingOrder.delivery_type,
-      comment: orderingOrder.comment,
-      summary: {
-        deliveryPrice: orderingOrder.delivery,
-        subTotal: orderingOrder.subTotal,
-      },
-      provider: ProviderEnum.Munchi,
-      status: orderingOrder.status,
-      createdAt: orderingOrder.created_at,
-      preorder: {
-        status: preorder ? 'confirmed' : 'waiting',
-        preorderTime: orderingOrder.delivery_datetime,
-      },
-      products: orderingOrder.products,
-    };
-  }
-
-  async mapWoltOrderToOrderResponse(
-    woltOrder: WoltOrder,
-    businessOrderingId: number,
-  ): Promise<OrderResponse> {
-    const business = await this.businessService.findBusinessByOrderingId(businessOrderingId, {});
-
-    let deliverytype: number;
-
-    woltOrder.delivery.type === 'eatin'
-      ? (deliverytype = 3)
-      : woltOrder.delivery.type === 'homedelivery'
-      ? (deliverytype = 1)
-      : (deliverytype = 2);
-
-    const orderStatusMapping = {
-      received: OrderingOrderStatus.AcceptedByBusiness,
-      fetched: OrderingOrderStatus.PickupCompletedByCustomer,
-      acknowledged: OrderingOrderStatus.AcceptedByBusiness,
-      production: OrderingOrderStatus.AcceptedByBusiness,
-      ready: OrderingOrderStatus.PreparationCompleted,
-      delivered: OrderingOrderStatus.DeliveryCompletedByDriver,
-      rejected: OrderingOrderStatus.RejectedByBusiness,
-      refunded: 25,
-    };
-
-    //     const mappedProducted:ProductDto[] = woltOrder.items.map((item) => {
-    //       let optionData
-    //       const options:OptionDto[] = item.options.map((option) =>{
-
-    //         return optionData.push({
-    //           id: option.id,
-    //           image: 0,
-    // name: option.name,
-    // price: option.price.amount
-    // ,suboptions: []
-    //         })
-
-    //         }
-    //        )
-    //         return [{
-    //           comment:null,
-    //           id: item.id,
-    //           name:item.name,
-    //           price:item.base_price.amount,
-    //           quantity: item.count,
-    //           options: options
-    //         }]
-
-    //     })
-
-    return {
-      id: woltOrder.id,
-      business: {
-        logo: business.logo,
-        name: business.name,
-        publicId: business.publicId,
-        address: business.address,
-        email: business.email,
-      },
-      deliveryType: deliverytype,
-      comment: woltOrder.consumer_comment,
-      summary: {
-        deliveryPrice: woltOrder.delivery.fee.amount,
-        subTotal: woltOrder.price.amount,
-      },
-      provider: ProviderEnum.Wolt,
-      status: orderStatusMapping[woltOrder.order_status],
-      createdAt: woltOrder.created_at,
-      preorder: {
-        status: woltOrder.pre_order.pre_order_status,
-        preorderTime: woltOrder.pre_order.preorder_time,
-      },
-      products: [],
-    };
   }
 }
