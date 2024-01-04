@@ -4,16 +4,16 @@ import { OptionDto } from './option.dto';
 @Exclude()
 export class ProductDto {
   @Expose({ name: 'product_id' })
-  id: number;
+  id: number | string;
 
   @Expose()
-  name: number;
+  name: string;
 
   @Expose()
   quantity: number;
 
   @Expose()
-  price: number;
+  price: number | string;
 
   @Expose()
   comment: string;

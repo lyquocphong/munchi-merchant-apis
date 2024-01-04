@@ -88,7 +88,7 @@ export type OrderResponse = {
   business: {
     publicId: string;
     name: string;
-    logo: string;
+    logo: string | null;
     email: string;
     address: string;
   };
