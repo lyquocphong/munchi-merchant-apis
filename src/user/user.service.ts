@@ -2,9 +2,10 @@ import { Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/commo
 import { Prisma } from '@prisma/client';
 import moment from 'moment';
 import { SessionService } from 'src/auth/session.service';
-import { OrderingUser } from 'src/ordering/ordering.type';
+
 import { PrismaService } from 'src/prisma/prisma.service';
 import { OrderingService } from 'src/provider/ordering/ordering.service';
+import { OrderingUser } from 'src/provider/ordering/ordering.type';
 import { UtilsService } from 'src/utils/utils.service';
 
 type UserInfoSelectBase = {
@@ -18,7 +19,7 @@ export class UserService {
     private prismaService: PrismaService,
     @Inject(forwardRef(() => UtilsService)) private readonly utils: UtilsService,
     @Inject(forwardRef(() => SessionService)) private readonly sessionService: SessionService,
-    @Inject(forwardRef(() => OrderingService)) private readonly Ordering: OrderingService,
+    @Inject(forwardRef(() => OrderingService)) private readonly orderingService: OrderingService,
   ) {}
 
   getUserInternally = async (orderingUserId: number, publicUserId: string) => {

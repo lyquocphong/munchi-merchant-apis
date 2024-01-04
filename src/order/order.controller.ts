@@ -14,13 +14,8 @@ import { SessionService } from 'src/auth/session.service';
 @ApiBearerAuth('JWT-auth')
 @Controller('orders')
 export class OrderController {
-  constructor(
-    private Ordering: OrderingService,
-    private utils: UtilsService,
-    private orderService: OrderService,
-    private sessionService: SessionService
-  ) {}
-  
+  constructor(private orderService: OrderService, private sessionService: SessionService) {}
+
   //TODO: Need to refactor publicBussinessId use later, right now it come from session
   @Get('filteredOrders')
   async getFilteredOrders(
@@ -34,7 +29,7 @@ export class OrderController {
   }
 
   @Get(':orderId')
-  async getOrderbyId(@Param('orderId') orderId: number, @Request() req: any) {    
+  async getOrderbyId(@Param('orderId') orderId: number, @Request() req: any) {
     const { sessionPublicId } = req.user;
     const user = await this.sessionService.getSessionUserBySessionPublicId(sessionPublicId);
     return this.orderService.getOrderbyId(user.orderingUserId, orderId);

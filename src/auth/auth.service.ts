@@ -16,7 +16,7 @@ import { JwtTokenPayload } from './session.type';
 export class AuthService {
   constructor(
     @Inject(forwardRef(() => UserService)) private user: UserService,
-    @Inject(forwardRef(() => OrderingService)) private readonly Ordering: OrderingService,
+    @Inject(forwardRef(() => OrderingService)) private readonly orderingService: OrderingService,
     @Inject(forwardRef(() => UtilsService)) readonly utils: UtilsService,
     @Inject(forwardRef(() => SessionService)) private readonly sessionService: SessionService,
     private config: ConfigService,
@@ -24,7 +24,7 @@ export class AuthService {
   ) {}
 
   async signIn(credentials: AuthCredentials) {
-    const orderingUserInfo = await this.Ordering.signIn(credentials);
+    const orderingUserInfo = await this.orderingService.signIn(credentials);
 
     const userSelect = Prisma.validator<Prisma.UserSelect>()({
       id: true,
@@ -105,10 +105,9 @@ export class AuthService {
     >(sessionPublicId, findSessionArgs);
 
     const accessToken = await this.utils.getOrderingAccessToken(session.user.orderingUserId);
-    await this.Ordering.signOut(accessToken);
+    await this.orderingService.signOut(accessToken);
     await this.sessionService.deleteSession({
       publicId: sessionPublicId,
     });
   }
-
 }

@@ -15,8 +15,9 @@ import { BusinessDto, BusinessExtraConfigDto } from './dto/business.dto';
 import { UserService } from 'src/user/user.service';
 import moment from 'moment-timezone';
 import { Prisma } from '@prisma/client';
-import { OrderingBusiness } from 'src/ordering/ordering.type';
+
 import { BusinessInfoSelectBase } from './business.type';
+import { OrderingBusiness } from 'src/provider/ordering/ordering.type';
 
 @Injectable()
 export class BusinessService {

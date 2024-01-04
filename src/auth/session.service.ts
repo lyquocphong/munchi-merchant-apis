@@ -26,7 +26,7 @@ export class SessionService {
     @Inject(forwardRef(() => UtilsService)) readonly utils: UtilsService,
     @Inject(forwardRef(() => UserService)) private userService: UserService,
     @Inject(forwardRef(() => OrderingService))
-    private readonly Ordering: OrderingService,
+    private readonly orderingService: OrderingService,
     private readonly jwt: JwtService,
     private config: ConfigService,
     private readonly prismaService: PrismaService,
@@ -37,7 +37,7 @@ export class SessionService {
   }
 
   async updateOrderingAccessToken(credentials: AuthCredentials) {
-    const orderingUserInfo = await this.Ordering.signIn(credentials);
+    const orderingUserInfo = await this.orderingService.signIn(credentials);
 
     const userSelect = Prisma.validator<Prisma.UserSelect>()({
       id: true,
