@@ -56,7 +56,7 @@ model Business {
   phone                String?
   address              String?
   description          String?
-  businessExtraSetting BusinessExtraSetting? @relation("BusinessExtraSettings")
+  businessExtraSetting BusinessExtraSetting[] @relation("BusinessExtraSettings")
 
   @@map("business")
 }
@@ -65,7 +65,8 @@ model BusinessExtraSetting {
   id                 Int      @unique @default(autoincrement())
   orderingBusinessId Int      @unique
   business           Business @relation("BusinessExtraSettings", fields: [orderingBusinessId], references: [orderingBusinessId])
-  woltVenueId        String   @unique
+  name               String?
+  value              String?  @unique
 }
 
 model Notification {
