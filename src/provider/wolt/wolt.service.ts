@@ -7,6 +7,7 @@ import { UtilsService } from 'src/utils/utils.service';
 import { OrderingDeliveryType, OrderingOrderStatus } from '../ordering/ordering.type';
 import { Provider, ProviderEnum, WOLT_ACTIONS } from '../provider.type';
 import { WoltItem, WoltOrder, WoltOrderNotification } from './wolt.type';
+import { OrderResponse } from 'src/order/dto/order.dto';
 
 @Injectable()
 export class WoltService implements Provider {
@@ -107,12 +108,13 @@ export class WoltService implements Provider {
     let deliverytype: number;
     const businessData = await this.prismaService.businessExtraSetting.findUnique({
       where: {
-        woltVenueId: woltOrder.venue.id,
+        value: woltOrder.venue.id,
       },
       select: {
         business: true,
       },
     });
+
     woltOrder.delivery.type === 'eatin'
       ? (deliverytype = OrderingDeliveryType.EatIn)
       : woltOrder.delivery.type === 'homedelivery'
@@ -160,7 +162,7 @@ export class WoltService implements Provider {
     };
   }
 
-  async getOrderDataAndSaveToDb(woltWebhookdata: WoltOrderNotification) {
+  async getOrderDataAndSaveToDb(woltWebhookdata: WoltOrderNotification): Promise<OrderResponse> {
     // Get order detail from wolt host provider
     //It will throw and error and return in case the order is not found
     const woltOrder = await this.getOrderById<WoltOrder>(woltWebhookdata.order.id);
@@ -168,9 +170,13 @@ export class WoltService implements Provider {
     //Save order to databse
 
     const mappedWoltOrder = await this.mapToOrderResponse(woltOrder);
-    console.log("🚀 ~ file: wolt.service.ts:173 ~ WoltService ~ getOrderDataAndSaveToDb ~ mappedWoltOrder:", mappedWoltOrder)
+    console.log(
+      '🚀 ~ file: wolt.service.ts:173 ~ WoltService ~ getOrderDataAndSaveToDb ~ mappedWoltOrder:',
+      mappedWoltOrder,
+    );
     // await this.saveWoltOrdertoDb(woltOrder)
     // console.log(this.woltApiKey, this.woltApiUrl);
+    return mappedWoltOrder;
   }
 
   async saveWoltOrdertoDb(woltOrder) {}
