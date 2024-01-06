@@ -10,8 +10,8 @@ export class BusinessDto {
     description: 'The id of business',
     example: '123456',
   })
-  @Expose()
-  id: number;
+  @Expose({ name: 'id' })
+  orderingBusinessId: number;
 
   @ApiProperty({
     description: 'The name of business',

@@ -14,10 +14,12 @@ import { UtilsService } from 'src/utils/utils.service';
 import { BusinessDto, BusinessExtraConfigDto } from './dto/business.dto';
 import { UserService } from 'src/user/user.service';
 import moment from 'moment-timezone';
-import { Prisma } from '@prisma/client';
+import { BusinessExtraSetting, Prisma } from '@prisma/client';
 
 import { BusinessInfoSelectBase } from './business.type';
 import { OrderingBusiness } from 'src/provider/ordering/ordering.type';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { Business } from 'ordering-api-sdk';
 
 @Injectable()
 export class BusinessService {
@@ -48,6 +50,65 @@ export class BusinessService {
     });
   }
 
+  @Cron(CronExpression.EVERY_10_MINUTES)
+  async syncBusinessFromOrdering() {
+    const orderingApiKey = await this.prismaService.apiKey.findFirst({
+      where: {
+        name: 'ORDERING_API_KEY',
+      },
+    });
+
+    if (!orderingApiKey) {
+      throw new NotFoundException('No key found');
+    }
+
+    const orderingBusiness = await this.orderingService.getAllBusinessForAdmin(
+      orderingApiKey.value,
+    );
+
+    const formattedBusinessesData = plainToInstance(BusinessDto, orderingBusiness);
+
+    await this.saveMultipleBusinessToDb(formattedBusinessesData);
+
+    console.log('Success on sync businesses');
+  }
+
+  async getAllBusiness(page: number, rowPerPage: number) {
+    const businessSelectArgs = Prisma.validator<Prisma.BusinessSelect>()({
+      publicId: true,
+      name: true,
+      owners: {
+        select: {
+          publicId: true,
+          level: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      },
+      logo: true,
+      email: true,
+      phone: true,
+      address: true,
+      description: true,
+      businessExtraSetting: {
+        select: {
+          name: true,
+          value: true,
+        },
+      },
+    });
+
+    const totalBusiness = await this.prismaService.business.count();
+
+    const business = await this.findAllBusiness(businessSelectArgs, page, rowPerPage);
+
+    return {
+      data: business,
+      total: totalBusiness,
+    };
+  }
+
   async upsertBusinessFromOrderingInfo<S extends Prisma.BusinessSelect>(
     businessInfo: OrderingBusiness,
     select: S,
@@ -72,7 +133,7 @@ export class BusinessService {
     });
   }
 
-  async getAllBusiness(orderingId: number): Promise<BusinessDto[]> {
+  async businessOwnershipService(orderingId: number): Promise<BusinessDto[]> {
     const accessToken = await this.utils.getOrderingAccessToken(orderingId);
     const response = await this.orderingService.getAllBusiness(accessToken);
     const mappedBusiness = plainToInstance(OrderingBusiness, response);
@@ -199,6 +260,9 @@ export class BusinessService {
       where: {
         publicId: publicBusinessId,
       },
+      include: {
+        businessExtraSetting: true,
+      },
     });
   }
 
@@ -219,7 +283,7 @@ export class BusinessService {
   async findBusinessByWoltVenueid(woltVenueId: string) {
     return await this.prismaService.businessExtraSetting.findUnique({
       where: {
-        woltVenueId: woltVenueId,
+        value: woltVenueId,
       },
       include: {
         business: true,
@@ -239,18 +303,17 @@ export class BusinessService {
   }
 
   async findAllBusiness<S extends Prisma.BusinessSelect>(
-    orderingUserId: number,
     select: S,
+    page: number,
+    rowPerPage: number,
   ): Promise<Prisma.BusinessGetPayload<{ select: S }>[]> {
     return await this.prismaService.business.findMany({
-      where: {
-        owners: {
-          some: {
-            orderingUserId: orderingUserId,
-          },
-        },
-      },
       select,
+      orderBy: {
+        orderingBusinessId: 'asc',
+      },
+      skip: page === 1 ? 0 : rowPerPage * (page - 1),
+      take: rowPerPage,
     });
   }
 
@@ -258,19 +321,58 @@ export class BusinessService {
     businessPublicId: string,
     data: Omit<BusinessExtraConfigDto, 'id'>,
   ) {
-    const business = await this.findBusinessByPublicId(businessPublicId);
+    console.log('🚀 ~ file: business.service.ts:321 ~ BusinessService ~ data:', data);
+    console.log(
+      '🚀 ~ file: business.service.ts:321 ~ BusinessService ~ businessPublicId:',
+      businessPublicId,
+    );
 
-    if (business) {
+    const business = await this.findBusinessByPublicId(businessPublicId);
+    console.log('🚀 ~ file: business.service.ts:328 ~ BusinessService ~ business:', business);
+
+    if (!business) {
       throw new NotFoundException("Business can't be found");
     }
 
-    await this.prismaService.businessExtraSetting.update({
-      where: {
-        orderingBusinessId: business.orderingBusinessId,
-      },
+    const businessExtraSetting: BusinessExtraSetting[] = business.businessExtraSetting;
+
+    const exist = businessExtraSetting.find(
+      (setting: BusinessExtraSetting) => setting.name === data.name,
+    );
+    console.log('🚀 ~ file: business.service.ts:344 ~ BusinessService ~ exist:', exist);
+    if (exist) {
+      return await this.prismaService.businessExtraSetting.update({
+        where: {
+          orderingBusinessId: exist.orderingBusinessId,
+        },
+        data: {
+          value: data.value,
+        },
+      });
+    }
+
+    return await this.prismaService.businessExtraSetting.create({
       data: {
-        woltVenueId: data.value,
+        orderingBusinessId: business.orderingBusinessId,
+        name: data.name,
+        value: data.value,
       },
+    });
+  }
+
+  async saveMultipleBusinessToDb(businesses: BusinessDto[]) {
+    const businessesData = businesses.map((business: BusinessDto) => ({
+      name: business.name,
+      orderingBusinessId: business.orderingBusinessId,
+      address: business.address,
+      description: business.description,
+      email: business.email,
+      logo: business.logo,
+      phone: business.phone,
+    }));
+    await this.prismaService.business.createMany({
+      data: businessesData,
+      skipDuplicates: true,
     });
   }
 }
