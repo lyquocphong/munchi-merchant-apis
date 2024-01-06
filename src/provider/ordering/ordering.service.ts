@@ -77,6 +77,26 @@ export class OrderingService {
     }
   }
 
+  async getAllBusinessForAdmin(apiKey: string): Promise<Business[]> {
+    const options = {
+      method: 'GET',
+      url: `${this.utils.getEnvUrl(
+        'business',
+      )}?type=1&params=name,email,phone,address,logo,metafields,description,today,schedule,owners,enabled&mode=dashboard`,
+      headers: {
+        accept: 'application/json',
+        'x-api-key': apiKey,
+      },
+    };
+
+    try {
+      const response = await axios.request(options);
+      return response.data.result;
+    } catch (error) {
+      this.utils.logError(error);
+    }
+  }
+
   async getBusinessById(accessToken: string, businessId: number) {
     const options = {
       method: 'GET',
@@ -335,7 +355,5 @@ export class OrderingService {
     };
   }
 
-  async saveWoltOrderToDataBase(formattedWoltOrder: OrderResponse) {
-    
-  }
+  async saveWoltOrderToDataBase(formattedWoltOrder: OrderResponse) {}
 }
