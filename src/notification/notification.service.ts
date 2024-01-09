@@ -19,7 +19,7 @@ export class NotificationService {
     @Inject(forwardRef(() => WebhookService)) private webhookService: WebhookService,
   ) {}
 
-  async sendNewOrderNotification(orderingBusinessId: number) {
+  async sendNewOrderNotification(orderingBusinessId: string) {
     this.logger.warn('Send new order push notification');
 
     const business = await this.businessService.findBusinessByOrderingId(orderingBusinessId, {
