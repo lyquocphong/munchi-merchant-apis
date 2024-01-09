@@ -96,6 +96,11 @@ export interface WoltPreOrder {
   pre_order_status: string;
 }
 
+export enum WoltOrderType {
+  Instant = 'instant',
+  PreOrder = 'preorder',
+}
+
 export interface WoltOrder {
   id: string;
   venue: {
@@ -109,7 +114,7 @@ export interface WoltOrder {
   consumer_comment: string;
   pickup_eta: string;
   attribution_id: string;
-  type: string;
+  type: WoltOrderType;
   pre_order: WoltPreOrder;
   consumer_name: string;
   consumer_phone_number: string;
