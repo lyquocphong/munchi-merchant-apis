@@ -29,7 +29,32 @@ export enum OrderingOrderStatus {
   DriverWaitingForOrder = 24,
   AcceptedByDriverCompany = 25,
 }
+export const pendingStatus = [OrderingOrderStatus.Pending, OrderingOrderStatus.Preorder];
+export const inProgressStatus = [
+  OrderingOrderStatus.AcceptedByBusiness,
+  OrderingOrderStatus.AcceptedByDriver,
+  // OrderingOrderStatus.DriverAlmostArrivedToBusiness,
+  // OrderingOrderStatus.DriverAlmostArrivedToCustomer,
+  // OrderingOrderStatus.CustomerAlmostArrivedToBusiness,
+  // OrderingOrderStatus.DriverOnWay,
+  // OrderingOrderStatus.LookingForDriver,
+  // OrderingOrderStatus.OrderNotReady,
+];
+export const completedStatus = [
+  OrderingOrderStatus.Completed,
+  OrderingOrderStatus.PreparationCompleted,
+  OrderingOrderStatus.DeliveryCompletedByDriver,
+  OrderingOrderStatus.PickupCompletedByCustomer,
+];
 
+export const rejectedStatus = [
+  OrderingOrderStatus.Rejected,
+  OrderingOrderStatus.RejectedByBusiness,
+  OrderingOrderStatus.CanceledByDriver,
+  OrderingOrderStatus.CanceledByCustomer,
+  OrderingOrderStatus.NotPickedByCustomer,
+  OrderingOrderStatus.DeliveryFailedByDriver,
+];
 export enum OrderingDeliveryType {
   Delivery = 1,
   PickUp = 2,
@@ -230,6 +255,37 @@ interface OrderingOrderProductOption {
   suboptions: OrderingOrderProductOptionSuboption[];
 }
 
+interface Offer {
+  id: number;
+  order_id: number;
+  offer_id: number;
+  name: string;
+  description: string;
+  image: null | string;
+  label: null | string;
+  type: number;
+  rate: number;
+  rate_type: number;
+  condition_type: number;
+  target: number;
+  coupon: null | string;
+  auto: boolean;
+  public: boolean;
+  stackable: boolean;
+  created_at: null | string;
+  updated_at: null | string;
+  reference_id: null | string;
+  rank: null | string;
+  discounts: {
+    [key: string]: {
+      [key: string]: number;
+    };
+  };
+  summary: {
+    discount: number;
+  };
+}
+
 interface OrderingOrderProduct {
   id: number;
   product_id: number;
@@ -293,4 +349,5 @@ export interface OrderingOrder extends Order {
   products: OrderingOrderProduct[];
   customer: OrderingCustomer;
   business: Business;
+  offers: Offer[];
 }
