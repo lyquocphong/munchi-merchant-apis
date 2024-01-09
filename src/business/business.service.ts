@@ -116,7 +116,7 @@ export class BusinessService {
     const data = Prisma.validator<Prisma.BusinessUncheckedCreateInput>()({
       name: businessInfo.name,
       logo: businessInfo.logo,
-      orderingBusinessId: businessInfo.id,
+      orderingBusinessId: businessInfo.id.toString(),
       email: businessInfo.email,
       phone: businessInfo.phone,
       address: businessInfo.address,
@@ -125,7 +125,7 @@ export class BusinessService {
 
     return await this.prismaService.business.upsert({
       where: {
-        orderingBusinessId: businessInfo.id,
+        orderingBusinessId: businessInfo.id.toString(),
       },
       create: data,
       update: data,
@@ -171,7 +171,10 @@ export class BusinessService {
     if (!business) {
       throw new ForbiddenException(`we need this: ${publicBusinessId}`);
     }
-    return await this.orderingService.getBusinessById(accessToken, business.orderingBusinessId);
+    return await this.orderingService.getBusinessById(
+      accessToken,
+      business.orderingBusinessId.toString(),
+    );
   }
 
   /**
@@ -267,7 +270,7 @@ export class BusinessService {
   }
 
   async findBusinessByOrderingId<P extends Prisma.BusinessArgs>(
-    orderingBusinessId: number,
+    orderingBusinessId: string,
     getPayload: P,
   ): Promise<Prisma.BusinessGetPayload<P>> {
     const options = {
@@ -310,7 +313,7 @@ export class BusinessService {
     return await this.prismaService.business.findMany({
       select,
       orderBy: {
-        orderingBusinessId: 'asc',
+        id: 'asc',
       },
       skip: page === 1 ? 0 : rowPerPage * (page - 1),
       take: rowPerPage,
@@ -321,49 +324,29 @@ export class BusinessService {
     businessPublicId: string,
     data: Omit<BusinessExtraConfigDto, 'id'>,
   ) {
-    console.log('🚀 ~ file: business.service.ts:321 ~ BusinessService ~ data:', data);
-    console.log(
-      '🚀 ~ file: business.service.ts:321 ~ BusinessService ~ businessPublicId:',
-      businessPublicId,
-    );
-
     const business = await this.findBusinessByPublicId(businessPublicId);
-    console.log('🚀 ~ file: business.service.ts:328 ~ BusinessService ~ business:', business);
-
     if (!business) {
       throw new NotFoundException("Business can't be found");
     }
+    const dataUpsert = Prisma.validator<Prisma.BusinessExtraSettingUncheckedCreateInput>()({
+      name: data.name,
+      value: data.value,
+      orderingBusinessId: business.orderingBusinessId,
+    });
 
-    const businessExtraSetting: BusinessExtraSetting[] = business.businessExtraSetting;
-
-    const exist = businessExtraSetting.find(
-      (setting: BusinessExtraSetting) => setting.name === data.name,
-    );
-    console.log('🚀 ~ file: business.service.ts:344 ~ BusinessService ~ exist:', exist);
-    if (exist) {
-      return await this.prismaService.businessExtraSetting.update({
-        where: {
-          orderingBusinessId: exist.orderingBusinessId,
-        },
-        data: {
-          value: data.value,
-        },
-      });
-    }
-
-    return await this.prismaService.businessExtraSetting.create({
-      data: {
+    return await this.prismaService.businessExtraSetting.upsert({
+      where: {
         orderingBusinessId: business.orderingBusinessId,
-        name: data.name,
-        value: data.value,
       },
+      create: dataUpsert,
+      update: dataUpsert,
     });
   }
 
   async saveMultipleBusinessToDb(businesses: BusinessDto[]) {
     const businessesData = businesses.map((business: BusinessDto) => ({
       name: business.name,
-      orderingBusinessId: business.orderingBusinessId,
+      orderingBusinessId: business.orderingBusinessId.toString(),
       address: business.address,
       description: business.description,
       email: business.email,
@@ -373,6 +356,16 @@ export class BusinessService {
     await this.prismaService.business.createMany({
       data: businessesData,
       skipDuplicates: true,
+    });
+  }
+
+  async findManyBusinessesByPublicId(businessPublicIds: string[]) {
+    return await this.prismaService.business.findMany({
+      where: {
+        publicId: {
+          in: businessPublicIds,
+        },
+      },
     });
   }
 }
