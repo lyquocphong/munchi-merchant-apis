@@ -28,3 +28,7 @@ export enum ProviderEnum {
   Wolt = 'Wolt',
   Munchi = 'Munchi',
 }
+
+export type AvailableProvider = ProviderEnum.Wolt | ProviderEnum.Munchi;
+
+export type ProviderOrder = OrderingOrder | WoltOrder;
