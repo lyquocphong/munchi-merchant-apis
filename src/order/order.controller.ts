@@ -1,6 +1,6 @@
 /* eslint-disable prettier/prettier */
 import { Body, Controller, Delete, Get, Param, Put, Request, UseGuards } from '@nestjs/common';
-import { Query } from '@nestjs/common/decorators';
+import { Post, Query } from '@nestjs/common/decorators';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { JwtGuard } from 'src/auth/guard/jwt.guard';
 
@@ -9,6 +9,8 @@ import { OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
 import { OrderService } from './order.service';
 import { SessionService } from 'src/auth/session.service';
+import { AvailableProvider } from 'src/provider/provider.type';
+import { AvailableOrderStatus } from './dto/order.dto';
 
 @UseGuards(JwtGuard)
 @ApiBearerAuth('JWT-auth')
@@ -28,21 +30,45 @@ export class OrderController {
     return this.orderService.getFilteredOrdersForSession(sessionPublicId, query, paramsQuery);
   }
 
+  @Post('orderByStatus')
+  async getOrderByStatus(
+    @Body()
+    bodyData: {
+      providers: string[];
+      status: AvailableOrderStatus;
+      businessPublicIds: string[];
+    },
+    @Request() req: any,
+  ) {
+    const { orderingUserId } = req.user;
+
+    return this.orderService.getOrderByStatus(orderingUserId, bodyData);
+  }
+
   @Get(':orderId')
-  async getOrderbyId(@Param('orderId') orderId: number, @Request() req: any) {
-    const { sessionPublicId } = req.user;
-    const user = await this.sessionService.getSessionUserBySessionPublicId(sessionPublicId);
-    return this.orderService.getOrderbyId(user.orderingUserId, orderId);
+  async getOrderbyId(@Param('orderId') orderId: string, @Request() req: any) {
+    const { orderingUserId } = req.user;
+
+    return this.orderService.getOrderbyId(orderingUserId, orderId);
+  }
+
+  @Post('')
+  async postOrderbyId(
+    @Body() orderData: { orderId: string; provider: AvailableProvider },
+    @Request() req: any,
+  ) {
+    const { orderingUserId } = req.user;
+    return this.orderService.postOrderbyId(orderingUserId, orderData);
   }
 
   @Put(':orderId')
   async updateOrder(
-    @Param('orderId') orderId: number,
+    @Param('orderId') orderId: string,
     @Body() orderData: OrderData,
     @Request() req: any,
   ) {
-    const { sessionPublicId } = req.user;
-    const user = await this.sessionService.getSessionUserBySessionPublicId(sessionPublicId);
-    return this.orderService.updateOrder(user.orderingUserId, orderId, orderData);
+    const { orderingUserId } = req.user;
+
+    return this.orderService.updateOrder(orderingUserId, orderId, orderData);
   }
 }
