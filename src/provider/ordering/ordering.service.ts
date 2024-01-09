@@ -1,19 +1,98 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import axios from 'axios';
 import { plainToInstance } from 'class-transformer';
 import { Business, Order } from 'ordering-api-sdk';
+import { OfferDto } from 'src/order/dto/offer.dto';
+import { AvailableOrderStatus, OrderResponse, OrderStatusEnum } from 'src/order/dto/order.dto';
+import { ProductDto } from 'src/order/dto/product.dto';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { AuthCredentials, OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
-import { OrderingOrder, OrderingUser } from './ordering.type';
+import { ProviderService } from '../provider.service';
 import { ProviderEnum } from '../provider.type';
-import { OrderResponse } from 'src/order/dto/order.dto';
-import { ProductDto } from 'src/order/dto/product.dto';
+import {
+  OrderingOrder,
+  OrderingUser,
+  completedStatus,
+  inProgressStatus,
+  pendingStatus,
+  rejectedStatus,
+} from './ordering.type';
 
 @Injectable()
-export class OrderingService {
+export class OrderingService implements ProviderService {
   private readonly logger = new Logger(OrderingService.name);
 
-  constructor(private utils: UtilsService) {}
+  constructor(private utils: UtilsService, private readonly prismaService: PrismaService) {}
+  getAllOrder(accessToken: string, id: string): Promise<any> {
+    throw new Error('Method not implemented.');
+  }
+  async getOrderByStatus(
+    accessToken: string,
+    status: string,
+    businessOrderingIds: string[],
+  ): Promise<OrderingOrder[]> {
+    const businessOrderingIdsString = businessOrderingIds.join(',');
+
+    const paramsQuery = [
+      'id',
+      'business_id',
+      'prepared_in',
+      'customer_id',
+      'status',
+      'delivery_type',
+      'delivery_datetime',
+      'products',
+      'summary',
+      'customer',
+      'created_at',
+      'spot_number',
+      'history',
+      'delivery_datetime',
+      'business',
+      'reporting_data',
+      'comment',
+      'offers',
+      'paymethod_id',
+    ].join(',');
+    const options = {
+      method: 'GET',
+      url: `${this.utils.getEnvUrl(
+        'orders',
+      )}?mode=dashboard&where={"status":[${status}],"business_id":[${businessOrderingIdsString}]}&params=${paramsQuery}`,
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+    };
+
+    try {
+      const response = await axios.request(options);
+      return response.data.result;
+    } catch (error) {
+      this.utils.logError(error);
+    }
+  }
+
+  async getOrderById(accessToken: string, orderId: string): Promise<OrderingOrder> {
+    const options = {
+      method: 'GET',
+      url: `${this.utils.getEnvUrl('orders', orderId)}?mode=dashboard`,
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+    };
+
+    try {
+      const response = await axios.request(options);
+
+      return response.data.result;
+    } catch (error) {
+      this.utils.logError(error);
+    }
+  }
+
   // Auth service
   async signIn(credentials: AuthCredentials): Promise<OrderingUser> {
     const options = {
@@ -97,7 +176,7 @@ export class OrderingService {
     }
   }
 
-  async getBusinessById(accessToken: string, businessId: number) {
+  async getBusinessById(accessToken: string, businessId: string) {
     const options = {
       method: 'GET',
       url: `${this.utils.getEnvUrl('business', businessId)}?mode=dashboard`,
@@ -137,7 +216,7 @@ export class OrderingService {
 
   async getOrderForBusinesses(
     accessToken: string,
-    businessIds: number[],
+    businessIds: string[],
     query: string,
     paramsQuery: string[],
   ) {
@@ -162,7 +241,7 @@ export class OrderingService {
 
   async getFilteredOrders(
     accessToken: string,
-    businessId: number,
+    businessId: string,
     query: string,
     paramsQuery: string[],
   ) {
@@ -171,24 +250,6 @@ export class OrderingService {
       url: `${this.utils.getEnvUrl(
         'orders',
       )}?mode=dashboard&where={${query},"business_id":${businessId}}&params=${paramsQuery}`,
-      headers: {
-        accept: 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-      },
-    };
-
-    try {
-      const response = await axios.request(options);
-      return response.data.result;
-    } catch (error) {
-      this.utils.logError(error);
-    }
-  }
-
-  async getOrderbyId(accessToken: string, orderId: number) {
-    const options = {
-      method: 'GET',
-      url: `${this.utils.getEnvUrl('orders', orderId)}?mode=dashboard`,
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
@@ -222,7 +283,11 @@ export class OrderingService {
     }
   }
 
-  async updateOrder(acessToken: string, orderId: number, orderData: OrderData): Promise<Order> {
+  async updateOrder(
+    acessToken: string,
+    orderId: string,
+    orderData: Omit<OrderData, 'provider'>,
+  ): Promise<Order> {
     const options = {
       method: 'PUT',
       url: `${this.utils.getEnvUrl('orders', orderId)}`,
@@ -326,34 +391,84 @@ export class OrderingService {
   }
 
   //Transform ordering response to order resposne
-  async mapOrderingOrderToOrderResponse(orderingOrder: OrderingOrder): Promise<OrderResponse> {
+  async mapOrderToOrderResponse(orderingOrder: OrderingOrder): Promise<OrderResponse> {
     const preorder: boolean = orderingOrder.reporting_data.at.hasOwnProperty(`status:13`);
     const productDto = plainToInstance(ProductDto, orderingOrder.products);
+    const offers = plainToInstance(OfferDto, orderingOrder.offers);
+    const orderStatus = this.mapOrderingStatusToOrderStatus(orderingOrder.status) as string;
+    const business = await this.validateOrderingBusiness(orderingOrder.business_id.toString());
+
     return {
-      id: orderingOrder.id,
+      id: orderingOrder.id.toString(),
       business: {
-        logo: orderingOrder.business.logo,
-        name: orderingOrder.business.name,
-        publicId: orderingOrder.business.publicId,
-        address: orderingOrder.business.address,
-        email: orderingOrder.business.email,
+        orderingBusinessId: business.orderingBusinessId,
+        logo: business.logo,
+        name: business.name,
+        publicId: business.publicId,
+        address: business.address,
+        email: business.email,
       },
       deliveryType: orderingOrder.delivery_type,
       comment: orderingOrder.comment,
       summary: {
-        deliveryPrice: orderingOrder.delivery,
-        subTotal: orderingOrder.subTotal,
+        deliveryPrice: orderingOrder.summary.delivery_price,
+        subTotal: orderingOrder.summary.subtotal,
       },
       provider: ProviderEnum.Munchi,
-      status: orderingOrder.status,
+      status: orderStatus,
       createdAt: orderingOrder.created_at,
-      preorder: {
-        status: preorder ? 'confirmed' : 'waiting',
-        preorderTime: orderingOrder.delivery_datetime,
-      },
+      prepareIn: orderingOrder.prepared_in,
+      preorder: preorder
+        ? {
+            status: 'waiting',
+            preorderTime: orderingOrder.delivery_datetime,
+          }
+        : null,
       products: productDto,
+      offers: offers,
     };
   }
 
-  async saveWoltOrderToDataBase(formattedWoltOrder: OrderResponse) {}
+  async validateOrderingBusiness(orderingBusinessId: string) {
+    const business = await this.prismaService.business.findUnique({
+      where: {
+        orderingBusinessId: orderingBusinessId,
+      },
+    });
+    if (!business) {
+      throw new NotFoundException('No business found');
+    }
+
+    return business;
+  }
+
+  mapOrderingStatusToOrderStatus(
+    orderingStatus?: number,
+    orderStatus?: AvailableOrderStatus,
+  ): string | number[] {
+    if (orderingStatus !== undefined) {
+      if (pendingStatus.includes(orderingStatus)) {
+        return OrderStatusEnum.PENDING as string;
+      } else if (inProgressStatus.includes(orderingStatus)) {
+        return OrderStatusEnum.IN_PROGRESS as string;
+      } else if (completedStatus.includes(orderingStatus)) {
+        return OrderStatusEnum.COMPLETED as string;
+      } else {
+        return OrderStatusEnum.REJECTED as string;
+      }
+    }
+
+    if (orderStatus !== undefined) {
+      switch (orderStatus) {
+        case OrderStatusEnum.PENDING:
+          return pendingStatus as number[];
+        case OrderStatusEnum.IN_PROGRESS:
+          return inProgressStatus as number[];
+        case OrderStatusEnum.COMPLETED:
+          return completedStatus as number[];
+        default:
+          return rejectedStatus as number[];
+      }
+    }
+  }
 }
