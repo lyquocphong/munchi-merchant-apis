@@ -82,10 +82,11 @@ export class OrderDto {
 }
 
 export type OrderResponse = {
-  id: string | number;
+  id: string;
   provider: string;
 
   business: {
+    orderingBusinessId: string;
     publicId: string;
     name: string;
     logo: string | null;
@@ -93,10 +94,11 @@ export type OrderResponse = {
     address: string;
   };
 
-  status: number;
+  status: string;
   deliveryType: number;
   createdAt: string;
   comment: string;
+  prepareIn: string;
   preorder: {
     status: string;
     preorderTime: string;
@@ -106,4 +108,18 @@ export type OrderResponse = {
     subTotal: number;
     deliveryPrice: number;
   };
+  offers: OfferDto[];
 };
+
+export enum OrderStatusEnum {
+  PENDING = 'pending',
+  IN_PROGRESS = 'in_progress',
+  REJECTED = 'reject',
+  COMPLETED = 'completed',
+}
+
+export type AvailableOrderStatus =
+  | OrderStatusEnum.PENDING
+  | OrderStatusEnum.IN_PROGRESS
+  | OrderStatusEnum.REJECTED
+  | OrderStatusEnum.COMPLETED;
