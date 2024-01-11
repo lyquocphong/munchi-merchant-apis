@@ -1,17 +1,15 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, Session } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 import { SessionService } from 'src/auth/session.service';
 import { BusinessService } from 'src/business/business.service';
 import { OrderingService } from 'src/provider/ordering/ordering.service';
-import { OrderingOrderStatus } from 'src/provider/ordering/ordering.type';
-import { AvailableProvider, ProviderEnum } from 'src/provider/provider.type';
-import { WoltOrder } from 'src/provider/wolt/wolt.type';
+import { ProviderManagmentService } from 'src/provider/provider-management.service';
+import { AvailableProvider } from 'src/provider/provider.type';
+import { WoltService } from 'src/provider/wolt/wolt.service';
 import { OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
-import { AvailableOrderStatus, OrderDto, OrderResponse, OrderStatusEnum } from './dto/order.dto';
-import { WoltService } from 'src/provider/wolt/wolt.service';
-import { ProviderManagmentService } from 'src/provider/provider-management.service';
+import { AvailableOrderStatus, OrderDto, OrderStatusEnum } from './dto/order.dto';
 
 @Injectable()
 export class OrderService {
@@ -82,19 +80,16 @@ export class OrderService {
 
   async getOrderByStatus(
     orderingUserId: number,
-    bodyData: {
+    queryData: {
       providers: string[];
       status: AvailableOrderStatus;
       businessPublicIds: string[];
     },
   ) {
-    if (!bodyData || Object.values(bodyData).some((value) => value === null)) {
-      throw new NotFoundException('Not enough data');
-    }
-
-    //Validate data from body
-    const validProvider = await this.providerManagementService.validateProvider(bodyData.providers);
-    const validateStatus = await this.validateOrderStatus(bodyData.status);
+    const validProvider = await this.providerManagementService.validateProvider(
+      queryData.providers,
+    );
+    const validateStatus = await this.validateOrderStatus(queryData.status);
 
     // If not enough data or data passed in wrong we return error
     if (!validProvider) {
@@ -104,20 +99,18 @@ export class OrderService {
     }
 
     const businesses = await this.businessService.findManyBusinessesByPublicId(
-      bodyData.businessPublicIds,
+      queryData.businessPublicIds,
     );
 
     //Format business data to array of business ordering ids
     const businessIds = businesses.map((b) => b.orderingBusinessId);
 
-    // console.log('🚀 ~ OrderService ~ validProvider:', validProvider);
-
     const accessToken = await this.utils.getOrderingAccessToken(orderingUserId);
 
     // Get order by filtering provider, status and businessIds
     const order = await this.providerManagementService.getOrderByStatus(
-      bodyData.providers,
-      bodyData.status,
+      queryData.providers,
+      queryData.status,
       businessIds,
       {
         orderingToken: accessToken,
@@ -155,26 +148,9 @@ export class OrderService {
   async getOrderbyId(orderingUserId: number, orderId: string) {
     const accessToken = await this.utils.getOrderingAccessToken(orderingUserId);
     try {
-      const response = await this.orderingService.getOrderById(accessToken, orderId);
-      return plainToInstance(OrderDto, response);
-    } catch (error) {
-      this.utils.logError(error);
-    }
-  }
-
-  async postOrderbyId(
-    orderingUserId: number,
-    orderData: { orderId: string; provider: AvailableProvider },
-  ) {
-    const accessToken = await this.utils.getOrderingAccessToken(orderingUserId);
-    try {
-      return await this.providerManagementService.getOrderById(
-        orderData.orderId,
-        orderData.provider,
-        {
-          orderingToken: accessToken,
-        },
-      );
+      return await this.providerManagementService.getOrderById(orderId, {
+        orderingToken: accessToken,
+      });
     } catch (error) {
       this.utils.logError(error);
     }
@@ -195,7 +171,7 @@ export class OrderService {
 
     try {
       //Update order base on provider
-      await this.providerManagementService.updateOrder(
+      const order = await this.providerManagementService.updateOrder(
         orderData.provider,
         orderId,
         {
@@ -206,9 +182,8 @@ export class OrderService {
           orderingToken: accessToken,
         },
       );
-      // const response = await this.orderingService.updateOrder(accessToken, orderId, orderData);
-      // return plainToInstance(OrderDto, response);
-      return 'Updated';
+
+      return order;
     } catch (error) {
       this.utils.logError(error);
     }
