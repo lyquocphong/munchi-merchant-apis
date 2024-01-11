@@ -1,26 +1,23 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Prisma } from '@prisma/client';
 import axios, { AxiosHeaders } from 'axios';
+import { AvailableOrderStatus, OrderResponse, OrderStatusEnum } from 'src/order/dto/order.dto';
 import { ProductDto } from 'src/order/dto/product.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { UtilsService } from 'src/utils/utils.service';
-import { OrderingDeliveryType, OrderingOrderStatus } from '../ordering/ordering.type';
-import { Provider, ProviderEnum, ProviderOrder, WOLT_ACTIONS } from '../provider.type';
-import { WoltItem, WoltOrder, WoltOrderNotification, WoltOrderType } from './wolt.type';
-import { AvailableOrderStatus, OrderResponse, OrderStatusEnum } from 'src/order/dto/order.dto';
-import { ProviderService } from '../provider.service';
-import { Business } from 'ordering-api-sdk';
-import { BusinessDto } from 'src/business/dto/business.dto';
-import {
-  Order as PrismaOrder,
-  Product,
-  Offer,
-  Business as PrismaBusiness,
-  PreOrder,
-  Prisma,
-} from '@prisma/client';
-import { plainToInstance } from 'class-transformer';
 import { OrderData } from 'src/type';
+import { UtilsService } from 'src/utils/utils.service';
+import { OrderingDeliveryType } from '../ordering/ordering.type';
+import { ProviderService } from '../provider.service';
+import { ProviderEnum, ProviderOrder } from '../provider.type';
+import {
+  WoltItem,
+  WoltOrder,
+  WoltOrderNotification,
+  WoltOrderType,
+  WoltOrderPrismaSelectArgs,
+  AvailableWoltOrderStatus,
+} from './wolt.type';
 
 @Injectable()
 export class WoltService implements ProviderService {
@@ -54,12 +51,7 @@ export class WoltService implements ProviderService {
       orderBy: {
         id: 'desc',
       },
-      include: {
-        business: true,
-        offers: true,
-        preorder: true,
-        products: true,
-      },
+      include: WoltOrderPrismaSelectArgs,
     });
     return orders;
   }
@@ -100,42 +92,60 @@ export class WoltService implements ProviderService {
     }
   }
 
+  async sendWoltUpdateRequest(
+    woltOrderId: string,
+    endpoint: string,
+    updateData?: Omit<OrderData, 'provider'>,
+  ) {
+    try {
+      const response = await axios.request({
+        method: 'PUT',
+        baseURL: `${this.woltApiUrl}/orders/${woltOrderId}/${endpoint}`,
+        headers: this.header as any,
+        data:
+          endpoint === 'reject'
+            ? {
+                reason: 'Your order has been rejected, please contact the restaurant for more info',
+              }
+            : null,
+      });
+
+      return response.data;
+    } catch (error) {
+      console.log('🚀 ~ WoltService ~ error:', error);
+      this.utilsService.logError(error);
+    }
+  }
+
   public async updateOrder(
     accessToken: string,
     woltOrderId: string,
     updateData: Omit<OrderData, 'provider'>,
   ): Promise<any> {
     const { orderStatus, preparedIn } = updateData;
-    console.log('🚀 ~ WoltService ~ orderStatus:', orderStatus);
-
     //Get wolt order by id
-    const woltOrder = await this.getOrderById(woltOrderId);
-    console.log('🚀 ~ WoltService ~ woltOrder:', woltOrder);
+    const order = await this.getOrderByIdFromDb(woltOrderId);
+    const woltOrder = await this.getOrderById(order.orderId);
     const updateEndPoint = this.generateWoltUpdateEndPoint(updateData.orderStatus, woltOrder);
-    console.log('🚀 ~ WoltService ~ updateEndPoint:', updateEndPoint);
-    console.log(`${this.woltApiUrl}/orders/${woltOrderId}/${updateEndPoint}`);
-    try {
-      const response = await axios.request({
-        method: 'PUT',
-        baseURL: `${this.woltApiUrl}/orders/${woltOrderId}/${updateEndPoint}`,
-        headers: this.header as any,
-        data: updateEndPoint === 'reject' ? { reason: 'testing' } : null,
-      });
+    console.log('🚀 ~ WoltService ~ updateEndPoint:', updateEndPoint, woltOrder.order_status);
+    const updatedOrder = await this.prismaService.order.update({
+      where: {
+        orderId: woltOrder.id,
+      },
+      data: {
+        preparedIn: preparedIn ? preparedIn.toString() : null,
+        status: orderStatus,
+      },
+      include: WoltOrderPrismaSelectArgs,
+    });
+    console.log("🚀 ~ WoltService ~ updatedOrder:", updatedOrder)
 
-      await this.prismaService.order.update({
-        where: {
-          orderId: woltOrderId,
-        },
-        data: {
-          preparedIn: preparedIn,
-          status: orderStatus,
-        },
-      });
-
-      return response.data;
-    } catch (error) {
-      this.utilsService.logError(error);
+    if (updateEndPoint !== woltOrder.order_status) {
+      console.log('this is not equal');
+      await this.sendWoltUpdateRequest(woltOrder.id, updateEndPoint);
+      return updatedOrder;
     }
+    return updatedOrder;
   }
 
   public async updateSelfDeliveryOrder<OrderResponse>(woltOrdeId: string): Promise<OrderResponse> {
@@ -202,7 +212,7 @@ export class WoltService implements ProviderService {
       acknowledged: OrderStatusEnum.PENDING,
       production: OrderStatusEnum.IN_PROGRESS,
       ready: OrderStatusEnum.COMPLETED,
-      delivered: OrderStatusEnum.COMPLETED,
+      delivered: OrderStatusEnum.DELIVERED,
       rejected: OrderStatusEnum.REJECTED,
     };
 
@@ -216,12 +226,20 @@ export class WoltService implements ProviderService {
         address: businessData.business.address,
         email: businessData.business.email,
       },
+      payMethodId: null,
+      customer: {
+        name: woltOrder.consumer_name,
+        phone: woltOrder.consumer_phone_number,
+      },
+      lastModified: woltOrder.modified_at,
+      type: woltOrder.type,
       deliveryType: deliverytype,
       comment: woltOrder.consumer_comment,
       summary: {
-        deliveryPrice: woltOrder.delivery.fee.amount,
-        subTotal: woltOrder.price.amount,
+        total: woltOrder.price.amount,
       },
+      pickupEta: woltOrder.pickup_eta,
+      deliveryEta: woltOrder.delivery.time,
       prepareIn: null,
       provider: ProviderEnum.Wolt,
       status: orderStatusMapping[woltOrder.order_status],
@@ -248,7 +266,7 @@ export class WoltService implements ProviderService {
     await this.validateWoltOrder(mappedWoltOrder.id);
 
     await this.saveWoltOrdertoDb(mappedWoltOrder);
-    // console.log(this.woltApiKey, this.woltApiUrl);
+
     return mappedWoltOrder;
   }
 
@@ -267,6 +285,64 @@ export class WoltService implements ProviderService {
     }
 
     return business;
+  }
+
+  public async getOrderByIdFromDb(woltOrderId: string) {
+    const order = await this.prismaService.order.findUnique({
+      where: {
+        id: parseInt(woltOrderId),
+      },
+      include: WoltOrderPrismaSelectArgs,
+    });
+
+    if (!order) {
+      return null;
+    }
+
+    await this.syncWoltOrder(order.orderId);
+
+    return order;
+  }
+
+  async syncWoltOrder(woltOrderId: string) {
+    //Get order from wolt
+    const woltOrder = await this.getOrderById(woltOrderId);
+
+    // Mapp to general order response
+    const mappedWoltOrder = await this.mapOrderToOrderResponse(woltOrder);
+
+    //Init prisma validator
+    const orderUpdateInputAgrs = Prisma.validator<Prisma.OrderUpdateInput>()({
+      orderId: mappedWoltOrder.id,
+      provider: mappedWoltOrder.provider,
+      status: mappedWoltOrder.status,
+      deliveryType: mappedWoltOrder.deliveryType,
+      preparedIn: mappedWoltOrder.prepareIn,
+      createdAt: mappedWoltOrder.createdAt,
+      comment: mappedWoltOrder.comment,
+      type: mappedWoltOrder.type,
+      preorder: mappedWoltOrder.preorder
+        ? {
+            update: {
+              status: mappedWoltOrder.preorder.status,
+              preorderTime: mappedWoltOrder.preorder.preorderTime,
+            },
+          }
+        : undefined,
+
+      lastModified: mappedWoltOrder.lastModified,
+      deliveryEta: mappedWoltOrder.deliveryEta,
+      pickupEta: mappedWoltOrder.pickupEta,
+      payMethodId: mappedWoltOrder.payMethodId,
+    });
+
+    //Update order in database
+    await this.prismaService.order.update({
+      where: {
+        orderId: woltOrderId,
+      },
+      data: orderUpdateInputAgrs,
+    });
   }
 
   private async validateWoltOrder(woltOrderId: string) {
@@ -290,6 +366,23 @@ export class WoltService implements ProviderService {
             orderingBusinessId: mappedWoltOrder.business.orderingBusinessId,
           },
         },
+        customer: {
+          create: {
+            name: mappedWoltOrder.customer.name,
+            phone: mappedWoltOrder.customer.phone,
+          },
+        },
+        summary: {
+          create: {
+            total: mappedWoltOrder.summary.total,
+          },
+        },
+        deliveryEta: mappedWoltOrder.deliveryEta,
+        pickupEta: mappedWoltOrder.pickupEta,
+        preparedIn: mappedWoltOrder.prepareIn,
+        lastModified: mappedWoltOrder.lastModified,
+        type: mappedWoltOrder.type,
+        payMethodId: mappedWoltOrder.payMethodId,
         status: mappedWoltOrder.status,
         deliveryType: mappedWoltOrder.deliveryType,
         createdAt: mappedWoltOrder.createdAt,
@@ -310,11 +403,12 @@ export class WoltService implements ProviderService {
 
     // Save order to database
     const order = await this.prismaService.order.create(orderData);
+
     // Save products to database
     await Promise.all(
       mappedWoltOrder.products.map(async (product) => {
         const data: Prisma.ProductCreateInput = {
-          id: product.id,
+          productId: product.id,
           name: product.name,
           comment: product.comment || undefined,
           price: product.price,
@@ -331,15 +425,25 @@ export class WoltService implements ProviderService {
         // Save product options to database
         await Promise.all(
           product.options.map(async (option) => {
+            const subOptions: Prisma.SubOptionCreateManyOptionInput[] = option.subOptions.map(
+              (subOption) => ({
+                subOptionId: subOption.id,
+                name: subOption.name,
+                price: subOption.price,
+                quantity: subOption.quantity,
+                image: subOption.image,
+                position: subOption.position,
+              }),
+            );
             const optionData: Prisma.OptionUncheckedCreateInput = {
-              id: option.id,
+              optionId: option.id,
               name: option.name,
               productId: productSaved.id,
               image: option.image,
               price: option.price,
               subOption: {
                 createMany: {
-                  data: option.subOptions,
+                  data: subOptions,
                   skipDuplicates: true,
                 },
               },
@@ -361,8 +465,10 @@ export class WoltService implements ProviderService {
       return 'confirm-preorder';
     } else if (orderStatus === OrderStatusEnum.IN_PROGRESS) {
       return 'accept';
-    } else if (orderStatus === OrderStatusEnum.COMPLETED) {
+    } else if (orderStatus === OrderStatusEnum.COMPLETED && woltOrder.order_number !== 'ready') {
       return 'ready';
+    } else if (orderStatus === OrderStatusEnum.DELIVERED) {
+      return 'delivered';
     } else if (orderStatus === OrderStatusEnum.REJECTED) {
       return 'reject';
     } else {
