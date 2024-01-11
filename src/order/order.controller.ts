@@ -1,16 +1,22 @@
 /* eslint-disable prettier/prettier */
-import { Body, Controller, Delete, Get, Param, Put, Request, UseGuards } from '@nestjs/common';
-import { Post, Query } from '@nestjs/common/decorators';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Put,
+  Request,
+  UseGuards,
+  ValidationPipe,
+} from '@nestjs/common';
+import { Query } from '@nestjs/common/decorators';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { JwtGuard } from 'src/auth/guard/jwt.guard';
 
-import { OrderingService } from 'src/provider/ordering/ordering.service';
-import { OrderData } from 'src/type';
-import { UtilsService } from 'src/utils/utils.service';
-import { OrderService } from './order.service';
 import { SessionService } from 'src/auth/session.service';
-import { AvailableProvider } from 'src/provider/provider.type';
-import { AvailableOrderStatus } from './dto/order.dto';
+import { OrderData } from 'src/type';
+import { OrderStatusFilter } from './filter/order.filter';
+import { OrderService } from './order.service';
 
 @UseGuards(JwtGuard)
 @ApiBearerAuth('JWT-auth')
@@ -30,19 +36,14 @@ export class OrderController {
     return this.orderService.getFilteredOrdersForSession(sessionPublicId, query, paramsQuery);
   }
 
-  @Post('orderByStatus')
+  @Get('orderByStatus')
   async getOrderByStatus(
-    @Body()
-    bodyData: {
-      providers: string[];
-      status: AvailableOrderStatus;
-      businessPublicIds: string[];
-    },
-    @Request() req: any,
+    @Request() request: any,
+    @Query(new ValidationPipe({ transform: true })) queryData: OrderStatusFilter,
   ) {
-    const { orderingUserId } = req.user;
+    const { orderingUserId } = request.user;
 
-    return this.orderService.getOrderByStatus(orderingUserId, bodyData);
+    return this.orderService.getOrderByStatus(orderingUserId, queryData);
   }
 
   @Get(':orderId')
@@ -50,15 +51,6 @@ export class OrderController {
     const { orderingUserId } = req.user;
 
     return this.orderService.getOrderbyId(orderingUserId, orderId);
-  }
-
-  @Post('')
-  async postOrderbyId(
-    @Body() orderData: { orderId: string; provider: AvailableProvider },
-    @Request() req: any,
-  ) {
-    const { orderingUserId } = req.user;
-    return this.orderService.postOrderbyId(orderingUserId, orderData);
   }
 
   @Put(':orderId')
