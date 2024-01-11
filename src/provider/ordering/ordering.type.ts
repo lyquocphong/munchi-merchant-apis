@@ -41,10 +41,10 @@ export const inProgressStatus = [
   // OrderingOrderStatus.OrderNotReady,
 ];
 export const completedStatus = [
-  OrderingOrderStatus.Completed,
+  // OrderingOrderStatus.Completed,
   OrderingOrderStatus.PreparationCompleted,
-  OrderingOrderStatus.DeliveryCompletedByDriver,
-  OrderingOrderStatus.PickupCompletedByCustomer,
+  // OrderingOrderStatus.DeliveryCompletedByDriver,
+  // OrderingOrderStatus.PickupCompletedByCustomer,
 ];
 
 export const rejectedStatus = [
@@ -55,6 +55,12 @@ export const rejectedStatus = [
   OrderingOrderStatus.NotPickedByCustomer,
   OrderingOrderStatus.DeliveryFailedByDriver,
 ];
+
+export const deliveredStatus = [
+  OrderingOrderStatus.DeliveryCompletedByDriver,
+  OrderingOrderStatus.PickupCompletedByCustomer,
+];
+
 export enum OrderingDeliveryType {
   Delivery = 1,
   PickUp = 2,
@@ -350,4 +356,5 @@ export interface OrderingOrder extends Order {
   customer: OrderingCustomer;
   business: Business;
   offers: Offer[];
+  history: any;
 }
