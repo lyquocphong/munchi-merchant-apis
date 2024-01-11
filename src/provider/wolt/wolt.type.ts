@@ -1,3 +1,5 @@
+import { Prisma } from '@prisma/client';
+
 export interface WoltCoordinate {
   lon: number;
   lat: number;
@@ -24,15 +26,26 @@ export interface WoltSmallOrderSurcharge {
 
 export type WoltDeliveryType = 'takeaway' | 'homedelivery' | 'eatin';
 
-export type WoltOrderStatus =
-  | 'received'
-  | 'fetched'
-  | 'acknowledged'
-  | 'production'
-  | 'ready'
-  | 'delivered'
-  | 'rejected'
-  | 'refunded';
+export enum WoltOrderStatusEnum {
+  Received = 'received',
+  Fetched = 'fetched',
+  Acknowledged = 'acknowledged',
+  Production = 'production',
+  Ready = 'ready',
+  Delivered = 'delivered',
+  Rejected = 'rejected',
+  Refunded = 'refunded',
+}
+
+export type AvailableWoltOrderStatus =
+  | WoltOrderStatusEnum.Ready
+  | WoltOrderStatusEnum.Fetched
+  | WoltOrderStatusEnum.Acknowledged
+  | WoltOrderStatusEnum.Production
+  | WoltOrderStatusEnum.Ready
+  | WoltOrderStatusEnum.Delivered
+  | WoltOrderStatusEnum.Rejected
+  | WoltOrderStatusEnum.Refunded;
 
 export interface WoltDeliveryDetails {
   status: string;
@@ -119,7 +132,7 @@ export interface WoltOrder {
   consumer_name: string;
   consumer_phone_number: string;
   order_number: string;
-  order_status: WoltOrderStatus;
+  order_status: AvailableWoltOrderStatus;
   modified_at: string;
   company_tax_id: string;
   loyalty_card_number: string;
@@ -136,3 +149,61 @@ export interface WoltOrderNotification {
   };
   created_at: string;
 }
+
+export const WoltOrderPrismaSelectArgs = Prisma.validator<Prisma.OrderInclude>()({
+  business: {
+    select: {
+      publicId: true,
+      name: true,
+      logo: true,
+      email: true,
+      phone: true,
+      description: true,
+    },
+  },
+  customer: {
+    select: {
+      name: true,
+      phone: true,
+    },
+  },
+  offers: true,
+  preorder: {
+    select: {
+      preorderTime: true,
+      status: true,
+    },
+  },
+  products: {
+    select: {
+      productId: true,
+      comment: true,
+      name: true,
+      option: {
+        select: {
+          optionId: true,
+          image: true,
+          price: true,
+          name: true,
+          subOption: {
+            select: {
+              subOptionId: true,
+              name: true,
+              image: true,
+              price: true,
+              position: true,
+              quantity: true,
+            },
+          },
+        },
+      },
+      price: true,
+      quantity: true,
+    },
+  },
+  summary: {
+    select: {
+      total: true,
+    },
+  },
+});
