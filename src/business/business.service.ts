@@ -159,6 +159,7 @@ export class BusinessService {
       // TODO: Need to remove if owner has been remove
 
       const convertData = { ...business, id: existedBusiness.publicId };
+  
       businessDtos.push(plainToInstance(BusinessDto, convertData));
     }
 
@@ -346,7 +347,7 @@ export class BusinessService {
   async saveMultipleBusinessToDb(businesses: BusinessDto[]) {
     const businessesData = businesses.map((business: BusinessDto) => ({
       name: business.name,
-      orderingBusinessId: business.orderingBusinessId.toString(),
+      orderingBusinessId: business.id.toString(),
       address: business.address,
       description: business.description,
       email: business.email,
