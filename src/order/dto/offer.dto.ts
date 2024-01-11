@@ -25,8 +25,8 @@ export class OfferDto {
   @Expose()
   type: OfferType;
 
-  @Expose()
-  rate_type: string;
+  @Expose({ name: 'rate_type' })
+  rateType: string;
 
   @Expose()
   rate: number;
