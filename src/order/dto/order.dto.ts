@@ -5,6 +5,7 @@ import { SummaryDto } from './summary.dto';
 import { HistoryDto } from './history.dto';
 import { BusinessDto } from 'src/business/dto/business.dto';
 import { OfferDto } from 'src/order/dto/offer.dto';
+import { WoltOrderType } from 'src/provider/wolt/wolt.type';
 
 class ReportingData {
   @Expose()
@@ -93,7 +94,7 @@ export type OrderResponse = {
     email: string;
     address: string;
   };
-
+  type: WoltOrderType;
   status: string;
   deliveryType: number;
   createdAt: string;
@@ -105,10 +106,19 @@ export type OrderResponse = {
   };
   products: ProductDto[];
   summary: {
-    subTotal: number;
-    deliveryPrice: number;
+    total: number;
   };
+  deliveryEta: string | null;
+  pickupEta: string | null;
   offers: OfferDto[];
+  lastModified: string;
+  customer: OrderResponseCustomer;
+  payMethodId: number | null;
+};
+
+export type OrderResponseCustomer = {
+  name: string;
+  phone: string;
 };
 
 export enum OrderStatusEnum {
@@ -116,10 +126,12 @@ export enum OrderStatusEnum {
   IN_PROGRESS = 'in_progress',
   REJECTED = 'reject',
   COMPLETED = 'completed',
+  DELIVERED = 'delivered',
 }
 
 export type AvailableOrderStatus =
   | OrderStatusEnum.PENDING
   | OrderStatusEnum.IN_PROGRESS
   | OrderStatusEnum.REJECTED
-  | OrderStatusEnum.COMPLETED;
+  | OrderStatusEnum.COMPLETED
+  | OrderStatusEnum.DELIVERED;
