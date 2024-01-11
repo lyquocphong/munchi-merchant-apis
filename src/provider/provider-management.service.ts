@@ -19,7 +19,6 @@ export class ProviderManagmentService {
     businessOrderingIds: string[],
     { orderingToken }: { orderingToken: string },
   ) {
-    let finalResult: OrderResponse[] = [];
     //There only 2 case here as the munchi provider should always be active and can't be disabled
 
     //Map from order status to ordering stus
@@ -42,30 +41,30 @@ export class ProviderManagmentService {
         return await this.orderingService.mapOrderToOrderResponse(order);
       }),
     );
+
+    //If wolt provider included in the body data
     if (provider.includes(ProviderEnum.Wolt)) {
       const woltOrders = await this.woltService.getOrderByStatus(
         orderingToken,
         status,
         businessOrderingIds,
       );
-      return [...woltOrders, ...formattedOrderingOrders];
+      return [...woltOrders, ...formattedOrderingOrders.sort((a, b) => parseInt(b.id) - parseInt(a.id))];
     }
 
     return formattedOrderingOrders;
   }
 
-  async getOrderById(
-    orderId: string,
-    provider: AvailableProvider,
-    { orderingToken }: { orderingToken: string },
-  ) {
-    if (provider === ProviderEnum.Wolt) {
-      const woltOrder = await this.woltService.getOrderById(orderId);
-      return this.woltService.mapOrderToOrderResponse(woltOrder);
-    } else if (provider === ProviderEnum.Munchi) {
+  async getOrderById(orderId: string, { orderingToken }: { orderingToken: string }) {
+    const woltOrder = await this.woltService.getOrderByIdFromDb(orderId);
+
+    if (!woltOrder) {
       const orderingOrder = await this.orderingService.getOrderById(orderingToken, orderId);
-      return this.orderingService.mapOrderToOrderResponse(orderingOrder);
+      const mapToOrderResponse = await this.orderingService.mapOrderToOrderResponse(orderingOrder);
+      return mapToOrderResponse;
     }
+
+    return woltOrder;
   }
 
   async updateOrder(
@@ -80,7 +79,12 @@ export class ProviderManagmentService {
     if (provider === ProviderEnum.Wolt) {
       return await this.woltService.updateOrder(orderingToken, orderId, updateData);
     } else if (provider === ProviderEnum.Munchi) {
-      return await this.orderingService.updateOrder(orderingToken, orderId, updateData);
+      const orderingOrder = await this.orderingService.updateOrder(
+        orderingToken,
+        orderId,
+        updateData,
+      );
+      return this.orderingService.mapOrderToOrderResponse(orderingOrder);
     }
   }
 
