@@ -14,7 +14,7 @@ export class OptionDto {
   @Expose()
   price: string;
 
-  @Expose()
+  @Expose({ name: 'suboptions' })
   @Type(() => SubOptionDto)
   subOptions: SubOptionDto[];
 
