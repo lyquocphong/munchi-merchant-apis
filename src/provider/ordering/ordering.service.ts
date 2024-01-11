@@ -3,7 +3,12 @@ import axios from 'axios';
 import { plainToInstance } from 'class-transformer';
 import { Business, Order } from 'ordering-api-sdk';
 import { OfferDto } from 'src/order/dto/offer.dto';
-import { AvailableOrderStatus, OrderResponse, OrderStatusEnum } from 'src/order/dto/order.dto';
+import {
+  AvailableOrderStatus,
+  OrderDto,
+  OrderResponse,
+  OrderStatusEnum,
+} from 'src/order/dto/order.dto';
 import { ProductDto } from 'src/order/dto/product.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AuthCredentials, OrderData } from 'src/type';
@@ -12,12 +17,16 @@ import { ProviderService } from '../provider.service';
 import { ProviderEnum } from '../provider.type';
 import {
   OrderingOrder,
+  OrderingOrderStatus,
   OrderingUser,
   completedStatus,
+  deliveredStatus,
   inProgressStatus,
   pendingStatus,
   rejectedStatus,
 } from './ordering.type';
+import { WoltOrderType } from '../wolt/wolt.type';
+import moment from 'moment';
 
 @Injectable()
 export class OrderingService implements ProviderService {
@@ -86,7 +95,6 @@ export class OrderingService implements ProviderService {
 
     try {
       const response = await axios.request(options);
-
       return response.data.result;
     } catch (error) {
       this.utils.logError(error);
@@ -187,6 +195,7 @@ export class OrderingService implements ProviderService {
     };
     try {
       const response = await axios.request(options);
+
       return response.data.result;
     } catch (error) {
       this.utils.logError(error);
@@ -284,19 +293,27 @@ export class OrderingService implements ProviderService {
   }
 
   async updateOrder(
-    acessToken: string,
+    accessToken: string,
     orderId: string,
     orderData: Omit<OrderData, 'provider'>,
-  ): Promise<Order> {
+  ): Promise<OrderingOrder> {
+    const defaultStatus = {
+      pending: OrderingOrderStatus.Pending,
+      in_progress: OrderingOrderStatus.AcceptedByBusiness,
+      completed: OrderingOrderStatus.PreparationCompleted,
+    };
+
+    const status = defaultStatus[orderData.orderStatus];
+
     const options = {
       method: 'PUT',
       url: `${this.utils.getEnvUrl('orders', orderId)}`,
       headers: {
         accept: 'application/json',
-        Authorization: `Bearer ${acessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
       data: {
-        status: orderData.orderStatus,
+        status: status,
         prepared_in: orderData.preparedIn,
       },
     };
@@ -309,13 +326,13 @@ export class OrderingService implements ProviderService {
     }
   }
 
-  async deleteOrder(acessToken: string, orderId: number) {
+  async deleteOrder(accessToken: string, orderId: number) {
     const options = {
       method: 'DELETE',
       url: `${this.utils.getEnvUrl('orders', orderId)}`,
       headers: {
         accept: 'application/json',
-        Authorization: `Bearer ${acessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
     };
 
@@ -397,7 +414,11 @@ export class OrderingService implements ProviderService {
     const offers = plainToInstance(OfferDto, orderingOrder.offers);
     const orderStatus = this.mapOrderingStatusToOrderStatus(orderingOrder.status) as string;
     const business = await this.validateOrderingBusiness(orderingOrder.business_id.toString());
-
+    const lastModified =
+      orderingOrder.history.length === 0
+        ? null
+        : moment(orderingOrder.history[orderingOrder.history.length - 1].updated_at).toISOString();
+    
     return {
       id: orderingOrder.id.toString(),
       business: {
@@ -408,12 +429,20 @@ export class OrderingService implements ProviderService {
         address: business.address,
         email: business.email,
       },
+      payMethodId: orderingOrder.paymethod_id,
+      type: preorder ? WoltOrderType.PreOrder : WoltOrderType.Instant,
       deliveryType: orderingOrder.delivery_type,
       comment: orderingOrder.comment,
       summary: {
-        deliveryPrice: orderingOrder.summary.delivery_price,
-        subTotal: orderingOrder.summary.subtotal,
+        total: orderingOrder.summary.subtotal, // This should be equal to subtotal as we don't need delivery fee
       },
+      customer: {
+        name: `${orderingOrder.customer.name} ${orderingOrder.customer.lastname}`,
+        phone: orderingOrder.customer.cellphone,
+      },
+      deliveryEta: orderingOrder.delivery_datetime,
+      pickupEta: null,
+      lastModified: lastModified,
       provider: ProviderEnum.Munchi,
       status: orderStatus,
       createdAt: orderingOrder.created_at,
@@ -466,6 +495,8 @@ export class OrderingService implements ProviderService {
           return inProgressStatus as number[];
         case OrderStatusEnum.COMPLETED:
           return completedStatus as number[];
+        case OrderStatusEnum.DELIVERED:
+          return deliveredStatus as number[];
         default:
           return rejectedStatus as number[];
       }
