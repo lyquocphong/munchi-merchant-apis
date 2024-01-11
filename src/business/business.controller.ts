@@ -53,6 +53,7 @@ export class BusinessController {
   @ApiCreatedResponse({
     description: 'Get business in session',
   })
+  @UseGuards(JwtGuard)
   @Get('session-business')
   async getBusinessInSession(@Request() req: any) {
     const { sessionPublicId } = req.user;
