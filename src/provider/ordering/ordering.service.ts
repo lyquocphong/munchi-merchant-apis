@@ -414,11 +414,17 @@ export class OrderingService implements ProviderService {
     const offers = plainToInstance(OfferDto, orderingOrder.offers);
     const orderStatus = this.mapOrderingStatusToOrderStatus(orderingOrder.status) as string;
     const business = await this.validateOrderingBusiness(orderingOrder.business_id.toString());
+
+    //Calculate total amount without delivery fee and including the discount
+    const total =
+      orderingOrder.summary.total -
+      orderingOrder.summary.delivery_price -
+      orderingOrder.summary.driver_tip;
     const lastModified =
       orderingOrder.history.length === 0
         ? null
         : moment(orderingOrder.history[orderingOrder.history.length - 1].updated_at).toISOString();
-    
+
     return {
       id: orderingOrder.id.toString(),
       business: {
@@ -434,7 +440,7 @@ export class OrderingService implements ProviderService {
       deliveryType: orderingOrder.delivery_type,
       comment: orderingOrder.comment,
       summary: {
-        total: orderingOrder.summary.subtotal, // This should be equal to subtotal as we don't need delivery fee
+        total: total, // This should be equal to subtotal as we don't need delivery fee
       },
       customer: {
         name: `${orderingOrder.customer.name} ${orderingOrder.customer.lastname}`,
