@@ -78,6 +78,13 @@ export class WoltService implements ProviderService {
     });
   }
 
+  /**
+   * Asynchronously retrieves Wolt order data from the Wolt server.
+   *
+   * @param   {string<WoltOrder>}   woltOrdeId  Wolt order id
+   *
+   * @return  {Promise<WoltOrder>}              A promise that resolves with the Wolt order data from the Wolt server.
+   */
   public async getOrderById(woltOrdeId: string): Promise<WoltOrder> {
     try {
       const response = await axios.request({
@@ -112,11 +119,22 @@ export class WoltService implements ProviderService {
 
       return response.data;
     } catch (error) {
-      console.log('🚀 ~ WoltService ~ error:', error);
       this.utilsService.logError(error);
     }
   }
 
+  /**
+   * This service takes a Wolt order ID as input to update the corresponding order.
+   * It follows the following steps:
+   * 1. Retrieve the order details from the Wolt server using the provided order ID.
+   * 2. Check if the retrieved order matches the current order in the local database and meets all conditions.
+   * 3. If conditions are met, send a PUT request to the server to update the order.
+   * 4. Sync the updated order data with the local database to maintain consistency.
+   *
+   * @param {string} woltOrderId - The Wolt order ID to identify the order to be updated.
+   * @returns {Promise<void>} A promise that resolves when the update and synchronization process is complete.
+   * @throws {Error} If any issues occur during the retrieval, validation, or update process.
+   */
   public async updateOrder(
     accessToken: string,
     woltOrderId: string,
@@ -127,7 +145,11 @@ export class WoltService implements ProviderService {
     const order = await this.getOrderByIdFromDb(woltOrderId);
     const woltOrder = await this.getOrderById(order.orderId);
     const updateEndPoint = this.generateWoltUpdateEndPoint(updateData.orderStatus, woltOrder);
-    console.log('🚀 ~ WoltService ~ updateEndPoint:', updateEndPoint, woltOrder.order_status);
+
+    if (updateEndPoint !== woltOrder.order_status) {
+      await this.sendWoltUpdateRequest(woltOrder.id, updateEndPoint);
+    }
+
     const updatedOrder = await this.prismaService.order.update({
       where: {
         orderId: woltOrder.id,
@@ -138,28 +160,7 @@ export class WoltService implements ProviderService {
       },
       include: WoltOrderPrismaSelectArgs,
     });
-    console.log("🚀 ~ WoltService ~ updatedOrder:", updatedOrder)
-
-    if (updateEndPoint !== woltOrder.order_status) {
-      console.log('this is not equal');
-      await this.sendWoltUpdateRequest(woltOrder.id, updateEndPoint);
-      return updatedOrder;
-    }
     return updatedOrder;
-  }
-
-  public async updateSelfDeliveryOrder<OrderResponse>(woltOrdeId: string): Promise<OrderResponse> {
-    try {
-      const response = await axios.request({
-        method: 'PUT',
-        baseURL: `${this.woltApiUrl}/orders/${woltOrdeId}/self-delivery/accept`,
-        headers: this.header as any,
-      });
-
-      return response.data;
-    } catch (error) {
-      this.utilsService.logError(error);
-    }
   }
 
   public async deleteOrder<OrderResponse>(woltOrdeId: string): Promise<OrderResponse> {
@@ -236,7 +237,7 @@ export class WoltService implements ProviderService {
       deliveryType: deliverytype,
       comment: woltOrder.consumer_comment,
       summary: {
-        total: woltOrder.price.amount,
+        total: parseFloat((woltOrder.price.amount / 100).toFixed(1)),
       },
       pickupEta: woltOrder.pickup_eta,
       deliveryEta: woltOrder.delivery.time,
@@ -255,16 +256,26 @@ export class WoltService implements ProviderService {
     };
   }
 
+  /**
+   * Retrieves order data from the Wolt server based on the provided webhook data
+   * and saves it to the local database.
+   *
+   * @param   {WoltOrderNotification<OrderResponse>}  woltWebhookdata  The webhook data containing order information from Wolt.
+   *
+   * @return  {Promise<OrderResponse>}                                 A promise that resolves with the order response after saving to the database.
+   */
   async getOrderDataAndSaveToDb(woltWebhookdata: WoltOrderNotification): Promise<OrderResponse> {
     // Get order detail from wolt host provider
     //It will throw and error and return in case the order is not found
     const woltOrder = await this.getOrderById(woltWebhookdata.order.id);
 
-    //Save order to databse
-
+    //Map wolt order to general order model
     const mappedWoltOrder = await this.mapOrderToOrderResponse(woltOrder);
+
+    //Validate if this wolt order was saved before or not
     await this.validateWoltOrder(mappedWoltOrder.id);
 
+    //Save order to database
     await this.saveWoltOrdertoDb(mappedWoltOrder);
 
     return mappedWoltOrder;
@@ -304,7 +315,18 @@ export class WoltService implements ProviderService {
     return order;
   }
 
-  async syncWoltOrder(woltOrderId: string) {
+  /**
+   * Synchronizes order data from the Wolt server and updates our local database.
+   * This function retrieves order information from the Wolt server and ensures that our
+   * local database reflects the latest data. It is responsible for handling the synchronization
+   * process, updating order details, and maintaining consistency between the external Wolt
+   * server and our internal database.
+   *
+   * @param   {string}  woltOrderId  [It will need wolt order id to retreieve data]
+   *
+   * @return  {[string]}               [return void]
+   */
+  async syncWoltOrder(woltOrderId: string): Promise<void> {
     //Get order from wolt
     const woltOrder = await this.getOrderById(woltOrderId);
 
@@ -356,7 +378,14 @@ export class WoltService implements ProviderService {
     }
   }
 
-  async saveWoltOrdertoDb(mappedWoltOrder: OrderResponse) {
+  /**
+   * Saves a Wolt order to the database using Prisma.
+   *
+   * @param {OrderResponse} mappedWoltOrder - The Wolt order data mapped to a general response model.
+   *
+   * @return  {<string>}           A promise that resolves with a string indicating the result of the save operation.
+   */
+  async saveWoltOrdertoDb(mappedWoltOrder: OrderResponse): Promise<string> {
     const orderData: Prisma.OrderCreateArgs = {
       data: {
         orderId: mappedWoltOrder.id,
