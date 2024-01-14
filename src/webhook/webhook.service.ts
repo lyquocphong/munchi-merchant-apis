@@ -21,7 +21,7 @@ export class WebhookService implements OnModuleInit {
   private readonly logger = new Logger(WebhookService.name);
   @WebSocketServer() public server: Server;
   constructor(
-    @Inject(forwardRef(() => BusinessService)) private business: BusinessService,
+    @Inject(forwardRef(() => BusinessService)) private businessService: BusinessService,
     private utils: UtilsService,
     private notificationService: NotificationService,
     private woltService: WoltService,
@@ -33,7 +33,7 @@ export class WebhookService implements OnModuleInit {
     ioServer.on('connection', (socket) => {
       socket.on('join', async (room: string) => {
         this.logger.warn(`Try to join room ${room}`);
-        const business = await this.business.findBusinessByPublicId(room);
+        const business = await this.businessService.findBusinessByPublicId(room);
         if (!business) {
           this.logger.error(`No business found for ${room}`);
           // throw new ForbiddenException(403, `No business found for ${room}`);
@@ -45,7 +45,7 @@ export class WebhookService implements OnModuleInit {
 
       socket.on('leave', async (room: string) => {
         this.logger.warn(`Try to leave room ${room}`);
-        const business = await this.business.findBusinessByPublicId(room);
+        const business = await this.businessService.findBusinessByPublicId(room);
         if (!business) {
           this.logger.error(`No business found for ${room}`);
           //throw new ForbiddenException(403, `No business found for ${room}`);
@@ -88,19 +88,27 @@ export class WebhookService implements OnModuleInit {
   }
 
   async newWoltOrderNotification(woltWebhookdata: WoltOrderNotification) {
-    //Get order data from the web hook data
-    const woltOrder = await this.woltService.getOrderDataAndSaveToDb(woltWebhookdata);
-
-    try {
-      this.server.to(woltWebhookdata.order.venue_id).emit('order_change', woltOrder);
-      return 'Order sent';
-    } catch (error) {
-      this.utils.logError(error);
+    if (
+      woltWebhookdata.order.status === 'CREATED' &&
+      woltWebhookdata.type === 'order.notification'
+    ) {
+      const woltOrder = await this.woltService.getOrderDataAndSaveToDb(woltWebhookdata);
+      const business = await this.businessService.findBusinessByWoltVenueid(
+        woltWebhookdata.order.venue_id,
+      );
+      try {
+        // Emit to client by public business id
+        this.server.to(business.publicId).emit('orders_register', woltOrder);
+        return 'Order sent';
+      } catch (error) {
+        this.utils.logError(error);
+      }
+      return `Order ${woltWebhookdata.order.status.toLocaleLowerCase()}`;
     }
   }
 
   async notifyCheckBusinessStatus(businessPublicId: string) {
-    const business = await this.business.findBusinessByPublicId(businessPublicId);
+    const business = await this.businessService.findBusinessByPublicId(businessPublicId);
     this.logger.warn(`emit business_status_change because of ${businessPublicId}`);
     const message = `${business.name} status changed`;
     this.server.to(business.orderingBusinessId.toString()).emit('business_status_change', message);
