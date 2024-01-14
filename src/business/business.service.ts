@@ -159,7 +159,7 @@ export class BusinessService {
       // TODO: Need to remove if owner has been remove
 
       const convertData = { ...business, id: existedBusiness.publicId };
-  
+
       businessDtos.push(plainToInstance(BusinessDto, convertData));
     }
 
@@ -285,7 +285,7 @@ export class BusinessService {
   }
 
   async findBusinessByWoltVenueid(woltVenueId: string) {
-    return await this.prismaService.businessExtraSetting.findUnique({
+    const businessExtraSetting = await this.prismaService.businessExtraSetting.findUnique({
       where: {
         value: woltVenueId,
       },
@@ -293,6 +293,10 @@ export class BusinessService {
         business: true,
       },
     });
+    if (!businessExtraSetting || !businessExtraSetting.business) {
+      throw new NotFoundException('No business found');
+    }
+    return businessExtraSetting.business;
   }
 
   async getAssociateSessions(condition: Prisma.BusinessWhereInput): Promise<
