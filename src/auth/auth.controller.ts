@@ -9,6 +9,7 @@ import {
   Req,
   Param,
   Put,
+  ValidationPipe,
 } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
 import { AuthCredentials } from 'src/type';
@@ -18,11 +19,17 @@ import { RefreshJwt } from './guard/refreshJwt.guard';
 import { JwtGuard } from './guard/jwt.guard';
 import { SessionService } from './session.service';
 import { ApiKeyGuard } from './guard/apiKey.guard';
+import { ApiKeyData } from './validation';
+import { ApiKeyService } from './apiKey.service';
 
 @Controller('auth')
 @ApiTags('auth')
 export class AuthController {
-  constructor(private authService: AuthService, private sessionService: SessionService) {}
+  constructor(
+    private authService: AuthService,
+    private sessionService: SessionService,
+    private apiKeyService: ApiKeyService,
+  ) {}
 
   @ApiCreatedResponse({
     description: 'Sign in new user',
@@ -95,7 +102,12 @@ export class AuthController {
     @Param('publicUserId') publicUserId: string,
     @Body('sessionIds') sessionIds: string[],
   ) {
-    
     return this.sessionService.deleteUserSessions(publicUserId, sessionIds);
+  }
+
+  @UseGuards(JwtGuard)
+  @Post('apiKey/create')
+  createApiKey(@Body(new ValidationPipe()) apiKeyData: ApiKeyData) {
+    return this.apiKeyService.createApiKey(apiKeyData.name, apiKeyData.value);
   }
 }

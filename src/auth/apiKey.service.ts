@@ -1,4 +1,5 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -19,5 +20,57 @@ export class ApiKeyService {
     }
 
     return apiKeys.find((apiK) => apiK.value === apiKey);
+  }
+
+  async createApiKey(name: string, value: string) {
+    const apiKey = await this.prismaService.apiKey.findFirst({
+      where: {
+        name: {
+          contains: name,
+        },
+        OR: {
+          value: {
+            equals: value,
+          },
+        },
+      },
+    });
+    console.log('🚀 ~ ApiKeyService ~ createApiKey ~ apiKey:', apiKey);
+
+    if (!apiKey) {
+      return await this.prismaService.apiKey.create({
+        data: {
+          name: name,
+          value: value,
+        },
+        select: {
+          name: true,
+          value: true,
+        },
+      });
+    } else {
+      return await this.prismaService.apiKey.upsert({
+        create: {
+          name: name,
+          value: value,
+        },
+        update: {
+          name: name,
+          value: value,
+        },
+        where: {
+          id: apiKey.id,
+        },
+        select: {
+          name: true,
+          value: true,
+        },
+      });
+    }
+    //Save api key to database
+  }
+
+  async addApiKey(name: string, value: string) {
+    await this.createApiKey(name, value);
   }
 }
