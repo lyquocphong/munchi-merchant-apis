@@ -1,25 +1,25 @@
-import { QueueService } from './../queue/queue.service';
 import {
-  Injectable,
-  Inject,
-  forwardRef,
-  ForbiddenException,
-  NotFoundException,
   BadRequestException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+  forwardRef,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
-import { OrderingService } from 'src/provider/ordering/ordering.service';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { UtilsService } from 'src/utils/utils.service';
-import { BusinessDto, BusinessExtraConfigDto } from './dto/business.dto';
-import { UserService } from 'src/user/user.service';
 import moment from 'moment-timezone';
-import { BusinessExtraSetting, Prisma } from '@prisma/client';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { OrderingService } from 'src/provider/ordering/ordering.service';
+import { UserService } from 'src/user/user.service';
+import { UtilsService } from 'src/utils/utils.service';
+import { QueueService } from './../queue/queue.service';
+import { BusinessDto } from './dto/business.dto';
 
-import { BusinessInfoSelectBase } from './business.type';
-import { OrderingBusiness } from 'src/provider/ordering/ordering.type';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { Business } from 'ordering-api-sdk';
+import { OrderingBusiness } from 'src/provider/ordering/ordering.type';
+import { BusinessInfoSelectBase } from './business.type';
+import { BusinessExtraConfigDto } from './validation';
 
 @Injectable()
 export class BusinessService {
@@ -339,13 +339,15 @@ export class BusinessService {
       orderingBusinessId: business.orderingBusinessId,
     });
 
-    return await this.prismaService.businessExtraSetting.upsert({
+    await this.prismaService.businessExtraSetting.upsert({
       where: {
         orderingBusinessId: business.orderingBusinessId,
       },
       create: dataUpsert,
       update: dataUpsert,
     });
+
+    return 'Success';
   }
 
   async saveMultipleBusinessToDb(businesses: BusinessDto[]) {
