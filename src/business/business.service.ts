@@ -247,7 +247,7 @@ export class BusinessService {
   async updateBusinessOwners(businsessData: any, orderingUserId: number) {
     return await this.prismaService.business.update({
       where: {
-        orderingBusinessId: businsessData.id,
+        orderingBusinessId: businsessData.id.toString(),
       },
       data: {
         owners: {
