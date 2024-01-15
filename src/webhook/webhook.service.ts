@@ -72,7 +72,7 @@ export class WebhookService implements OnModuleInit {
   async newOrderNotification(order: any) {
     try {
       this.server.to(order.business_id.toString()).emit('orders_register', order);
-      this.notificationService.sendNewOrderNotification(order.business_id);
+      this.notificationService.sendNewOrderNotification(order.business_id.toString());
     } catch (error) {
       this.utils.logError(error);
     }
@@ -98,7 +98,8 @@ export class WebhookService implements OnModuleInit {
       );
       try {
         // Emit to client by public business id
-        this.server.to(business.publicId).emit('orders_register', woltOrder);
+        this.logger.log(`emit order created because of ${business.publicId}`);
+        this.server.to(business.orderingBusinessId).emit('orders_register', woltOrder);
         return 'Order sent';
       } catch (error) {
         this.utils.logError(error);
