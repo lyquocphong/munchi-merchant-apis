@@ -7,6 +7,7 @@ import {
   Post,
   Request,
   UseGuards,
+  ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiAcceptedResponse,
@@ -19,8 +20,9 @@ import { Prisma } from '@prisma/client';
 import { JwtGuard } from 'src/auth/guard/jwt.guard';
 import { SessionService } from 'src/auth/session.service';
 import { BusinessService } from './business.service';
-import { BusinessDto, BusinessExtraConfigDto, SetOnlineStatusDto } from './dto/business.dto';
+import { BusinessDto, SetOnlineStatusDto } from './dto/business.dto';
 import { ApiKeyGuard } from 'src/auth/guard/apiKey.guard';
+import { BusinessExtraConfigDto } from './validation';
 
 @Controller('business')
 @ApiBearerAuth('JWT-auth')
@@ -112,7 +114,10 @@ export class BusinessController {
   })
   @UseGuards(ApiKeyGuard)
   @Post('business-extra-config')
-  async setExtraConfig(@Request() req: any, @Body() body: BusinessExtraConfigDto) {
+  async setExtraConfig(
+    @Request() req: any,
+    @Body(new ValidationPipe()) body: BusinessExtraConfigDto,
+  ) {
     const { name, value, id: businessPublicId } = body;
 
     if (!name || !value) {
