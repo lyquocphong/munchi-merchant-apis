@@ -3,6 +3,7 @@ import { ForbiddenException, Inject, Injectable, Logger, forwardRef } from '@nes
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import Cryptr from 'cryptr';
+import moment from 'moment';
 import { SessionService } from 'src/auth/session.service';
 import { OrderingService } from 'src/provider/ordering/ordering.service';
 import { UserService } from 'src/user/user.service';
@@ -97,5 +98,17 @@ export class UtilsService {
     } else {
       throw new ForbiddenException(error);
     }
+  }
+
+  convertTimeToTimeZone(utcTime: string, targetTimeZone: string): string {
+    const allTimeZones = moment.tz.names();
+
+    // Check if the target timezone is valid
+    if (allTimeZones.includes(targetTimeZone)) {
+      const convertedTime = moment(utcTime).tz(targetTimeZone).format();
+
+      return convertedTime;
+    }
+    return null;
   }
 }
