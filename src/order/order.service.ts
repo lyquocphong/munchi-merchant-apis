@@ -10,6 +10,7 @@ import { WoltService } from 'src/provider/wolt/wolt.service';
 import { OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
 import { AvailableOrderStatus, OrderDto, OrderStatusEnum } from './dto/order.dto';
+import { OrderRejectData } from './validation/order.validation';
 
 @Injectable()
 export class OrderService {
@@ -184,6 +185,25 @@ export class OrderService {
       );
 
       return order;
+    } catch (error) {
+      this.utils.logError(error);
+    }
+  }
+
+  async rejectOrder(orderingUserId: number, orderId: string, orderRejectData: OrderRejectData) {
+    const accessToken = await this.utils.getOrderingAccessToken(orderingUserId);
+
+    try {
+     return await this.providerManagementService.rejectOrder(
+        orderRejectData.provider,
+        orderId,
+        {
+          reason: orderRejectData.reason,
+        },
+        {
+          orderingToken: accessToken,
+        },
+      );
     } catch (error) {
       this.utils.logError(error);
     }

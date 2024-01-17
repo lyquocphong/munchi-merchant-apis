@@ -15,7 +15,7 @@ import { JwtGuard } from 'src/auth/guard/jwt.guard';
 
 import { SessionService } from 'src/auth/session.service';
 import { OrderData } from 'src/type';
-import { OrderStatusFilter } from './filter/order.filter';
+import { OrderRejectData, OrderStatusFilter } from './validation/order.validation';
 import { OrderService } from './order.service';
 
 @UseGuards(JwtGuard)
@@ -62,5 +62,16 @@ export class OrderController {
     const { orderingUserId } = req.user;
 
     return this.orderService.updateOrder(orderingUserId, orderId, orderData);
+  }
+
+  @Put(':orderId/reject')
+  async rejectOrder(
+    @Param('orderId') orderId: string,
+    @Body() orderRejectData: OrderRejectData,
+    @Request() req: any,
+  ) {
+    const { orderingUserId } = req.user;
+
+    return this.orderService.rejectOrder(orderingUserId, orderId, orderRejectData);
   }
 }

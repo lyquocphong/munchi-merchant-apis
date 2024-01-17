@@ -104,9 +104,10 @@ export type OrderResponse = {
     status: string;
     preorderTime: string;
   };
+  table: number | null;
   products: ProductDto[];
   summary: {
-    total: number;
+    total: string;
   };
   deliveryEta: string | null;
   pickupEta: string | null;
@@ -124,8 +125,9 @@ export type OrderResponseCustomer = {
 export enum OrderStatusEnum {
   PENDING = 'pending',
   IN_PROGRESS = 'in_progress',
-  REJECTED = 'reject',
+  REJECTED = 'rejected',
   COMPLETED = 'completed',
+  PREORDER = 'preorder',
   DELIVERED = 'delivered',
 }
 
@@ -134,4 +136,5 @@ export type AvailableOrderStatus =
   | OrderStatusEnum.IN_PROGRESS
   | OrderStatusEnum.REJECTED
   | OrderStatusEnum.COMPLETED
-  | OrderStatusEnum.DELIVERED;
+  | OrderStatusEnum.DELIVERED
+  | OrderStatusEnum.PREORDER;
