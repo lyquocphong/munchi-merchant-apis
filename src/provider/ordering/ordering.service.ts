@@ -16,6 +16,7 @@ import { UtilsService } from 'src/utils/utils.service';
 import { ProviderService } from '../provider.service';
 import { ProviderEnum } from '../provider.type';
 import {
+  OrderingDeliveryType,
   OrderingOrder,
   OrderingOrderStatus,
   OrderingUser,
@@ -32,7 +33,7 @@ import moment from 'moment';
 export class OrderingService implements ProviderService {
   private readonly logger = new Logger(OrderingService.name);
 
-  constructor(private utils: UtilsService, private readonly prismaService: PrismaService) {}
+  constructor(private utilService: UtilsService, private readonly prismaService: PrismaService) {}
   getAllOrder(accessToken: string, id: string): Promise<any> {
     throw new Error('Method not implemented.');
   }
@@ -66,7 +67,7 @@ export class OrderingService implements ProviderService {
     ].join(',');
     const options = {
       method: 'GET',
-      url: `${this.utils.getEnvUrl(
+      url: `${this.utilService.getEnvUrl(
         'orders',
       )}?mode=dashboard&where={"status":[${status}],"business_id":[${businessOrderingIdsString}]}&params=${paramsQuery}`,
       headers: {
@@ -79,14 +80,14 @@ export class OrderingService implements ProviderService {
       const response = await axios.request(options);
       return response.data.result;
     } catch (error) {
-      this.utils.logError(error);
+      this.utilService.logError(error);
     }
   }
 
   async getOrderById(accessToken: string, orderId: string): Promise<OrderingOrder> {
     const options = {
       method: 'GET',
-      url: `${this.utils.getEnvUrl('orders', orderId)}?mode=dashboard`,
+      url: `${this.utilService.getEnvUrl('orders', orderId)}?mode=dashboard`,
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
@@ -97,7 +98,7 @@ export class OrderingService implements ProviderService {
       const response = await axios.request(options);
       return response.data.result;
     } catch (error) {
-      this.utils.logError(error);
+      this.utilService.logError(error);
     }
   }
 
@@ -105,7 +106,7 @@ export class OrderingService implements ProviderService {
   async signIn(credentials: AuthCredentials): Promise<OrderingUser> {
     const options = {
       method: 'POST',
-      url: this.utils.getEnvUrl('auth'),
+      url: this.utilService.getEnvUrl('auth'),
       headers: {
         accept: 'application/json',
         'content-type': 'application/json',
@@ -120,14 +121,14 @@ export class OrderingService implements ProviderService {
       const response = await axios.request(options);
       return plainToInstance(OrderingUser, response.data.result);
     } catch (error) {
-      this.utils.logError(error);
+      this.utilService.logError(error);
     }
   }
 
   async signOut(accessToken: string) {
     const options = {
       method: 'POST',
-      url: this.utils.getEnvUrl('auth', 'logout'),
+      url: this.utilService.getEnvUrl('auth', 'logout'),
       headers: {
         accept: 'application/json',
         'content-type': 'application/json',
@@ -139,7 +140,7 @@ export class OrderingService implements ProviderService {
       const response = await axios.request(options);
       return response.data.result;
     } catch (error) {
-      this.utils.logError(error);
+      this.utilService.logError(error);
     }
   }
 
@@ -147,7 +148,7 @@ export class OrderingService implements ProviderService {
   async getAllBusiness(accessToken: string): Promise<Business[]> {
     const options = {
       method: 'GET',
-      url: `${this.utils.getEnvUrl(
+      url: `${this.utilService.getEnvUrl(
         'business',
       )}?type=1&params=name,email,phone,address,logo,metafields,description,today,schedule,owners,enabled&mode=dashboard`,
       headers: {
@@ -160,14 +161,14 @@ export class OrderingService implements ProviderService {
       const response = await axios.request(options);
       return response.data.result;
     } catch (error) {
-      this.utils.logError(error);
+      this.utilService.logError(error);
     }
   }
 
   async getAllBusinessForAdmin(apiKey: string): Promise<Business[]> {
     const options = {
       method: 'GET',
-      url: `${this.utils.getEnvUrl(
+      url: `${this.utilService.getEnvUrl(
         'business',
       )}?type=1&params=name,email,phone,address,logo,metafields,description,today,schedule,owners,enabled&mode=dashboard`,
       headers: {
@@ -180,14 +181,14 @@ export class OrderingService implements ProviderService {
       const response = await axios.request(options);
       return response.data.result;
     } catch (error) {
-      this.utils.logError(error);
+      this.utilService.logError(error);
     }
   }
 
   async getBusinessById(accessToken: string, businessId: string) {
     const options = {
       method: 'GET',
-      url: `${this.utils.getEnvUrl('business', businessId)}?mode=dashboard`,
+      url: `${this.utilService.getEnvUrl('business', businessId)}?mode=dashboard`,
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
@@ -198,14 +199,14 @@ export class OrderingService implements ProviderService {
 
       return response.data.result;
     } catch (error) {
-      this.utils.logError(error);
+      this.utilService.logError(error);
     }
   }
 
   async editBusiness(accessToken: string, businessId: number, data: object): Promise<Business> {
     const options = {
       method: 'POST',
-      url: `${this.utils.getEnvUrl('business', businessId)}`,
+      url: `${this.utilService.getEnvUrl('business', businessId)}`,
       data,
       headers: {
         accept: 'application/json',
@@ -219,7 +220,7 @@ export class OrderingService implements ProviderService {
       const response = await axios.request(options);
       return response.data.result;
     } catch (error) {
-      this.utils.logError(error);
+      this.utilService.logError(error);
     }
   }
 
@@ -231,7 +232,7 @@ export class OrderingService implements ProviderService {
   ) {
     const options = {
       method: 'GET',
-      url: `${this.utils.getEnvUrl(
+      url: `${this.utilService.getEnvUrl(
         'orders',
       )}?mode=dashboard&where={${query},"business_id":[${businessIds}]}&params=${paramsQuery}`,
       headers: {
@@ -244,7 +245,7 @@ export class OrderingService implements ProviderService {
       const response = await axios.request(options);
       return response.data.result;
     } catch (error) {
-      this.utils.logError(error);
+      this.utilService.logError(error);
     }
   }
 
@@ -256,7 +257,7 @@ export class OrderingService implements ProviderService {
   ) {
     const options = {
       method: 'GET',
-      url: `${this.utils.getEnvUrl(
+      url: `${this.utilService.getEnvUrl(
         'orders',
       )}?mode=dashboard&where={${query},"business_id":${businessId}}&params=${paramsQuery}`,
       headers: {
@@ -269,7 +270,7 @@ export class OrderingService implements ProviderService {
       const response = await axios.request(options);
       return response.data.result;
     } catch (error) {
-      this.utils.logError(error);
+      this.utilService.logError(error);
     }
   }
 
@@ -288,7 +289,7 @@ export class OrderingService implements ProviderService {
       const response = await axios.request(options);
       return response.data.result;
     } catch (error) {
-      this.utils.logError(error);
+      this.utilService.logError(error);
     }
   }
 
@@ -297,17 +298,22 @@ export class OrderingService implements ProviderService {
     orderId: string,
     orderData: Omit<OrderData, 'provider'>,
   ): Promise<OrderingOrder> {
+    const orderingOrder = await this.getOrderById(accessToken, orderId);
     const defaultStatus = {
       pending: OrderingOrderStatus.Pending,
       in_progress: OrderingOrderStatus.AcceptedByBusiness,
       completed: OrderingOrderStatus.PreparationCompleted,
+      delivered:
+        orderingOrder.status === OrderingDeliveryType.Delivery
+          ? OrderingOrderStatus.PickUpCompletedByDriver
+          : OrderingOrderStatus.PickupCompletedByCustomer,
     };
 
     const status = defaultStatus[orderData.orderStatus];
 
     const options = {
       method: 'PUT',
-      url: `${this.utils.getEnvUrl('orders', orderId)}`,
+      url: `${this.utilService.getEnvUrl('orders', orderId)}`,
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
@@ -322,14 +328,36 @@ export class OrderingService implements ProviderService {
       const response = await axios.request(options);
       return response.data.result;
     } catch (error) {
-      this.utils.logError(error);
+      this.utilService.logError(error);
+    }
+  }
+
+  async rejectOrder(accessToken: string, orderId: string): Promise<OrderingOrder> {
+    const options = {
+      method: 'PUT',
+      url: `${this.utilService.getEnvUrl('orders', orderId)}`,
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+      data: {
+        status: OrderingOrderStatus.RejectedByBusiness,
+      },
+    };
+    console.log('🚀 ~ OrderingService ~ rejectOrder ~ options:', options);
+
+    try {
+      const response = await axios.request(options);
+      return response.data.result;
+    } catch (error) {
+      this.utilService.logError(error);
     }
   }
 
   async deleteOrder(accessToken: string, orderId: number) {
     const options = {
       method: 'DELETE',
-      url: `${this.utils.getEnvUrl('orders', orderId)}`,
+      url: `${this.utilService.getEnvUrl('orders', orderId)}`,
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
@@ -340,7 +368,7 @@ export class OrderingService implements ProviderService {
       const response = await axios.request(options);
       return response.data.result;
     } catch (error) {
-      this.utils.logError(error);
+      this.utilService.logError(error);
     }
   }
 
@@ -348,7 +376,7 @@ export class OrderingService implements ProviderService {
   async getUser(accessToken: string, userId: number) {
     const options = {
       method: 'GET',
-      url: this.utils.getEnvUrl('users', userId),
+      url: this.utilService.getEnvUrl('users', userId),
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
@@ -359,7 +387,7 @@ export class OrderingService implements ProviderService {
       const response = await axios.request(options);
       return response.data.result;
     } catch (error) {
-      this.utils.logError(error);
+      this.utilService.logError(error);
     }
   }
 
@@ -367,7 +395,7 @@ export class OrderingService implements ProviderService {
   async getPage(accessToken: string) {
     const options = {
       method: 'GET',
-      url: this.utils.getEnvUrl('pages'),
+      url: this.utilService.getEnvUrl('pages'),
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
@@ -378,7 +406,7 @@ export class OrderingService implements ProviderService {
       const response = await axios.request(options);
       return response.data.result;
     } catch (error) {
-      this.utils.logError(error);
+      this.utilService.logError(error);
     }
   }
 
@@ -392,7 +420,7 @@ export class OrderingService implements ProviderService {
   async setBusinessSchedule(accessToken: string, schedule: string) {
     const options = {
       method: 'GET',
-      url: this.utils.getEnvUrl('pages'),
+      url: this.utilService.getEnvUrl('pages'),
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
@@ -403,7 +431,7 @@ export class OrderingService implements ProviderService {
       const response = await axios.request(options);
       return response.data.result;
     } catch (error) {
-      this.utils.logError(error);
+      this.utilService.logError(error);
     }
   }
 
@@ -423,8 +451,25 @@ export class OrderingService implements ProviderService {
     const lastModified =
       orderingOrder.history.length === 0
         ? null
-        : moment(orderingOrder.history[orderingOrder.history.length - 1].updated_at).toISOString();
+        : this.utilService.convertTimeToTimeZone(
+            moment(
+              orderingOrder.history[orderingOrder.history.length - 1].updated_at,
+            ).toISOString(),
+            business.timeZone,
+          );
 
+    const deliveryDatetime = orderingOrder.delivery_datetime
+      ? this.utilService.convertTimeToTimeZone(
+          moment(orderingOrder.delivery_datetime).toISOString(),
+          business.timeZone,
+        )
+      : null;
+    const createdAt = orderingOrder.created_at
+      ? this.utilService.convertTimeToTimeZone(
+          moment(orderingOrder.created_at).toISOString(),
+          business.timeZone,
+        )
+      : null;
     return {
       id: orderingOrder.id.toString(),
       business: {
@@ -435,28 +480,29 @@ export class OrderingService implements ProviderService {
         address: business.address,
         email: business.email,
       },
+      table: orderingOrder.spot_number,
       payMethodId: orderingOrder.paymethod_id,
       type: preorder ? WoltOrderType.PreOrder : WoltOrderType.Instant,
       deliveryType: orderingOrder.delivery_type,
       comment: orderingOrder.comment,
       summary: {
-        total: total, // This should be equal to subtotal as we don't need delivery fee
+        total: total.toString(), // This should be equal to subtotal as we don't need delivery fee
       },
       customer: {
         name: `${orderingOrder.customer.name} ${orderingOrder.customer.lastname}`,
         phone: orderingOrder.customer.cellphone,
       },
-      deliveryEta: orderingOrder.delivery_datetime,
+      deliveryEta: deliveryDatetime,
       pickupEta: null,
       lastModified: lastModified,
       provider: ProviderEnum.Munchi,
       status: orderStatus,
-      createdAt: orderingOrder.created_at,
+      createdAt: createdAt,
       prepareIn: orderingOrder.prepared_in,
       preorder: preorder
         ? {
             status: 'waiting',
-            preorderTime: orderingOrder.delivery_datetime,
+            preorderTime: deliveryDatetime,
           }
         : null,
       products: productDto,
@@ -487,6 +533,8 @@ export class OrderingService implements ProviderService {
       } else if (inProgressStatus.includes(orderingStatus)) {
         return OrderStatusEnum.IN_PROGRESS as string;
       } else if (completedStatus.includes(orderingStatus)) {
+        return OrderStatusEnum.COMPLETED as string;
+      } else if (deliveredStatus.includes(orderingStatus)) {
         return OrderStatusEnum.COMPLETED as string;
       } else {
         return OrderStatusEnum.REJECTED as string;
