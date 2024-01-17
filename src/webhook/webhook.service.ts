@@ -105,6 +105,8 @@ export class WebhookService implements OnModuleInit {
         this.utils.logError(error);
       }
       return `Order ${woltWebhookdata.order.status.toLocaleLowerCase()}`;
+    } else {
+      await this.woltService.syncWoltOrder(woltWebhookdata.order.id);
     }
   }
 
