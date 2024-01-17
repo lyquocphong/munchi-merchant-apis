@@ -58,6 +58,7 @@ model Business {
   phone                String?
   address              String?
   description          String?
+  timeZone             String                 @default("Europe/Helsinki")
   orders               Order[]                @relation("BusinessOrder")
   businessExtraSetting BusinessExtraSetting[] @relation("BusinessExtraSettings")
 
@@ -81,6 +82,7 @@ model Order {
   business           Business  @relation("BusinessOrder", fields: [orderingBusinessId], references: [orderingBusinessId])
   status             String
   deliveryType       Int
+  table              Int?
   preparedIn         String?
   createdAt          String
   comment            String?
@@ -99,7 +101,7 @@ model Order {
 
 model Summary {
   id      Int    @id @default(autoincrement())
-  total   Int
+  total   String
   orderId String @unique
   order   Order  @relation("order-summary", fields: [orderId], references: [orderId], onDelete: Cascade, onUpdate: Cascade)
 }
@@ -116,11 +118,12 @@ model Customer {
 
 //Preorder
 model PreOrder {
-  id           Int    @id @default(autoincrement())
+  id           Int     @id @default(autoincrement())
   status       String
   preorderTime String
-  orderId      String @unique
-  order        Order? @relation("preorder", fields: [orderId], references: [orderId], onDelete: Cascade, onUpdate: Cascade)
+  reminderTime String?
+  orderId      String  @unique
+  order        Order?  @relation("preorder", fields: [orderId], references: [orderId], onDelete: Cascade, onUpdate: Cascade)
 }
 
 //Order product
