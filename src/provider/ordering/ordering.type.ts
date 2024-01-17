@@ -57,7 +57,7 @@ export const rejectedStatus = [
 ];
 
 export const deliveredStatus = [
-  OrderingOrderStatus.DeliveryCompletedByDriver,
+  OrderingOrderStatus.PickUpCompletedByDriver,
   OrderingOrderStatus.PickupCompletedByCustomer,
 ];
 
@@ -357,4 +357,5 @@ export interface OrderingOrder extends Order {
   business: Business;
   offers: Offer[];
   history: any;
+  spot_number: number | null;
 }
