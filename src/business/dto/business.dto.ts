@@ -55,6 +55,9 @@ export class BusinessDto {
   @Expose()
   logo: string;
 
+  @Expose({ name: 'timezone' })
+  timeZone: string;
+
   @ApiProperty({
     description: 'The address of business',
     example: true,

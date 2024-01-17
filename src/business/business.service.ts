@@ -121,6 +121,7 @@ export class BusinessService {
       phone: businessInfo.phone,
       address: businessInfo.address,
       description: businessInfo.description,
+      timeZone: businessInfo.timezone,
     });
 
     return await this.prismaService.business.upsert({
@@ -359,7 +360,9 @@ export class BusinessService {
       email: business.email,
       logo: business.logo,
       phone: business.phone,
+      timeZone: business.timeZone,
     }));
+
     await this.prismaService.business.createMany({
       data: businessesData,
       skipDuplicates: true,
