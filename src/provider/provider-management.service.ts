@@ -49,7 +49,10 @@ export class ProviderManagmentService {
         status,
         businessOrderingIds,
       );
-      return [...woltOrders, ...formattedOrderingOrders.sort((a, b) => parseInt(b.id) - parseInt(a.id))];
+      return [
+        ...woltOrders,
+        ...formattedOrderingOrders.sort((a, b) => parseInt(b.id) - parseInt(a.id)),
+      ];
     }
 
     return formattedOrderingOrders;
@@ -84,7 +87,25 @@ export class ProviderManagmentService {
         orderId,
         updateData,
       );
-      return this.orderingService.mapOrderToOrderResponse(orderingOrder);
+      return await this.orderingService.mapOrderToOrderResponse(orderingOrder);
+    }
+  }
+
+  async rejectOrder(
+    provider: AvailableProvider,
+    orderId: string,
+    orderRejectData: {
+      reason: string;
+    },
+    { orderingToken }: { orderingToken: string },
+  ) {
+    if (provider === ProviderEnum.Wolt) {
+      return await this.woltService.rejectOrder(orderingToken, orderId, orderRejectData);
+    } else if (provider === ProviderEnum.Munchi) {
+      const orderingOrder = await this.orderingService.rejectOrder(orderingToken, orderId);
+      const order2 =  await this.orderingService.mapOrderToOrderResponse(orderingOrder);
+      console.log("🚀 ~ ProviderManagmentService ~ order2:", order2)
+      return order2
     }
   }
 
