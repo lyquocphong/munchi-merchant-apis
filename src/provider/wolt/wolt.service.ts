@@ -2,7 +2,12 @@ import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nest
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import axios, { AxiosHeaders } from 'axios';
-import { AvailableOrderStatus, OrderResponse, OrderStatusEnum } from 'src/order/dto/order.dto';
+import {
+  AvailableOrderStatus,
+  OrderResponse,
+  OrderResponsePreOrderStatusEnum,
+  OrderStatusEnum,
+} from 'src/order/dto/order.dto';
 import { ProductDto } from 'src/order/dto/product.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { OrderData } from 'src/type';
@@ -40,12 +45,14 @@ export class WoltService implements ProviderService {
   }
   async getOrderByStatus(
     accessToken: string,
-    status: AvailableOrderStatus,
+    status: AvailableOrderStatus[],
     businessIds: string[],
   ): Promise<any[]> {
     const orders = await this.prismaService.order.findMany({
       where: {
-        status: status,
+        status: {
+          in: status,
+        },
         orderingBusinessId: {
           in: businessIds,
         },
@@ -168,17 +175,16 @@ export class WoltService implements ProviderService {
 
     //Send request to wolt server
 
-    // if (updateEndPoint !== woltOrder.order_status) {
-
-    // }
-    //Update order to wolt
     await this.sendWoltUpdateRequest(order.orderId, updateEndPoint, {
       orderStatus: OrderStatusEnum.IN_PROGRESS,
       preparedIn: adjustedPickupTime,
     });
 
-    //Sync order to database
+    const reminderTime = order.preorder
+      ? moment(order.preorder.preorderTime).subtract(updateData.preparedIn, 'minutes').toISOString()
+      : order.preorder.preorderTime;
 
+    //Update order to wolt
     const updatedOrder = await this.prismaService.order.update({
       where: {
         orderId: order.orderId,
@@ -186,6 +192,15 @@ export class WoltService implements ProviderService {
       data: {
         preparedIn: preparedIn ? preparedIn : order.preparedIn,
         status: orderStatus,
+        preorder: order.preorder
+          ? {
+              update: {
+                preorderTime: order.preorder.preorderTime,
+                status: OrderResponsePreOrderStatusEnum.Confirm,
+                reminderTime: reminderTime,
+              },
+            }
+          : null,
       },
       include: WoltOrderPrismaSelectArgs,
     });
@@ -266,7 +281,10 @@ export class WoltService implements ProviderService {
     const products = this.mapWoltItemToProductDto(woltOrder.items);
 
     const orderStatusMapping = {
-      received: OrderStatusEnum.PENDING,
+      received:
+        woltOrder.type === WoltOrderType.Instant
+          ? OrderStatusEnum.PENDING
+          : OrderStatusEnum.PREORDER,
       fetched: OrderStatusEnum.PENDING,
       acknowledged: OrderStatusEnum.PENDING,
       production: OrderStatusEnum.IN_PROGRESS,
@@ -289,6 +307,14 @@ export class WoltService implements ProviderService {
       woltOrder.pickup_eta,
       businessData.business.timeZone,
     );
+
+    const preOrderTime =
+      woltOrder.type === WoltOrderType.PreOrder && woltOrder.pre_order !== null
+        ? this.utilsService.convertTimeToTimeZone(
+            woltOrder.pre_order.preorder_time,
+            businessData.business.timeZone,
+          )
+        : null;
 
     const deliveryTime = woltOrder.delivery.time
       ? this.utilsService.convertTimeToTimeZone(
@@ -329,7 +355,7 @@ export class WoltService implements ProviderService {
       preorder: woltOrder.pre_order
         ? {
             status: woltOrder.pre_order.pre_order_status,
-            preorderTime: woltOrder.pre_order.preorder_time,
+            preorderTime: preOrderTime,
           }
         : null,
       products: products,
