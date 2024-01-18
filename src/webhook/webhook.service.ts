@@ -1,14 +1,15 @@
 import { NotificationService } from './../notification/notification.service';
 /* eslint-disable prettier/prettier */
 import {
-  ForbiddenException,
   Inject,
   Injectable,
   Logger,
   OnModuleInit,
-  forwardRef,
+  forwardRef
 } from '@nestjs/common';
+import { SchedulerRegistry } from '@nestjs/schedule';
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets/decorators';
+import { Business } from '@prisma/client';
 import { Server } from 'socket.io';
 import { BusinessService } from 'src/business/business.service';
 import { WoltService } from 'src/provider/wolt/wolt.service';
@@ -25,6 +26,7 @@ export class WebhookService implements OnModuleInit {
     private utils: UtilsService,
     private notificationService: NotificationService,
     private woltService: WoltService,
+    private readonly schedulerRegistry: SchedulerRegistry,
   ) {}
 
   onModuleInit() {
@@ -41,6 +43,7 @@ export class WebhookService implements OnModuleInit {
           this.logger.warn(`join ${room} and business is ${business.name}`);
           socket.join(business.orderingBusinessId.toString());
         }
+        console.log(socket.rooms)
       });
 
       socket.on('leave', async (room: string) => {
@@ -81,7 +84,6 @@ export class WebhookService implements OnModuleInit {
   async changeOrderNotification(order: any) {
     try {
       this.server.to(order.business_id.toString()).emit('order_change', order);
-      this.notificationService.sendWoltNotifiaction();
     } catch (error) {
       this.utils.logError(error);
     }
@@ -114,6 +116,21 @@ export class WebhookService implements OnModuleInit {
     const business = await this.businessService.findBusinessByPublicId(businessPublicId);
     this.logger.warn(`emit business_status_change because of ${businessPublicId}`);
     const message = `${business.name} status changed`;
-    this.server.to(business.orderingBusinessId.toString()).emit('business_status_change', message);
+    this.server.to(business.orderingBusinessId).emit('business_status_change', message);
   }
+
+  async remindPreOrder(order: any) {
+    const business: Business = order.business;
+    console.log("🚀 ~ WebhookService ~ remindPreOrder ~ business:", business)
+    console.log(typeof business.orderingBusinessId)
+    const message = `It's time for you to prepair order ${order.id}`;
+    this.server.to(business.orderingBusinessId).emit('preorder', message);
+
+    this.logger.warn(`cron notify preorder reminder complete ${business.publicId}`);
+    // this.schedulerRegistry.deleteCronJob(order.id);
+  }
+  // @Cron(CronExpression.EVERY_10_SECONDS)
+  // async sendPreOrderReminder() {
+  //   console.log()
+  // }
 }
