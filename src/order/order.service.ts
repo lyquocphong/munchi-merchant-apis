@@ -83,7 +83,7 @@ export class OrderService {
     orderingUserId: number,
     queryData: {
       providers: string[];
-      status: AvailableOrderStatus;
+      status: AvailableOrderStatus[];
       businessPublicIds: string[];
     },
   ) {
@@ -91,7 +91,6 @@ export class OrderService {
       queryData.providers,
     );
     const validateStatus = await this.validateOrderStatus(queryData.status);
-
     // If not enough data or data passed in wrong we return error
     if (!validProvider) {
       throw new NotFoundException('Provider not found');
@@ -194,7 +193,7 @@ export class OrderService {
     const accessToken = await this.utils.getOrderingAccessToken(orderingUserId);
 
     try {
-     return await this.providerManagementService.rejectOrder(
+      return await this.providerManagementService.rejectOrder(
         orderRejectData.provider,
         orderId,
         {
@@ -219,12 +218,9 @@ export class OrderService {
     }
   }
 
-  async validateOrderStatus(orderStatus: string) {
+  async validateOrderStatus(orderStatus: AvailableOrderStatus[]) {
     const orderStatusArray: string[] = Object.values(OrderStatusEnum);
 
-    if (orderStatusArray.includes(orderStatus)) {
-      return true;
-    }
-    return false;
+    return orderStatus.every((element) => orderStatusArray.includes(element));
   }
 }

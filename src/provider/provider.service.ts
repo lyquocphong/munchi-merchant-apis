@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Order } from 'ordering-api-sdk';
-import { OrderResponse } from 'src/order/dto/order.dto';
+import { AvailableOrderStatus, OrderResponse } from 'src/order/dto/order.dto';
 import { OrderData } from 'src/type';
 import { OrderingOrder } from './ordering/ordering.type';
 import { ProviderOrder } from './provider.type';
@@ -18,7 +18,7 @@ export abstract class ProviderService {
   //Need business ids here as we need to get order from multiple businesses at a time
   async getOrderByStatus(
     accessToken: string,
-    status: string,
+    status: AvailableOrderStatus[],
     businessIds: string[],
   ): Promise<OrderResponse[] | OrderingOrder[]> {
     return;

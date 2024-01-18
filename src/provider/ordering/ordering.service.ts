@@ -39,9 +39,14 @@ export class OrderingService implements ProviderService {
   }
   async getOrderByStatus(
     accessToken: string,
-    status: string,
+    status: AvailableOrderStatus[],
     businessOrderingIds: string[],
   ): Promise<OrderingOrder[]> {
+    //Map from order status to ordering stus
+    const orderStatus = this.mapOrderingStatusToOrderStatus(undefined, status) as number[];
+
+    // Convert order status from number array to a string
+    const mappedOrderStatusString = orderStatus.map((el: number) => el.toString()).join(',');
     const businessOrderingIdsString = businessOrderingIds.join(',');
 
     const paramsQuery = [
@@ -69,13 +74,12 @@ export class OrderingService implements ProviderService {
       method: 'GET',
       url: `${this.utilService.getEnvUrl(
         'orders',
-      )}?mode=dashboard&where={"status":[${status}],"business_id":[${businessOrderingIdsString}]}&params=${paramsQuery}`,
+      )}?mode=dashboard&where={"status":[${mappedOrderStatusString}],"business_id":[${businessOrderingIdsString}]}&params=${paramsQuery}`,
       headers: {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
       },
     };
-
     try {
       const response = await axios.request(options);
       return response.data.result;
@@ -344,8 +348,6 @@ export class OrderingService implements ProviderService {
         status: OrderingOrderStatus.RejectedByBusiness,
       },
     };
-    console.log('🚀 ~ OrderingService ~ rejectOrder ~ options:', options);
-
     try {
       const response = await axios.request(options);
       return response.data.result;
@@ -525,7 +527,7 @@ export class OrderingService implements ProviderService {
 
   mapOrderingStatusToOrderStatus(
     orderingStatus?: number,
-    orderStatus?: AvailableOrderStatus,
+    orderStatus?: AvailableOrderStatus[],
   ): string | number[] {
     if (orderingStatus !== undefined) {
       if (pendingStatus.includes(orderingStatus)) {
@@ -541,18 +543,17 @@ export class OrderingService implements ProviderService {
       }
     }
 
-    if (orderStatus !== undefined) {
-      switch (orderStatus) {
-        case OrderStatusEnum.PENDING:
-          return pendingStatus as number[];
-        case OrderStatusEnum.IN_PROGRESS:
-          return inProgressStatus as number[];
-        case OrderStatusEnum.COMPLETED:
-          return completedStatus as number[];
-        case OrderStatusEnum.DELIVERED:
-          return deliveredStatus as number[];
-        default:
-          return rejectedStatus as number[];
+    if (orderStatus !== undefined && orderStatus.length > 0) {
+      if (orderStatus.includes(OrderStatusEnum.PENDING)) {
+        return pendingStatus as number[];
+      } else if (orderStatus.includes(OrderStatusEnum.IN_PROGRESS)) {
+        return inProgressStatus as number[];
+      } else if (orderStatus.includes(OrderStatusEnum.COMPLETED)) {
+        return completedStatus as number[];
+      } else if (orderStatus.includes(OrderStatusEnum.DELIVERED)) {
+        return deliveredStatus as number[];
+      } else {
+        return rejectedStatus as number[];
       }
     }
   }

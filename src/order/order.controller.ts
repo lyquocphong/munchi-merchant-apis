@@ -41,6 +41,7 @@ export class OrderController {
     @Request() request: any,
     @Query(new ValidationPipe({ transform: true })) queryData: OrderStatusFilter,
   ) {
+    console.log("🚀 ~ OrderController ~ queryData:", queryData)
     const { orderingUserId } = request.user;
 
     return this.orderService.getOrderByStatus(orderingUserId, queryData);

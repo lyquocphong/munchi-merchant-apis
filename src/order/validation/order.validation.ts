@@ -14,8 +14,15 @@ export class OrderStatusFilter {
   })
   providers: string[];
 
-  @IsString()
-  status: AvailableOrderStatus;
+  @IsArray()
+  @Transform(({ value }) => {
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      return value;
+    }
+  })
+  status: AvailableOrderStatus[];
 
   @IsArray()
   @Transform(({ value }) => {

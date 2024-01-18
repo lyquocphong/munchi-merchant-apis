@@ -15,24 +15,15 @@ export class ProviderManagmentService {
 
   async getOrderByStatus(
     provider: string[],
-    status: AvailableOrderStatus,
+    status: AvailableOrderStatus[],
     businessOrderingIds: string[],
     { orderingToken }: { orderingToken: string },
   ) {
     //There only 2 case here as the munchi provider should always be active and can't be disabled
 
-    //Map from order status to ordering stus
-    const orderStatus = this.orderingService.mapOrderingStatusToOrderStatus(
-      undefined,
-      status,
-    ) as number[];
-
-    // Convert order status from number array to a string
-    const mappedOrderStatusString = orderStatus.map((el: number) => el.toString()).join(',');
-
     const orderingOrders = await this.orderingService.getOrderByStatus(
       orderingToken,
-      mappedOrderStatusString,
+      status,
       businessOrderingIds,
     );
 
@@ -103,9 +94,9 @@ export class ProviderManagmentService {
       return await this.woltService.rejectOrder(orderingToken, orderId, orderRejectData);
     } else if (provider === ProviderEnum.Munchi) {
       const orderingOrder = await this.orderingService.rejectOrder(orderingToken, orderId);
-      const order2 =  await this.orderingService.mapOrderToOrderResponse(orderingOrder);
-      console.log("🚀 ~ ProviderManagmentService ~ order2:", order2)
-      return order2
+      const order2 = await this.orderingService.mapOrderToOrderResponse(orderingOrder);
+      console.log('🚀 ~ ProviderManagmentService ~ order2:', order2);
+      return order2;
     }
   }
 

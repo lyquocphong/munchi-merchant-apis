@@ -101,7 +101,7 @@ export type OrderResponse = {
   comment: string;
   prepareIn: string;
   preorder: {
-    status: string;
+    status: AvailableOrderResponsePreOrderStatusEnum;
     preorderTime: string;
   };
   table: number | null;
@@ -116,6 +116,15 @@ export type OrderResponse = {
   customer: OrderResponseCustomer;
   payMethodId: number | null;
 };
+
+export enum OrderResponsePreOrderStatusEnum {
+  Waiting = 'waiting',
+  Confirm = 'confirmed',
+}
+
+export type AvailableOrderResponsePreOrderStatusEnum =
+  | OrderResponsePreOrderStatusEnum.Confirm
+  | OrderResponsePreOrderStatusEnum.Waiting;
 
 export type OrderResponseCustomer = {
   name: string;
