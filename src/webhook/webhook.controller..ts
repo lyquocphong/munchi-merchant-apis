@@ -21,6 +21,6 @@ export class WebhookController {
 
   @Post('wolt/notification')
   woltNewOrder(@Body() woltWebhookdata: WoltOrderNotification, @Req() request: Request) {
-    return this.webhookService.newWoltOrderNotification(woltWebhookdata);
+    return this.webhookService.woltOrderNotification(woltWebhookdata);
   }
 }

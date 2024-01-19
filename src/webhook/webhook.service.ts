@@ -3,7 +3,7 @@ import { NotificationService } from './../notification/notification.service';
 import { Inject, Injectable, Logger, OnModuleInit, forwardRef } from '@nestjs/common';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets/decorators';
-import { Business } from '@prisma/client';
+import { Business, Order } from '@prisma/client';
 import { Server } from 'socket.io';
 import { BusinessService } from 'src/business/business.service';
 import { OrderingService } from 'src/provider/ordering/ordering.service';
@@ -95,26 +95,38 @@ export class WebhookService implements OnModuleInit {
     }
   }
 
-  async newWoltOrderNotification(woltWebhookdata: WoltOrderNotification) {
+  async woltOrderNotification(woltWebhookdata: WoltOrderNotification) {
+    // Get order data from Wolt
+    const woltOrder = await this.woltService.getOrderById(woltWebhookdata.order.id);
+
+    //Mapped wolt response to general order response
+    const formattedWoltOrder = await this.woltService.mapOrderToOrderResponse(woltOrder);
+
+    //Find business by venue Id
+    const business = await this.businessService.findBusinessByWoltVenueid(
+      woltWebhookdata.order.venue_id,
+    );
     if (
       woltWebhookdata.order.status === 'CREATED' &&
       woltWebhookdata.type === 'order.notification'
     ) {
-      const woltOrder = await this.woltService.getOrderDataAndSaveToDb(woltWebhookdata);
-      const business = await this.businessService.findBusinessByWoltVenueid(
-        woltWebhookdata.order.venue_id,
-      );
+      await this.woltService.saveWoltOrder(formattedWoltOrder);
+
       try {
         // Emit to client by public business id
         this.logger.log(`emit order created because of ${business.publicId}`);
-        this.server.to(business.orderingBusinessId).emit('orders_register', woltOrder);
+        this.server.to(business.orderingBusinessId).emit('orders_register', formattedWoltOrder);
         return 'Order sent';
       } catch (error) {
         this.utils.logError(error);
       }
       return `Order ${woltWebhookdata.order.status.toLocaleLowerCase()}`;
     } else {
-      await this.woltService.syncWoltOrder(woltWebhookdata.order.id);
+      const orderSynced: Order = await this.woltService.syncWoltOrder(woltWebhookdata.order.id);
+      this.server.to(business.orderingBusinessId).emit('notification', {
+        orderId: orderSynced.id,
+        status: woltWebhookdata.order.status,
+      });
     }
   }
 
