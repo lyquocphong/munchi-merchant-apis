@@ -138,11 +138,13 @@ export class WoltService implements ProviderService {
       const response = await axios.request(option);
 
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
+      console.log('🚀 ~ WoltService ~ error:', error);
       this.logger.log(
         `Error when updating wolt Order with order id:${woltOrderId}. Error: ${error}`,
       );
       await this.syncWoltOrder(woltOrderId);
+      throw new ForbiddenException(error);
     }
   }
 
@@ -167,6 +169,7 @@ export class WoltService implements ProviderService {
 
     //Get wolt order by id
     const order = await this.getOrderByIdFromDb(woltOrderId);
+    console.log('🚀 ~ WoltService ~ order:', order);
 
     const updateEndPoint = this.generateWoltUpdateEndPoint(orderStatus, order as any);
     const adjustedPickupTime = preparedIn
@@ -174,17 +177,16 @@ export class WoltService implements ProviderService {
       : order.pickupEta;
 
     //Send request to wolt server
+    try {
+      await this.sendWoltUpdateRequest(order.orderId, updateEndPoint, {
+        orderStatus: OrderStatusEnum.IN_PROGRESS,
+        preparedIn: adjustedPickupTime,
+      });
+    } catch (error) {
+      this.logger.log(`Error when updatinbg order: ${error}`);
+      throw new ForbiddenException(error);
+    }
 
-    await this.sendWoltUpdateRequest(order.orderId, updateEndPoint, {
-      orderStatus: OrderStatusEnum.IN_PROGRESS,
-      preparedIn: adjustedPickupTime,
-    });
-
-    const reminderTime = order.preorder
-      ? moment(order.preorder.preorderTime).subtract(updateData.preparedIn, 'minutes').toISOString()
-      : order.preorder.preorderTime;
-
-    //Update order to wolt
     const updatedOrder = await this.prismaService.order.update({
       where: {
         orderId: order.orderId,
@@ -197,10 +199,9 @@ export class WoltService implements ProviderService {
               update: {
                 preorderTime: order.preorder.preorderTime,
                 status: OrderResponsePreOrderStatusEnum.Confirm,
-                reminderTime: reminderTime,
               },
             }
-          : null,
+          : undefined,
       },
       include: WoltOrderPrismaSelectArgs,
     });
@@ -371,21 +372,14 @@ export class WoltService implements ProviderService {
    *
    * @return  {Promise<OrderResponse>}                                 A promise that resolves with the order response after saving to the database.
    */
-  async getOrderDataAndSaveToDb(woltWebhookdata: WoltOrderNotification): Promise<OrderResponse> {
-    // Get order detail from wolt host provider
-    //It will throw and error and return in case the order is not found
-    const woltOrder = await this.getOrderById(woltWebhookdata.order.id);
-
-    //Map wolt order to general order model
-    const mappedWoltOrder = await this.mapOrderToOrderResponse(woltOrder);
-
+  async saveWoltOrder(formattedWoltOrder: OrderResponse): Promise<OrderResponse> {
     //Validate if this wolt order was saved before or not
-    await this.validateWoltOrder(mappedWoltOrder.id);
+    await this.validateWoltOrder(formattedWoltOrder.id);
 
     //Save order to database
-    await this.saveWoltOrdertoDb(mappedWoltOrder);
+    await this.saveWoltOrdertoDb(formattedWoltOrder);
 
-    return mappedWoltOrder;
+    return formattedWoltOrder;
   }
 
   private async validateBusinessByVenueId(woltVenueId: string) {
