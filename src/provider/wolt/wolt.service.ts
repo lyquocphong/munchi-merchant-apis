@@ -286,13 +286,23 @@ export class WoltService implements ProviderService {
         woltOrder.type === WoltOrderType.Instant
           ? OrderStatusEnum.PENDING
           : OrderStatusEnum.PREORDER,
-      fetched: OrderStatusEnum.PENDING,
-      acknowledged: OrderStatusEnum.PENDING,
+      fetched:
+        woltOrder.type === WoltOrderType.Instant
+          ? OrderStatusEnum.PENDING
+          : OrderStatusEnum.PREORDER,
+      acknowledged:
+        woltOrder.type === WoltOrderType.Instant
+          ? OrderStatusEnum.PENDING
+          : OrderStatusEnum.PREORDER,
       production: OrderStatusEnum.IN_PROGRESS,
       ready: OrderStatusEnum.COMPLETED,
       delivered: OrderStatusEnum.DELIVERED,
       rejected: OrderStatusEnum.REJECTED,
     };
+    console.log(
+      '🚀 ~ WoltService ~ mapOrderToOrderResponse ~ orderStatusMapping:',
+      orderStatusMapping[woltOrder.order_status],
+    );
 
     const createdAt = this.utilsService.convertTimeToTimeZone(
       woltOrder.created_at,
