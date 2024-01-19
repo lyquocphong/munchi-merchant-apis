@@ -7,6 +7,7 @@ import { CronJob, CronJobParameters } from 'cron';
 import { Logger } from '@nestjs/common';
 import { WebhookService } from 'src/webhook/webhook.service';
 import { UtilsService } from 'src/utils/utils.service';
+
 @Injectable()
 export class ScheduleService {
   private readonly logger = new Logger(ScheduleService.name);
@@ -57,11 +58,11 @@ export class ScheduleService {
     );
     try {
       this.schedulerRegistry.addCronJob(woltOrderId, job);
+      job.start();
     } catch (error: any) {
       return new ForbiddenException(error.message);
     }
-
-    job.start();
+  
 
     return 'success';
   }
