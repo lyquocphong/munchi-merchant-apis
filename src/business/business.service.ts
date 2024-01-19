@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
   forwardRef,
 } from '@nestjs/common';
@@ -23,6 +24,7 @@ import { BusinessExtraConfigDto } from './validation';
 
 @Injectable()
 export class BusinessService {
+  private logger = new Logger(BusinessService.name);
   constructor(
     private utils: UtilsService,
     private readonly prismaService: PrismaService,
@@ -50,7 +52,7 @@ export class BusinessService {
     });
   }
 
-  @Cron(CronExpression.EVERY_10_MINUTES)
+  @Cron(CronExpression.EVERY_DAY_AT_2PM)
   async syncBusinessFromOrdering() {
     const orderingApiKey = await this.prismaService.apiKey.findFirst({
       where: {
@@ -70,7 +72,7 @@ export class BusinessService {
 
     await this.saveMultipleBusinessToDb(formattedBusinessesData);
 
-    console.log('Success on sync businesses');
+    this.logger.log('Businesses synced');
   }
 
   async getAllBusiness(page: number, rowPerPage: number) {
