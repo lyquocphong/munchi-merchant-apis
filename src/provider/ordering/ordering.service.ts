@@ -1,13 +1,14 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import axios from 'axios';
 import { plainToInstance } from 'class-transformer';
-import { Business, Order } from 'ordering-api-sdk';
+import moment from 'moment';
+import { Business } from 'ordering-api-sdk';
 import { OfferDto } from 'src/order/dto/offer.dto';
 import {
   AvailableOrderStatus,
-  OrderDto,
   OrderResponse,
-  OrderStatusEnum,
+  OrderResponsePreOrderStatusEnum,
+  OrderStatusEnum
 } from 'src/order/dto/order.dto';
 import { ProductDto } from 'src/order/dto/product.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -15,6 +16,7 @@ import { AuthCredentials, OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
 import { ProviderService } from '../provider.service';
 import { ProviderEnum } from '../provider.type';
+import { WoltOrderType } from '../wolt/wolt.type';
 import {
   OrderingDeliveryType,
   OrderingOrder,
@@ -26,8 +28,6 @@ import {
   pendingStatus,
   rejectedStatus,
 } from './ordering.type';
-import { WoltOrderType } from '../wolt/wolt.type';
-import moment from 'moment';
 
 @Injectable()
 export class OrderingService implements ProviderService {
@@ -503,7 +503,7 @@ export class OrderingService implements ProviderService {
       prepareIn: orderingOrder.prepared_in,
       preorder: preorder
         ? {
-            status: 'waiting',
+            status: OrderResponsePreOrderStatusEnum.Waiting,
             preorderTime: deliveryDatetime,
           }
         : null,
