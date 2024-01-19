@@ -106,6 +106,7 @@ export class WebhookService implements OnModuleInit {
     const business = await this.businessService.findBusinessByWoltVenueid(
       woltWebhookdata.order.venue_id,
     );
+
     if (
       woltWebhookdata.order.status === 'CREATED' &&
       woltWebhookdata.type === 'order.notification'
@@ -121,7 +122,7 @@ export class WebhookService implements OnModuleInit {
         this.utils.logError(error);
       }
       return `Order ${woltWebhookdata.order.status.toLocaleLowerCase()}`;
-    } else {
+    } else if ( woltWebhookdata.order.status === 'PRODUCTION' || woltWebhookdata.order.status !== 'DELIVERED'){
       const orderSynced: Order = await this.woltService.syncWoltOrder(woltWebhookdata.order.id);
       this.server.to(business.orderingBusinessId).emit('notification', {
         orderId: orderSynced.id,
