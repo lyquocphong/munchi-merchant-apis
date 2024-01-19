@@ -1,17 +1,13 @@
 import { NotificationService } from './../notification/notification.service';
 /* eslint-disable prettier/prettier */
-import {
-  Inject,
-  Injectable,
-  Logger,
-  OnModuleInit,
-  forwardRef
-} from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit, forwardRef } from '@nestjs/common';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets/decorators';
 import { Business } from '@prisma/client';
 import { Server } from 'socket.io';
 import { BusinessService } from 'src/business/business.service';
+import { OrderingService } from 'src/provider/ordering/ordering.service';
+import { OrderingOrder, OrderingOrderStatus } from 'src/provider/ordering/ordering.type';
 import { WoltService } from 'src/provider/wolt/wolt.service';
 import { WoltOrderNotification } from 'src/provider/wolt/wolt.type';
 import { UtilsService } from 'src/utils/utils.service';
@@ -26,6 +22,7 @@ export class WebhookService implements OnModuleInit {
     private utils: UtilsService,
     private notificationService: NotificationService,
     private woltService: WoltService,
+    private orderingService: OrderingService,
     private readonly schedulerRegistry: SchedulerRegistry,
   ) {}
 
@@ -43,7 +40,6 @@ export class WebhookService implements OnModuleInit {
           this.logger.warn(`join ${room} and business is ${business.name}`);
           socket.join(business.orderingBusinessId.toString());
         }
-        console.log(socket.rooms)
       });
 
       socket.on('leave', async (room: string) => {
@@ -72,20 +68,30 @@ export class WebhookService implements OnModuleInit {
     this.server.emit('update-app-state', deviceId);
   }
 
-  async newOrderNotification(order: any) {
+  async newOrderNotification(order: OrderingOrder) {
+    const formattedOrder = await this.orderingService.mapOrderToOrderResponse(order);
     try {
-      this.server.to(order.business_id.toString()).emit('orders_register', order);
+      this.server.to(order.business_id.toString()).emit('orders_register', formattedOrder);
       this.notificationService.sendNewOrderNotification(order.business_id.toString());
     } catch (error) {
       this.utils.logError(error);
     }
   }
 
-  async changeOrderNotification(order: any) {
-    try {
-      this.server.to(order.business_id.toString()).emit('order_change', order);
-    } catch (error) {
-      this.utils.logError(error);
+  async changeOrderNotification(order: OrderingOrder) {
+    const message = `It's time for you to prepair order ${order.id}`;
+    const formattedOrder = await this.orderingService.mapOrderToOrderResponse(order);
+    if (
+      order.status === OrderingOrderStatus.Pending &&
+      order.reporting_data.at.hasOwnProperty(`status:${OrderingOrderStatus.Preorder}`)
+    ) {
+      this.server.to(order.business_id.toString()).emit('preorder', message);
+    } else {
+      try {
+        this.server.to(order.business_id.toString()).emit('order_change', formattedOrder);
+      } catch (error) {
+        this.utils.logError(error);
+      }
     }
   }
 
@@ -121,16 +127,10 @@ export class WebhookService implements OnModuleInit {
 
   async remindPreOrder(order: any) {
     const business: Business = order.business;
-    console.log("🚀 ~ WebhookService ~ remindPreOrder ~ business:", business)
-    console.log(typeof business.orderingBusinessId)
     const message = `It's time for you to prepair order ${order.id}`;
     this.server.to(business.orderingBusinessId).emit('preorder', message);
 
     this.logger.warn(`cron notify preorder reminder complete ${business.publicId}`);
     // this.schedulerRegistry.deleteCronJob(order.id);
   }
-  // @Cron(CronExpression.EVERY_10_SECONDS)
-  // async sendPreOrderReminder() {
-  //   console.log()
-  // }
 }
