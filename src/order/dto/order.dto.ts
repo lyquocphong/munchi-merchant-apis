@@ -99,7 +99,7 @@ export type OrderResponse = {
   deliveryType: number;
   createdAt: string;
   comment: string;
-  prepareIn: string;
+  preparedIn: string;
   preorder: {
     status: AvailableOrderResponsePreOrderStatusEnum;
     preorderTime: string;
