@@ -69,7 +69,6 @@ export class WebhookService implements OnModuleInit {
   }
 
   async newOrderNotification(order: OrderingOrder) {
-
     const formattedOrder = await this.orderingService.mapOrderToOrderResponse(order);
     try {
       this.server.to(order.business_id.toString()).emit('orders_register', formattedOrder);
@@ -86,7 +85,10 @@ export class WebhookService implements OnModuleInit {
       order.status === OrderingOrderStatus.Pending &&
       order.reporting_data.at.hasOwnProperty(`status:${OrderingOrderStatus.Preorder}`)
     ) {
-      this.server.to(order.business_id.toString()).emit('preorder', message);
+      this.server.to(order.business_id.toString()).emit('preorder', {
+        message: message,
+        orderId: order.id,
+      });
     } else {
       try {
         this.server.to(order.business_id.toString()).emit('order_change', formattedOrder);
@@ -124,15 +126,17 @@ export class WebhookService implements OnModuleInit {
       }
       return `Order ${woltWebhookdata.order.status.toLocaleLowerCase()}`;
     } else if (
-      (woltWebhookdata.order.status === 'PRODUCTION' &&
-        formattedWoltOrder.type === WoltOrderType.PreOrder) ||
-      woltWebhookdata.order.status === 'DELIVERED'
+      woltWebhookdata.order.status === 'PRODUCTION' &&
+      formattedWoltOrder.type === WoltOrderType.PreOrder
     ) {
       const orderSynced: Order = await this.woltService.syncWoltOrder(woltWebhookdata.order.id);
       this.server.to(business.orderingBusinessId).emit('notification', {
         orderId: orderSynced.id,
         status: woltWebhookdata.order.status,
       });
+    } else {
+      await this.woltService.syncWoltOrder(woltWebhookdata.order.id);
+      this.server.to(business.orderingBusinessId).emit('order_change', formattedWoltOrder);
     }
   }
 
