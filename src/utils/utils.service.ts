@@ -105,7 +105,7 @@ export class UtilsService {
 
     // Check if the target timezone is valid
     if (allTimeZones.includes(targetTimeZone)) {
-      const convertedTime = moment(utcTime).tz(targetTimeZone).format();
+      const convertedTime = moment(utcTime).tz(targetTimeZone).toISOString(true);
 
       return convertedTime;
     }
