@@ -19,7 +19,6 @@ export class ScheduleService {
   ) {}
 
   async setPreOrderReminder({ reminderTime, woltOrderId }: ReminderScheduleBodyData) {
-    console.log('🚀 ~ ScheduleService ~ setPreOrderReminder ~ reminderTime:', reminderTime);
     //Get order by order Id
     //Update reminder time
     const order = await this.prismaService.order.update({
@@ -62,7 +61,6 @@ export class ScheduleService {
     } catch (error: any) {
       return new ForbiddenException(error.message);
     }
-  
 
     return 'success';
   }

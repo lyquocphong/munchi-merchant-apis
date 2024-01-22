@@ -139,7 +139,6 @@ export class WoltService implements ProviderService {
 
       return response.data;
     } catch (error: any) {
-      console.log('🚀 ~ WoltService ~ error:', error);
       this.logger.log(
         `Error when updating wolt Order with order id:${woltOrderId}. Error: ${error}`,
       );
@@ -165,16 +164,17 @@ export class WoltService implements ProviderService {
     woltOrderId: string,
     updateData: Omit<OrderData, 'provider'>,
   ): Promise<any> {
+    console.log("🚀 ~ WoltService ~ updateData:", updateData)
     const { orderStatus, preparedIn } = updateData;
 
     //Get wolt order by id
     const order = await this.getOrderByIdFromDb(woltOrderId);
-    console.log('🚀 ~ WoltService ~ order:', order);
-
     const updateEndPoint = this.generateWoltUpdateEndPoint(orderStatus, order as any);
     const adjustedPickupTime = preparedIn
       ? moment(order.createdAt).add(preparedIn, 'minutes').format()
       : order.pickupEta;
+
+    
 
     //Send request to wolt server
     try {
@@ -299,11 +299,6 @@ export class WoltService implements ProviderService {
       delivered: OrderStatusEnum.DELIVERED,
       rejected: OrderStatusEnum.REJECTED,
     };
-    console.log(
-      '🚀 ~ WoltService ~ mapOrderToOrderResponse ~ orderStatusMapping:',
-      orderStatusMapping[woltOrder.order_status],
-    );
-
     const createdAt = this.utilsService.convertTimeToTimeZone(
       woltOrder.created_at,
       businessData.business.timeZone,
@@ -359,7 +354,7 @@ export class WoltService implements ProviderService {
       },
       pickupEta: pickupEta,
       deliveryEta: deliveryTime,
-      prepareIn: null,
+      preparedIn: null,
       provider: ProviderEnum.Wolt,
       status: orderStatusMapping[woltOrder.order_status],
       createdAt: createdAt,
@@ -517,7 +512,7 @@ export class WoltService implements ProviderService {
         table: mappedWoltOrder.table,
         deliveryEta: mappedWoltOrder.deliveryEta,
         pickupEta: mappedWoltOrder.pickupEta,
-        preparedIn: mappedWoltOrder.prepareIn,
+        preparedIn: mappedWoltOrder.preparedIn,
         lastModified: mappedWoltOrder.lastModified,
         type: mappedWoltOrder.type,
         payMethodId: mappedWoltOrder.payMethodId,
