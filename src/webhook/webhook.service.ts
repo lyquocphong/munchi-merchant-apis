@@ -9,7 +9,7 @@ import { BusinessService } from 'src/business/business.service';
 import { OrderingService } from 'src/provider/ordering/ordering.service';
 import { OrderingOrder, OrderingOrderStatus } from 'src/provider/ordering/ordering.type';
 import { WoltService } from 'src/provider/wolt/wolt.service';
-import { WoltOrderNotification } from 'src/provider/wolt/wolt.type';
+import { WoltOrderNotification, WoltOrderType } from 'src/provider/wolt/wolt.type';
 import { UtilsService } from 'src/utils/utils.service';
 
 @WebSocketGateway({ cors: { origin: { origin: '*' } } })
@@ -69,6 +69,7 @@ export class WebhookService implements OnModuleInit {
   }
 
   async newOrderNotification(order: OrderingOrder) {
+
     const formattedOrder = await this.orderingService.mapOrderToOrderResponse(order);
     try {
       this.server.to(order.business_id.toString()).emit('orders_register', formattedOrder);
@@ -122,7 +123,11 @@ export class WebhookService implements OnModuleInit {
         this.utils.logError(error);
       }
       return `Order ${woltWebhookdata.order.status.toLocaleLowerCase()}`;
-    } else if ( woltWebhookdata.order.status === 'PRODUCTION' || woltWebhookdata.order.status !== 'DELIVERED'){
+    } else if (
+      (woltWebhookdata.order.status === 'PRODUCTION' &&
+        formattedWoltOrder.type === WoltOrderType.PreOrder) ||
+      woltWebhookdata.order.status === 'DELIVERED'
+    ) {
       const orderSynced: Order = await this.woltService.syncWoltOrder(woltWebhookdata.order.id);
       this.server.to(business.orderingBusinessId).emit('notification', {
         orderId: orderSynced.id,
@@ -141,7 +146,10 @@ export class WebhookService implements OnModuleInit {
   async remindPreOrder(order: any) {
     const business: Business = order.business;
     const message = `It's time for you to prepair order ${order.id}`;
-    this.server.to(business.orderingBusinessId).emit('preorder', message);
+    this.server.to(business.orderingBusinessId).emit('preorder', {
+      message: message,
+      orderId: order.id,
+    });
 
     this.logger.warn(`cron notify preorder reminder complete ${business.publicId}`);
     // this.schedulerRegistry.deleteCronJob(order.id);
