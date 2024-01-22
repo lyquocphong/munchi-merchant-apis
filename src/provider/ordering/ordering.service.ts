@@ -8,7 +8,7 @@ import {
   AvailableOrderStatus,
   OrderResponse,
   OrderResponsePreOrderStatusEnum,
-  OrderStatusEnum
+  OrderStatusEnum,
 } from 'src/order/dto/order.dto';
 import { ProductDto } from 'src/order/dto/product.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -444,34 +444,35 @@ export class OrderingService implements ProviderService {
     const offers = plainToInstance(OfferDto, orderingOrder.offers);
     const orderStatus = this.mapOrderingStatusToOrderStatus(orderingOrder.status) as string;
     const business = await this.validateOrderingBusiness(orderingOrder.business_id.toString());
-
+    const inputFormat = 'YYYY-MM-DD HH:mm:ss';
+    let lastModified: string | null = null;
     //Calculate total amount without delivery fee and including the discount
     const total =
       orderingOrder.summary.total -
       orderingOrder.summary.delivery_price -
       orderingOrder.summary.driver_tip;
-    const lastModified =
-      orderingOrder.history.length === 0
-        ? null
-        : this.utilService.convertTimeToTimeZone(
-            moment(
-              orderingOrder.history[orderingOrder.history.length - 1].updated_at,
-            ).toISOString(),
-            business.timeZone,
-          );
+
+    if ('history' in orderingOrder && orderingOrder.history.length !== 0) {
+      lastModified = moment
+        .utc(orderingOrder.history[orderingOrder.history.length - 1].updated_at, inputFormat)
+        .local()
+        .toISOString(true);
+    }
 
     const deliveryDatetime = orderingOrder.delivery_datetime
-      ? this.utilService.convertTimeToTimeZone(
-          moment(orderingOrder.delivery_datetime).toISOString(),
-          business.timeZone,
-        )
+      ? moment.utc(orderingOrder.delivery_datetime, inputFormat).local().toISOString(true)
       : null;
+
+    // Assuming the input time is in UTC, convert to local time
+
+    this.utilService.convertTimeToTimeZone(
+      moment(orderingOrder.created_at).toISOString(),
+      business.timeZone,
+    );
     const createdAt = orderingOrder.created_at
-      ? this.utilService.convertTimeToTimeZone(
-          moment(orderingOrder.created_at).toISOString(),
-          business.timeZone,
-        )
+      ? moment.utc(orderingOrder.created_at, inputFormat).local().toISOString(true)
       : null;
+
     return {
       id: orderingOrder.id.toString(),
       business: {
@@ -500,7 +501,7 @@ export class OrderingService implements ProviderService {
       provider: ProviderEnum.Munchi,
       status: orderStatus,
       createdAt: createdAt,
-      prepareIn: orderingOrder.prepared_in,
+      preparedIn: orderingOrder.prepared_in,
       preorder: preorder
         ? {
             status: OrderResponsePreOrderStatusEnum.Waiting,
