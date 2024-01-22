@@ -117,7 +117,7 @@ export class WebhookService implements OnModuleInit {
       await this.woltService.saveWoltOrder(formattedWoltOrder);
 
       try {
-        // Emit to client by public business id
+        // Emit to client by public business id new order has been created
         this.logger.log(`emit order created because of ${business.publicId}`);
         this.server.to(business.orderingBusinessId).emit('orders_register', formattedWoltOrder);
         return 'Order sent';
@@ -129,12 +129,14 @@ export class WebhookService implements OnModuleInit {
       woltWebhookdata.order.status === 'PRODUCTION' &&
       formattedWoltOrder.type === WoltOrderType.PreOrder
     ) {
+      // Notify user that preorder order has changed to PRODUCTION state
       const orderSynced: Order = await this.woltService.syncWoltOrder(woltWebhookdata.order.id);
       this.server.to(business.orderingBusinessId).emit('notification', {
         orderId: orderSynced.id,
         status: woltWebhookdata.order.status,
       });
     } else {
+      // Notify up update client UI
       await this.woltService.syncWoltOrder(woltWebhookdata.order.id);
       this.server.to(business.orderingBusinessId).emit('order_change', formattedWoltOrder);
     }
