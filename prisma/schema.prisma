@@ -76,6 +76,7 @@ model BusinessExtraSetting {
 model Order {
   id                 Int       @id @default(autoincrement())
   orderId            String    @unique
+  orderNumber        String        @default("0")
   provider           String
   orderingBusinessId String
   payMethodId        Int?
