@@ -7,6 +7,7 @@ import { CronJob, CronJobParameters } from 'cron';
 import { Logger } from '@nestjs/common';
 import { WebhookService } from 'src/webhook/webhook.service';
 import { UtilsService } from 'src/utils/utils.service';
+import { WoltOrderPrismaSelectArgs } from 'src/provider/wolt/wolt.type';
 
 @Injectable()
 export class ScheduleService {
@@ -32,9 +33,7 @@ export class ScheduleService {
           },
         },
       },
-      include: {
-        business: true,
-      },
+      include: WoltOrderPrismaSelectArgs
     });
     // Convert the time to current restaurant timezone
     //Remove the Z at the end so moment don't convert that to utc time
@@ -62,7 +61,9 @@ export class ScheduleService {
       return new ForbiddenException(error.message);
     }
 
-    return 'success';
+    return {
+      message: 'Success',
+    };
   }
 
   isoToCronExpression(isoTime: string): string | null {
