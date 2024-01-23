@@ -54,6 +54,11 @@ export class WebhookService implements OnModuleInit {
         }
       });
 
+      socket.on('ping', async (data: string) => {
+        socket.emit('reconnect');
+        this.logger.warn(`Recieved ping from client ${data}`);
+      });
+
       /**
        * Notify when new order popup is closed and server emit event
        * back for other apps if avaiable to close the popup for same order
@@ -87,7 +92,7 @@ export class WebhookService implements OnModuleInit {
     ) {
       this.server.to(order.business_id.toString()).emit('preorder', {
         message: message,
-        orderId: order.id,
+        order: formattedOrder,
       });
     } else {
       try {
@@ -154,7 +159,7 @@ export class WebhookService implements OnModuleInit {
     const message = `It's time for you to prepair order ${order.id}`;
     this.server.to(business.orderingBusinessId).emit('preorder', {
       message: message,
-      orderId: order.id,
+      order: order,
     });
 
     this.logger.warn(`cron notify preorder reminder complete ${business.publicId}`);
