@@ -159,6 +159,7 @@ export const WoltOrderPrismaSelectArgs = Prisma.validator<Prisma.OrderInclude>()
       email: true,
       phone: true,
       description: true,
+      timeZone:true
     },
   },
   customer: {
