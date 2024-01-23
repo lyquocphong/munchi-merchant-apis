@@ -164,7 +164,6 @@ export class WoltService implements ProviderService {
     woltOrderId: string,
     updateData: Omit<OrderData, 'provider'>,
   ): Promise<any> {
-    console.log("🚀 ~ WoltService ~ updateData:", updateData)
     const { orderStatus, preparedIn } = updateData;
 
     //Get wolt order by id
@@ -173,8 +172,6 @@ export class WoltService implements ProviderService {
     const adjustedPickupTime = preparedIn
       ? moment(order.createdAt).add(preparedIn, 'minutes').format()
       : order.pickupEta;
-
-    
 
     //Send request to wolt server
     try {
@@ -299,6 +296,7 @@ export class WoltService implements ProviderService {
       delivered: OrderStatusEnum.DELIVERED,
       rejected: OrderStatusEnum.REJECTED,
     };
+
     const createdAt = this.utilsService.convertTimeToTimeZone(
       woltOrder.created_at,
       businessData.business.timeZone,
@@ -331,6 +329,7 @@ export class WoltService implements ProviderService {
 
     return {
       id: woltOrder.id.toString(),
+      orderNumber: woltOrder.order_number,
       business: {
         orderingBusinessId: businessData.business.orderingBusinessId.toString(),
         logo: businessData.business.logo,
@@ -445,6 +444,7 @@ export class WoltService implements ProviderService {
       createdAt: mappedWoltOrder.createdAt,
       comment: mappedWoltOrder.comment,
       type: mappedWoltOrder.type,
+      orderNumber: mappedWoltOrder.orderNumber,
       preorder: mappedWoltOrder.preorder
         ? {
             update: {
@@ -509,6 +509,7 @@ export class WoltService implements ProviderService {
             total: mappedWoltOrder.summary.total,
           },
         },
+        orderNumber: mappedWoltOrder.orderNumber,
         table: mappedWoltOrder.table,
         deliveryEta: mappedWoltOrder.deliveryEta,
         pickupEta: mappedWoltOrder.pickupEta,

@@ -475,6 +475,7 @@ export class OrderingService implements ProviderService {
 
     return {
       id: orderingOrder.id.toString(),
+      orderNumber: orderingOrder.id.toString(),
       business: {
         orderingBusinessId: business.orderingBusinessId,
         logo: business.logo,
