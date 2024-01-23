@@ -29,6 +29,8 @@ export enum OrderingOrderStatus {
   DriverWaitingForOrder = 24,
   AcceptedByDriverCompany = 25,
 }
+
+export const preorderStatus = [OrderingOrderStatus.Preorder];
 export const pendingStatus = [OrderingOrderStatus.Pending, OrderingOrderStatus.Preorder];
 export const inProgressStatus = [
   OrderingOrderStatus.AcceptedByBusiness,

@@ -26,6 +26,7 @@ import {
   deliveredStatus,
   inProgressStatus,
   pendingStatus,
+  preorderStatus,
   rejectedStatus,
 } from './ordering.type';
 
@@ -303,6 +304,7 @@ export class OrderingService implements ProviderService {
     orderData: Omit<OrderData, 'provider'>,
   ): Promise<OrderingOrder> {
     const orderingOrder = await this.getOrderById(accessToken, orderId);
+
     const defaultStatus = {
       pending: OrderingOrderStatus.Pending,
       in_progress: OrderingOrderStatus.AcceptedByBusiness,
@@ -442,6 +444,7 @@ export class OrderingService implements ProviderService {
     const preorder: boolean = orderingOrder.reporting_data.at.hasOwnProperty(`status:13`);
     const productDto = plainToInstance(ProductDto, orderingOrder.products);
     const offers = plainToInstance(OfferDto, orderingOrder.offers);
+    console.log(orderingOrder.status);
     const orderStatus = this.mapOrderingStatusToOrderStatus(orderingOrder.status) as string;
     const business = await this.validateOrderingBusiness(orderingOrder.business_id.toString());
     const inputFormat = 'YYYY-MM-DD HH:mm:ss';
@@ -458,10 +461,6 @@ export class OrderingService implements ProviderService {
         .local()
         .toISOString(true);
     }
-
-    const deliveryDatetime = orderingOrder.delivery_datetime
-      ? moment.utc(orderingOrder.delivery_datetime, inputFormat).local().toISOString(true)
-      : null;
 
     // Assuming the input time is in UTC, convert to local time
 
@@ -496,7 +495,7 @@ export class OrderingService implements ProviderService {
         name: `${orderingOrder.customer.name} ${orderingOrder.customer.lastname}`,
         phone: orderingOrder.customer.cellphone,
       },
-      deliveryEta: deliveryDatetime,
+      deliveryEta: orderingOrder.delivery_datetime,
       pickupEta: null,
       lastModified: lastModified,
       provider: ProviderEnum.Munchi,
@@ -506,7 +505,7 @@ export class OrderingService implements ProviderService {
       preorder: preorder
         ? {
             status: OrderResponsePreOrderStatusEnum.Waiting,
-            preorderTime: deliveryDatetime,
+            preorderTime: orderingOrder.delivery_datetime,
           }
         : null,
       products: productDto,
@@ -532,7 +531,9 @@ export class OrderingService implements ProviderService {
     orderStatus?: AvailableOrderStatus[],
   ): string | number[] {
     if (orderingStatus !== undefined) {
-      if (pendingStatus.includes(orderingStatus)) {
+      if (preorderStatus.includes(orderingStatus)) {
+        return OrderStatusEnum.PREORDER as string;
+      } else if (pendingStatus.includes(orderingStatus)) {
         return OrderStatusEnum.PENDING as string;
       } else if (inProgressStatus.includes(orderingStatus)) {
         return OrderStatusEnum.IN_PROGRESS as string;
