@@ -55,7 +55,6 @@ export class WebhookService implements OnModuleInit {
       });
 
       socket.on('ping', async (data: string) => {
-        socket.emit('reconnect');
         this.logger.warn(`Recieved ping from client ${data}`);
       });
 
