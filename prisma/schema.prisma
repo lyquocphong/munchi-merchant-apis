@@ -76,7 +76,7 @@ model BusinessExtraSetting {
 model Order {
   id                 Int       @id @default(autoincrement())
   orderId            String    @unique
-  orderNumber        String        @default("0")
+  orderNumber        String    @default("0")
   provider           String
   orderingBusinessId String
   payMethodId        Int?
@@ -90,7 +90,7 @@ model Order {
   type               String
   deliveryEta        String?
   pickupEta          String?
-  preorder           PreOrder? @relation("preorder")
+  preorder           Preorder? @relation("preorder")
   products           Product[] @relation("order-product")
   offers             Offer[]   @relation("order-offer")
   lastModified       String?
@@ -118,13 +118,25 @@ model Customer {
 }
 
 //Preorder
-model PreOrder {
-  id           Int     @id @default(autoincrement())
+model Preorder {
+  id           Int    @id @default(autoincrement())
   status       String
   preorderTime String
-  reminderTime String?
-  orderId      String  @unique
-  order        Order?  @relation("preorder", fields: [orderId], references: [orderId], onDelete: Cascade, onUpdate: Cascade)
+  orderId      String @unique
+  order        Order? @relation("preorder", fields: [orderId], references: [orderId], onDelete: Cascade, onUpdate: Cascade)
+}
+
+//Preorder Queue
+
+model PreorderQueue {
+  id               Int      @id @default(autoincrement())
+  orderId          Int
+  providerOrderId  String   @unique
+  businessPublicId String
+  processing       Boolean  @default(false)
+  reminderTime     DateTime
+  orderNumber      String
+  provider         String
 }
 
 //Order product
