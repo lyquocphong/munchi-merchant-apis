@@ -21,12 +21,14 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { OrderingBusiness } from 'src/provider/ordering/ordering.type';
 import { BusinessInfoSelectBase } from './business.type';
 import { BusinessExtraConfigDto } from './validation';
+import { SessionService } from 'src/auth/session.service';
 
 @Injectable()
 export class BusinessService {
   private logger = new Logger(BusinessService.name);
   constructor(
     private utils: UtilsService,
+    private sessionService: SessionService,
     private readonly prismaService: PrismaService,
     private readonly userService: UserService,
     @Inject(forwardRef(() => QueueService)) private queueService: QueueService,
@@ -134,6 +136,24 @@ export class BusinessService {
       update: data,
       select,
     });
+  }
+
+  async getBusinessInSession(sessionPublicId: string) {
+    const findSessionArgs = Prisma.validator<Prisma.SessionFindFirstArgsBase>()({
+      select: {
+        businesses: {
+          select: {
+            publicId: true,
+          },
+        },
+      },
+    });
+
+    const session = await this.sessionService.getSessionByPublicId<
+      Prisma.SessionGetPayload<typeof findSessionArgs>
+    >(sessionPublicId, findSessionArgs);
+
+    return session.businesses;
   }
 
   async businessOwnershipService(orderingId: number): Promise<BusinessDto[]> {

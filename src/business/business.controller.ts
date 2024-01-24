@@ -59,21 +59,8 @@ export class BusinessController {
   @Get('session-business')
   async getBusinessInSession(@Request() req: any) {
     const { sessionPublicId } = req.user;
-    const findSessionArgs = Prisma.validator<Prisma.SessionFindFirstArgsBase>()({
-      select: {
-        businesses: {
-          select: {
-            publicId: true,
-          },
-        },
-      },
-    });
 
-    const session = await this.sessionService.getSessionByPublicId<
-      Prisma.SessionGetPayload<typeof findSessionArgs>
-    >(sessionPublicId, findSessionArgs);
-
-    return session.businesses;
+    return this.businessService.getBusinessInSession(sessionPublicId);
   }
 
   @ApiCreatedResponse({
