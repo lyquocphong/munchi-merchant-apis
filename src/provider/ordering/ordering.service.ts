@@ -89,7 +89,11 @@ export class OrderingService implements ProviderService {
     }
   }
 
-  async getOrderById(accessToken: string, orderId: string): Promise<OrderingOrder> {
+  async getOrderById(
+    accessToken: string,
+    orderId: string,
+    apiKey?: string,
+  ): Promise<OrderingOrder> {
     const options = {
       method: 'GET',
       url: `${this.utilService.getEnvUrl('orders', orderId)}?mode=dashboard`,
@@ -98,6 +102,10 @@ export class OrderingService implements ProviderService {
         Authorization: `Bearer ${accessToken}`,
       },
     };
+
+    if (apiKey) {
+      options.headers['x-api-key'] = apiKey;
+    }
 
     try {
       const response = await axios.request(options);
@@ -324,10 +332,15 @@ export class OrderingService implements ProviderService {
         accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
       },
-      data: {
-        status: status,
-        prepared_in: orderData.preparedIn,
-      },
+      data:
+        orderData.orderStatus === OrderStatusEnum.PREORDER
+          ? {
+              prepared_in: orderData.preparedIn,
+            }
+          : {
+              status: status,
+              prepared_in: orderData.preparedIn,
+            },
     };
 
     try {
@@ -444,7 +457,6 @@ export class OrderingService implements ProviderService {
     const preorder: boolean = orderingOrder.reporting_data.at.hasOwnProperty(`status:13`);
     const productDto = plainToInstance(ProductDto, orderingOrder.products);
     const offers = plainToInstance(OfferDto, orderingOrder.offers);
-    console.log(orderingOrder.status);
     const orderStatus = this.mapOrderingStatusToOrderStatus(orderingOrder.status) as string;
     const business = await this.validateOrderingBusiness(orderingOrder.business_id.toString());
     const inputFormat = 'YYYY-MM-DD HH:mm:ss';
@@ -474,9 +486,9 @@ export class OrderingService implements ProviderService {
 
     return {
       id: orderingOrder.id.toString(),
+      orderId: orderingOrder.id.toString(),
       orderNumber: orderingOrder.id.toString(),
       business: {
-        orderingBusinessId: business.orderingBusinessId,
         logo: business.logo,
         name: business.name,
         publicId: business.publicId,
@@ -504,7 +516,10 @@ export class OrderingService implements ProviderService {
       preparedIn: orderingOrder.prepared_in,
       preorder: preorder
         ? {
-            status: OrderResponsePreOrderStatusEnum.Waiting,
+            status:
+              !orderingOrder.prepared_in && orderingOrder.status === OrderingOrderStatus.Preorder
+                ? OrderResponsePreOrderStatusEnum.Waiting
+                : OrderResponsePreOrderStatusEnum.Confirm,
             preorderTime: orderingOrder.delivery_datetime,
           }
         : null,
