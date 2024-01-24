@@ -1,13 +1,15 @@
 import { NotificationService } from './../notification/notification.service';
-/* eslint-disable prettier/prettier */
 import { Inject, Injectable, Logger, OnModuleInit, forwardRef } from '@nestjs/common';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets/decorators';
-import { Business, Order } from '@prisma/client';
+import { Business, Order, PreorderQueue } from '@prisma/client';
 import { Server } from 'socket.io';
 import { BusinessService } from 'src/business/business.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { OrderingService } from 'src/provider/ordering/ordering.service';
 import { OrderingOrder, OrderingOrderStatus } from 'src/provider/ordering/ordering.type';
+import { ProviderManagmentService } from 'src/provider/provider-management.service';
+import { ProviderEnum } from 'src/provider/provider.type';
 import { WoltService } from 'src/provider/wolt/wolt.service';
 import { WoltOrderNotification, WoltOrderType } from 'src/provider/wolt/wolt.type';
 import { UtilsService } from 'src/utils/utils.service';
@@ -23,7 +25,8 @@ export class WebhookService implements OnModuleInit {
     private notificationService: NotificationService,
     private woltService: WoltService,
     private orderingService: OrderingService,
-    private readonly schedulerRegistry: SchedulerRegistry,
+    private prismaService: PrismaService,
+    private readonly providerManagementService: ProviderManagmentService,
   ) {}
 
   onModuleInit() {
@@ -153,9 +156,28 @@ export class WebhookService implements OnModuleInit {
     this.server.to(business.orderingBusinessId).emit('business_status_change', message);
   }
 
-  async remindPreOrder(order: any) {
-    const business: Business = order.business;
-    const message = `It's time for you to prepair order ${order.id}`;
+  async remindPreOrder({ businessPublicId, orderId, provider }: PreorderQueue) {
+    const business = await this.businessService.findBusinessByPublicId(businessPublicId);
+    const orderingApiKey = await this.prismaService.apiKey.findFirst({
+      where: {
+        name: 'ORDERING_API_KEY',
+      },
+    });
+
+    let order: any;
+    if (provider === ProviderEnum.Wolt) {
+      order = await this.woltService.getOrderByIdFromDb(orderId.toString());
+    } else {
+      const orderingOrder = await this.orderingService.getOrderById(
+        '',
+        orderId.toString(),
+        orderingApiKey.value,
+      );
+      order = await this.orderingService.mapOrderToOrderResponse(orderingOrder);
+    }
+
+    console.log('🚀 ~ WebhookService ~ remindPreOrder ~ order:', order);
+    const message = `It's time for you to prepair order ${order.orderNumber}`;
     this.server.to(business.orderingBusinessId).emit('preorder', {
       message: message,
       order: order,
