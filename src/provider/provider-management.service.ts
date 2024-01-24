@@ -94,9 +94,8 @@ export class ProviderManagmentService {
       return await this.woltService.rejectOrder(orderingToken, orderId, orderRejectData);
     } else if (provider === ProviderEnum.Munchi) {
       const orderingOrder = await this.orderingService.rejectOrder(orderingToken, orderId);
-      const order2 = await this.orderingService.mapOrderToOrderResponse(orderingOrder);
-      console.log('🚀 ~ ProviderManagmentService ~ order2:', order2);
-      return order2;
+      const order = await this.orderingService.mapOrderToOrderResponse(orderingOrder);
+      return order;
     }
   }
 

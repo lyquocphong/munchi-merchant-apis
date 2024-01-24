@@ -85,9 +85,9 @@ export class OrderDto {
 export type OrderResponse = {
   id: string;
   provider: string;
+  orderId: string;
   orderNumber: string;
   business: {
-    orderingBusinessId: string;
     publicId: string;
     name: string;
     logo: string | null;

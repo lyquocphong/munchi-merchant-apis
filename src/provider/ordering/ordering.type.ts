@@ -353,6 +353,7 @@ export interface OrderingCustomer {
 
 export interface OrderingOrder extends Order {
   reporting_data: OrderingOrderReportingData;
+  prepared_in: string;
   summary: OrderingOrderSummary;
   products: OrderingOrderProduct[];
   customer: OrderingCustomer;

@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nest
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import axios, { AxiosHeaders } from 'axios';
+import moment from 'moment';
 import {
   AvailableOrderStatus,
   OrderResponse,
@@ -19,11 +20,9 @@ import {
   WoltItem,
   WoltOrder,
   WoltOrderNotification,
-  WoltOrderType,
   WoltOrderPrismaSelectArgs,
-  AvailableWoltOrderStatus,
+  WoltOrderType,
 } from './wolt.type';
-import moment from 'moment';
 
 @Injectable()
 export class WoltService implements ProviderService {
@@ -264,7 +263,7 @@ export class WoltService implements ProviderService {
     }));
   }
 
-  public async mapOrderToOrderResponse(woltOrder: ProviderOrder): Promise<OrderResponse> {
+  public async mapOrderToOrderResponse(woltOrder: WoltOrder): Promise<OrderResponse> {
     let deliverytype: number;
 
     //Find business by venue id
@@ -328,10 +327,10 @@ export class WoltService implements ProviderService {
       : null;
 
     return {
-      id: woltOrder.id.toString(),
+      id: woltOrder.id,
       orderNumber: woltOrder.order_number,
+      orderId: woltOrder.id,
       business: {
-        orderingBusinessId: businessData.business.orderingBusinessId.toString(),
         logo: businessData.business.logo,
         name: businessData.business.name,
         publicId: businessData.business.publicId,
@@ -495,7 +494,7 @@ export class WoltService implements ProviderService {
         provider: mappedWoltOrder.provider,
         business: {
           connect: {
-            orderingBusinessId: mappedWoltOrder.business.orderingBusinessId,
+            publicId: mappedWoltOrder.business.publicId,
           },
         },
         customer: {
