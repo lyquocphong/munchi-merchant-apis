@@ -1,13 +1,11 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
-import { ReminderScheduleBodyData } from './validation/schedule.validation';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { Injectable, Logger } from '@nestjs/common';
+import { SchedulerRegistry } from '@nestjs/schedule';
+import { Prisma } from '@prisma/client';
 import moment from 'moment';
-import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
-import { CronJob, CronJobParameters } from 'cron';
-import { Logger } from '@nestjs/common';
-import { WebhookService } from 'src/webhook/webhook.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { UtilsService } from 'src/utils/utils.service';
-import { WoltOrderPrismaSelectArgs } from 'src/provider/wolt/wolt.type';
+import { WebhookService } from 'src/webhook/webhook.service';
+import { ReminderScheduleBodyData } from './validation/schedule.validation';
 
 @Injectable()
 export class ScheduleService {
@@ -19,47 +17,31 @@ export class ScheduleService {
     private readonly utisService: UtilsService,
   ) {}
 
-  async setPreOrderReminder({ reminderTime, woltOrderId }: ReminderScheduleBodyData) {
+  async setPreOrderReminder({
+    reminderTime,
+    orderId,
+    businessPublicId,
+    orderNumber,
+    providerOrderId,
+    provider,
+  }: ReminderScheduleBodyData) {
     //Get order by order Id
-    //Update reminder time
-    const order = await this.prismaService.order.update({
-      where: {
-        id: parseInt(woltOrderId),
-      },
-      data: {
-        preorder: {
-          update: {
-            reminderTime: reminderTime,
-          },
-        },
-      },
-      include: WoltOrderPrismaSelectArgs
+    const localReminderTime = moment(reminderTime).local().toISOString(true);
+
+    //Create preorder queue to process
+
+    const preorderQueueData = Prisma.validator<Prisma.PreorderQueueUncheckedCreateInput>()({
+      orderId: parseInt(orderId),
+      businessPublicId: businessPublicId,
+      orderNumber: orderNumber,
+      providerOrderId: providerOrderId,
+      reminderTime: localReminderTime,
+      provider: provider,
     });
-    // Convert the time to current restaurant timezone
-    //Remove the Z at the end so moment don't convert that to utc time
-    const convertToLocalTime = reminderTime.replace('Z', '');
 
-    const cronExpression = this.isoToCronExpression(convertToLocalTime);
-
-    const job = new CronJob(
-      cronExpression,
-      async () => {
-        this.logger.warn(`This cron job ran at ${moment().format()}`);
-        // Add your custom action here
-        await this.webhookService.remindPreOrder(order);
-      },
-      null,
-      null,
-      order.business.timeZone, // Adjust the time zone accordingly
-      null,
-      //   true,
-    );
-    try {
-      this.schedulerRegistry.addCronJob(woltOrderId, job);
-      job.start();
-    } catch (error: any) {
-      return new ForbiddenException(error.message);
-    }
+    await this.prismaService.preorderQueue.create({
+      data: preorderQueueData,
+    });
 
     return {
       message: 'Success',
