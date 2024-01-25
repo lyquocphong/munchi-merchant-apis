@@ -140,6 +140,9 @@ export class OrderingBusiness {
   today: number;
 
   @Expose()
+  enabled: boolean;
+
+  @Expose()
   open: boolean;
   //push_notifications: boolean;
   //busy: boolean;
