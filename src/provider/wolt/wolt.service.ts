@@ -198,6 +198,7 @@ export class WoltService implements ProviderService {
               },
             }
           : undefined,
+        lastModified: moment().toISOString(true),
       },
       include: WoltOrderPrismaSelectArgs,
     });
@@ -235,6 +236,43 @@ export class WoltService implements ProviderService {
 
   public async deleteOrder<OrderResponse>(woltOrdeId: string): Promise<OrderResponse> {
     return;
+  }
+
+  async getWoltBusinessById(woltVenueId: string) {
+    const option = {
+      method: 'GET',
+      baseURL: `${this.woltApiUrl}/venues/${woltVenueId}/status`,
+      headers: this.header as any,
+    };
+    try {
+      const response = await axios.request(option);
+
+      return response.data;
+    } catch (error: any) {
+      // await this.syncWoltBusiness(woltOrderId);
+      throw new ForbiddenException(error);
+    }
+  }
+
+  async setWoltVenueStatus(woltVenueId: string, status: boolean, time?: string) {
+    const option = {
+      method: 'PATCH',
+      baseURL: `${this.woltApiUrl}/venues/${woltVenueId}/online`,
+      headers: this.header as any,
+      data: {
+        status: status ? 'ONLINE' : 'OFFLINE',
+        until: time ? time : null,
+      },
+    };
+
+    try {
+      const response = await axios.request(option);
+
+      return response.data;
+    } catch (error: any) {
+      // await this.syncWoltBusiness(woltOrderId);
+      throw new ForbiddenException(error);
+    }
   }
 
   public mapWoltItemToProductDto(woltItems: WoltItem[]): ProductDto[] {
@@ -386,9 +424,9 @@ export class WoltService implements ProviderService {
   }
 
   private async validateBusinessByVenueId(woltVenueId: string) {
-    const business = await this.prismaService.businessExtraSetting.findUnique({
+    const business = await this.prismaService.provider.findUnique({
       where: {
-        value: woltVenueId,
+        providerId: woltVenueId,
       },
       select: {
         business: true,
