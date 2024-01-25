@@ -3,6 +3,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Exclude, Expose, Transform, Type } from 'class-transformer';
 import { OwnerDto } from './owner.dto';
 import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
+import { AvailableProvider } from 'src/provider/provider.type';
 
 @Exclude()
 export class BusinessDto {
@@ -144,6 +145,13 @@ export class SetOnlineStatusDto {
   })
   @IsString()
   id: string;
+
+  @ApiProperty({
+    description: 'Provider want to disable',
+    example: 'Testing',
+  })
+  @IsString()
+  provider: AvailableProvider;
 
   @ApiProperty({
     description: 'Status want to set. true for on and false for off',

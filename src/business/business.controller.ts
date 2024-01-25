@@ -81,7 +81,7 @@ export class BusinessController {
   @UseGuards(JwtGuard)
   @Post('online-status')
   async setOnlineStatus(@Request() req: any, @Body() body: SetOnlineStatusDto) {
-    const { status, duration, id: publicBusinessId } = body;
+    const { status, duration, id: businessPublicId, provider } = body;
 
     if (status === false && !duration) {
       throw new BadRequestException('duration is needed when status is false');
@@ -89,8 +89,9 @@ export class BusinessController {
 
     const { userPublicId } = req.user;
     return this.businessService.setOnlineStatusByPublicId(
+      provider,
       userPublicId,
-      publicBusinessId,
+      businessPublicId,
       status,
       duration,
     );
