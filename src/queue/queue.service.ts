@@ -5,6 +5,7 @@ import moment from 'moment';
 import { BusinessService } from 'src/business/business.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { WebhookService } from './../webhook/webhook.service';
+import { AvailableProvider } from 'src/provider/provider.type';
 
 @Injectable()
 export class QueueService {
@@ -77,7 +78,12 @@ export class QueueService {
 
     for (const item of items) {
       const { userPublicId, businessPublicId } = item;
-      await this.businessService.setOnlineStatusByPublicId(userPublicId, businessPublicId, true);
+      await this.businessService.setOnlineStatusByPublicId(
+        item.provider as AvailableProvider,
+        userPublicId,
+        businessPublicId,
+        true,
+      );
       this.webhookService.notifyCheckBusinessStatus(businessPublicId);
     }
   }
@@ -135,16 +141,13 @@ export class QueueService {
     for (const queue of processingQueue) {
       const timeDiff = moment(queue.reminderTime).local().diff(moment(), 'minutes');
 
-      if (timeDiff <= 1) {
+      if (timeDiff > 0 && timeDiff <= 1) {
         this.logger.warn(`Time to send reminder for order ${queue.orderNumber}`);
         await this.webhookService.remindPreOrder(queue);
       } else if (timeDiff < 0) {
-        await this.prismaService.preorderQueue.update({
+        await this.prismaService.preorderQueue.delete({
           where: {
             providerOrderId: queue.providerOrderId,
-          },
-          data: {
-            processing: false,
           },
         });
       }
