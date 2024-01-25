@@ -318,11 +318,10 @@ export class OrderingService implements ProviderService {
       in_progress: OrderingOrderStatus.AcceptedByBusiness,
       completed: OrderingOrderStatus.PreparationCompleted,
       delivered:
-        orderingOrder.status === OrderingDeliveryType.Delivery
+        orderingOrder.delivery_type === OrderingDeliveryType.Delivery
           ? OrderingOrderStatus.PickUpCompletedByDriver
           : OrderingOrderStatus.PickupCompletedByCustomer,
     };
-
     const status = defaultStatus[orderData.orderStatus];
 
     const options = {
