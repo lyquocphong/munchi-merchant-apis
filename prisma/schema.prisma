@@ -47,30 +47,35 @@ model User {
 }
 
 model Business {
-  id                   Int                    @id @default(autoincrement())
-  orderingBusinessId   String                 @unique
-  publicId             String                 @unique @default(uuid())
-  name                 String
-  owners               User[]                 @relation("MyUserBusinessTable")
-  sessions             Session[]              @relation("BusinessSessionTable")
-  logo                 String?
-  email                String?
-  phone                String?
-  address              String?
-  description          String?
-  timeZone             String                 @default("Europe/Helsinki")
-  orders               Order[]                @relation("BusinessOrder")
-  businessExtraSetting BusinessExtraSetting[] @relation("BusinessExtraSettings")
+  id                 Int        @id @default(autoincrement())
+  orderingBusinessId String     @unique
+  publicId           String     @unique @default(uuid())
+  name               String
+  owners             User[]     @relation("MyUserBusinessTable")
+  sessions           Session[]  @relation("BusinessSessionTable")
+  logo               String?
+  email              String?
+  phone              String?
+  address            String?
+  description        String?
+  timeZone           String     @default("Europe/Helsinki")
+  orders             Order[]    @relation("BusinessOrder")
+  enabled            Boolean    @default(true)
+  open               Boolean    @default(true)
+  provider           Provider[] @relation("Provider")
 
   @@map("business")
 }
 
-model BusinessExtraSetting {
+model Provider {
   id                 Int      @unique @default(autoincrement())
   orderingBusinessId String   @unique
-  business           Business @relation("BusinessExtraSettings", fields: [orderingBusinessId], references: [orderingBusinessId])
-  name               String?
-  value              String?  @unique
+  business           Business @relation("Provider", fields: [orderingBusinessId], references: [orderingBusinessId])
+  name               String
+  providerId         String   @unique
+  open               Boolean  @default(true)
+  enabled            Boolean  @default(true)
+  ipadFree           Boolean?
 }
 
 model Order {
