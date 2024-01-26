@@ -1,25 +1,29 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
+import { AvailableProvider } from 'src/provider/provider.type';
 
-export class BusinessExtraConfigDto {
+export class ProviderDto {
   @ApiProperty({
     description: 'The public id of business',
     example: '123456',
   })
+  @IsNotEmpty()
   @IsString()
   id: string;
 
   @ApiProperty({
-    description: 'The name of the config',
+    description: 'The status of the config',
     example: 'Status',
   })
+  @IsNotEmpty()
   @IsString()
-  name: string;
+  name: AvailableProvider;
 
   @ApiProperty({
-    description: 'The value of the config',
-    example: '0,1',
+    description: 'The id of the provider',
+    example: 'Status',
   })
+  @IsNotEmpty()
   @IsString()
-  value: string;
+  providerId: string;
 }
