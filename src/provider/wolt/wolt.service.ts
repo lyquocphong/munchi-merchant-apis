@@ -161,34 +161,52 @@ export class WoltService implements ProviderService {
   public async updateOrder(
     accessToken: string,
     woltOrderId: string,
-    updateData: Omit<OrderData, 'provider'>,
+    { orderStatus, preparedIn }: Omit<OrderData, 'provider'>,
   ): Promise<any> {
-    const { orderStatus, preparedIn } = updateData;
-
-    //Get wolt order by id
     const order = await this.getOrderByIdFromDb(woltOrderId);
     const updateEndPoint = this.generateWoltUpdateEndPoint(orderStatus, order as any);
-    const adjustedPickupTime = preparedIn
-      ? moment(order.createdAt).add(preparedIn, 'minutes').format()
-      : order.pickupEta;
 
-    //Send request to wolt server
+    if (orderStatus === OrderStatusEnum.PICK_UP_COMPLETED_BY_DRIVER) {
+      return this.updateAndReturn(order, null, orderStatus);
+    }
+
     try {
+      const adjustedPickupTime = preparedIn
+        ? moment(order.createdAt).add(preparedIn, 'minutes').format()
+        : order.pickupEta;
+
       await this.sendWoltUpdateRequest(order.orderId, updateEndPoint, {
         orderStatus: OrderStatusEnum.IN_PROGRESS,
         preparedIn: adjustedPickupTime,
       });
+
+      return this.updateAndReturn(order, preparedIn, orderStatus);
     } catch (error) {
-      this.logger.log(`Error when updatinbg order: ${error}`);
+      this.logger.log(`Error when updating order: ${error}`);
       throw new ForbiddenException(error);
     }
+  }
 
+  private async updateAndReturn(
+    order: any,
+    preparedIn: string | null,
+    orderStatus: AvailableOrderStatus,
+  ): Promise<any> {
+    const updatedOrder = await this.updateOrderInDatabase(order, preparedIn, orderStatus);
+    return updatedOrder;
+  }
+
+  async updateOrderInDatabase(
+    order: any,
+    preparedIn?: string,
+    orderStatus?: AvailableOrderStatus,
+  ): Promise<any> {
     const updatedOrder = await this.prismaService.order.update({
       where: {
         orderId: order.orderId,
       },
       data: {
-        preparedIn: preparedIn ? preparedIn : order.preparedIn,
+        preparedIn: preparedIn ?? order.preparedIn,
         status: orderStatus,
         preorder: order.preorder
           ? {
@@ -202,8 +220,7 @@ export class WoltService implements ProviderService {
       },
       include: WoltOrderPrismaSelectArgs,
     });
-    // const woltOrder = await this.getOrderById(order.orderId);
-    // const mappedWoltOrder = await this.mapOrderToOrderResponse(woltOrder);
+
     return updatedOrder;
   }
 

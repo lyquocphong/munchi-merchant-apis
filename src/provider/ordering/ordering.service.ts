@@ -314,10 +314,11 @@ export class OrderingService implements ProviderService {
     const orderingOrder = await this.getOrderById(accessToken, orderId);
 
     const defaultStatus = {
-      pending: OrderingOrderStatus.Pending,
-      in_progress: OrderingOrderStatus.AcceptedByBusiness,
-      completed: OrderingOrderStatus.PreparationCompleted,
-      delivered:
+      [OrderStatusEnum.PENDING]: OrderingOrderStatus.Pending,
+      [OrderStatusEnum.IN_PROGRESS]: OrderingOrderStatus.AcceptedByBusiness,
+      [OrderStatusEnum.COMPLETED]: OrderingOrderStatus.PreparationCompleted,
+      [OrderStatusEnum.PICK_UP_COMPLETED_BY_DRIVER]: OrderingOrderStatus.PickUpCompletedByDriver,
+      [OrderStatusEnum.DELIVERED]:
         orderingOrder.delivery_type === OrderingDeliveryType.Delivery
           ? OrderingOrderStatus.PickUpCompletedByDriver
           : OrderingOrderStatus.PickupCompletedByCustomer,
@@ -545,25 +546,29 @@ export class OrderingService implements ProviderService {
     orderStatus?: AvailableOrderStatus[],
   ): string | number[] {
     if (orderingStatus !== undefined) {
-      if (preorderStatus.includes(orderingStatus)) {
-        return OrderStatusEnum.PREORDER as string;
-      } else if (pendingStatus.includes(orderingStatus)) {
-        return OrderStatusEnum.PENDING as string;
-      } else if (inProgressStatus.includes(orderingStatus)) {
-        return OrderStatusEnum.IN_PROGRESS as string;
-      } else if (completedStatus.includes(orderingStatus)) {
-        return OrderStatusEnum.COMPLETED as string;
-      } else if (deliveredStatus.includes(orderingStatus)) {
-        return OrderStatusEnum.COMPLETED as string;
-      } else {
-        return OrderStatusEnum.REJECTED as string;
+      const status = {
+        [OrderingOrderStatus.Preorder]: OrderStatusEnum.PREORDER,
+        [OrderingOrderStatus.Pending]: OrderStatusEnum.PENDING,
+        [OrderingOrderStatus.AcceptedByBusiness]: OrderStatusEnum.IN_PROGRESS,
+        [OrderingOrderStatus.AcceptedByDriver]: OrderStatusEnum.DRIVER_FOUND,
+        [OrderingOrderStatus.PreparationCompleted]: OrderStatusEnum.COMPLETED,
+        [OrderingOrderStatus.PickUpCompletedByDriver]: OrderStatusEnum.PICK_UP_COMPLETED_BY_DRIVER,
+      };
+
+      if (rejectedStatus.includes(orderingStatus)) {
+        return OrderStatusEnum.REJECTED;
       }
+
+      return status[orderingStatus];
     }
 
     if (orderStatus !== undefined && orderStatus.length > 0) {
       if (orderStatus.includes(OrderStatusEnum.PENDING)) {
         return pendingStatus as number[];
-      } else if (orderStatus.includes(OrderStatusEnum.IN_PROGRESS)) {
+      } else if (
+        orderStatus.includes(OrderStatusEnum.IN_PROGRESS) ||
+        orderStatus.includes(OrderStatusEnum.DRIVER_FOUND)
+      ) {
         return inProgressStatus as number[];
       } else if (orderStatus.includes(OrderStatusEnum.COMPLETED)) {
         return completedStatus as number[];
