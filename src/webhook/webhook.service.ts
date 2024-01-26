@@ -1,8 +1,6 @@
-import { NotificationService } from './../notification/notification.service';
 import { Inject, Injectable, Logger, OnModuleInit, forwardRef } from '@nestjs/common';
-import { SchedulerRegistry } from '@nestjs/schedule';
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets/decorators';
-import { Business, Order, PreorderQueue } from '@prisma/client';
+import { Order, PreorderQueue } from '@prisma/client';
 import { Server } from 'socket.io';
 import { BusinessService } from 'src/business/business.service';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -13,6 +11,7 @@ import { ProviderEnum } from 'src/provider/provider.type';
 import { WoltService } from 'src/provider/wolt/wolt.service';
 import { WoltOrderNotification, WoltOrderType } from 'src/provider/wolt/wolt.type';
 import { UtilsService } from 'src/utils/utils.service';
+import { NotificationService } from './../notification/notification.service';
 
 @WebSocketGateway({ cors: { origin: { origin: '*' } } })
 @Injectable()
@@ -92,10 +91,7 @@ export class WebhookService implements OnModuleInit {
       order.status === OrderingOrderStatus.Pending &&
       order.reporting_data.at.hasOwnProperty(`status:${OrderingOrderStatus.Preorder}`)
     ) {
-      this.server.to(order.business_id.toString()).emit('preorder', {
-        message: message,
-        order: formattedOrder,
-      });
+      return;
     } else {
       try {
         this.server.to(order.business_id.toString()).emit('order_change', formattedOrder);
@@ -175,8 +171,6 @@ export class WebhookService implements OnModuleInit {
       );
       order = await this.orderingService.mapOrderToOrderResponse(orderingOrder);
     }
-
-    console.log('🚀 ~ WebhookService ~ remindPreOrder ~ order:', order);
     const message = `It's time for you to prepair order ${order.orderNumber}`;
     this.server.to(business.orderingBusinessId).emit('preorder', {
       message: message,
