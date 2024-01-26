@@ -18,12 +18,12 @@ import { QueueService } from './../queue/queue.service';
 import { BusinessDto } from './dto/business.dto';
 
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { OrderingBusiness } from 'src/provider/ordering/ordering.type';
-import { BusinessInfoSelectBase } from './business.type';
-import { BusinessExtraConfigDto } from './validation';
 import { SessionService } from 'src/auth/session.service';
+import { OrderingBusiness } from 'src/provider/ordering/ordering.type';
 import { AvailableProvider, ProviderEnum } from 'src/provider/provider.type';
 import { WoltService } from 'src/provider/wolt/wolt.service';
+import { BusinessInfoSelectBase } from './business.type';
+import { ProviderDto } from './validation';
 
 @Injectable()
 export class BusinessService {
@@ -38,7 +38,7 @@ export class BusinessService {
     @Inject(forwardRef(() => OrderingService)) private orderingService: OrderingService,
   ) {}
 
-  @Cron(CronExpression.EVERY_DAY_AT_2PM)
+  @Cron(CronExpression.EVERY_HOUR)
   async syncBusinessFromOrdering() {
     const orderingApiKey = await this.prismaService.apiKey.findFirst({
       where: {
@@ -146,6 +146,9 @@ export class BusinessService {
                 enabled: true,
               },
             },
+          },
+          orderBy: {
+            id: 'desc',
           },
         },
       },
@@ -384,27 +387,24 @@ export class BusinessService {
     });
   }
 
-  async addBusinessExtraSetting(
-    businessPublicId: string,
-    data: Omit<BusinessExtraConfigDto, 'id'>,
-  ) {
+  async addBusinessProvider(businessPublicId: string, data: Omit<ProviderDto, 'id'>) {
     const business = await this.findBusinessByPublicId(businessPublicId);
     if (!business) {
       throw new NotFoundException("Business can't be found");
     }
-    // const dataUpsert = Prisma.validator<Prisma.ProviderUncheckedCreateInput>()({
-    //   name: data.name,
-    //   value: data.value,
-    //   orderingBusinessId: business.orderingBusinessId,
-    // });
+    const dataUpsert = Prisma.validator<Prisma.ProviderUncheckedCreateInput>()({
+      name: data.name,
+      providerId: data.providerId,
+      orderingBusinessId: business.orderingBusinessId,
+    });
 
-    // await this.prismaService.provider.upsert({
-    //   where: {
-    //     orderingBusinessId: business.orderingBusinessId,
-    //   },
-    //   create: dataUpsert,
-    //   update: dataUpsert,
-    // });
+    await this.prismaService.provider.upsert({
+      where: {
+        orderingBusinessId: business.orderingBusinessId,
+      },
+      create: dataUpsert,
+      update: dataUpsert,
+    });
 
     return 'Success';
   }

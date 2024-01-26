@@ -16,13 +16,12 @@ import {
   ApiCreatedResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Prisma } from '@prisma/client';
+import { ApiKeyGuard } from 'src/auth/guard/apiKey.guard';
 import { JwtGuard } from 'src/auth/guard/jwt.guard';
 import { SessionService } from 'src/auth/session.service';
 import { BusinessService } from './business.service';
 import { BusinessDto, SetOnlineStatusDto } from './dto/business.dto';
-import { ApiKeyGuard } from 'src/auth/guard/apiKey.guard';
-import { BusinessExtraConfigDto } from './validation';
+import { ProviderDto } from './validation';
 
 @Controller('business')
 @ApiBearerAuth('JWT-auth')
@@ -101,20 +100,13 @@ export class BusinessController {
     description: 'Add an extra business config for a specific extra business',
   })
   @UseGuards(ApiKeyGuard)
-  @Post('business-extra-config')
-  async setExtraConfig(
-    @Request() req: any,
-    @Body(new ValidationPipe()) body: BusinessExtraConfigDto,
-  ) {
-    const { name, value, id: businessPublicId } = body;
+  @Post('add-provider')
+  async setExtraConfig(@Body(new ValidationPipe()) body: ProviderDto) {
+    const { name, id: businessPublicId, providerId } = body;
 
-    if (!name || !value) {
-      throw new BadRequestException('Missing inputs');
-    }
-
-    return this.businessService.addBusinessExtraSetting(businessPublicId, {
+    return this.businessService.addBusinessProvider(businessPublicId, {
       name: name,
-      value: value,
+      providerId: providerId,
     });
   }
 }
