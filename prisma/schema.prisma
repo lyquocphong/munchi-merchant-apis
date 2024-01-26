@@ -85,7 +85,7 @@ model Order {
   provider           String
   orderingBusinessId String
   payMethodId        Int?
-  business           Business  @relation("BusinessOrder", fields: [orderingBusinessId], references: [orderingBusinessId])
+  business           Business  @relation("BusinessOrder", fields: [orderingBusinessId], references: [orderingBusinessId], onDelete: Cascade, onUpdate: Cascade)
   status             String
   deliveryType       Int
   table              Int?
