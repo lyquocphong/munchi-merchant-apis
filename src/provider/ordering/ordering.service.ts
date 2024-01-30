@@ -26,8 +26,7 @@ import {
   deliveredStatus,
   inProgressStatus,
   pendingStatus,
-  preorderStatus,
-  rejectedStatus,
+  rejectedStatus
 } from './ordering.type';
 
 @Injectable()
