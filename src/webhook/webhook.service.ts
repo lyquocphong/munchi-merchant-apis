@@ -85,7 +85,6 @@ export class WebhookService implements OnModuleInit {
   }
 
   async changeOrderNotification(order: OrderingOrder) {
-    const message = `It's time for you to prepair order ${order.id}`;
     const formattedOrder = await this.orderingService.mapOrderToOrderResponse(order);
     if (
       order.status === OrderingOrderStatus.Pending &&

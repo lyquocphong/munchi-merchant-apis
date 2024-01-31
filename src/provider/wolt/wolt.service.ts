@@ -15,14 +15,8 @@ import { OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
 import { OrderingDeliveryType } from '../ordering/ordering.type';
 import { ProviderService } from '../provider.service';
-import { ProviderEnum, ProviderOrder } from '../provider.type';
-import {
-  WoltItem,
-  WoltOrder,
-  WoltOrderNotification,
-  WoltOrderPrismaSelectArgs,
-  WoltOrderType,
-} from './wolt.type';
+import { ProviderEnum } from '../provider.type';
+import { WoltItem, WoltOrder, WoltOrderPrismaSelectArgs, WoltOrderType } from './wolt.type';
 
 @Injectable()
 export class WoltService implements ProviderService {
