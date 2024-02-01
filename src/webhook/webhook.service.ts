@@ -12,6 +12,7 @@ import { WoltService } from 'src/provider/wolt/wolt.service';
 import { WoltOrderNotification, WoltOrderType } from 'src/provider/wolt/wolt.type';
 import { UtilsService } from 'src/utils/utils.service';
 import { NotificationService } from './../notification/notification.service';
+import { OrderStatusEnum } from 'src/order/dto/order.dto';
 
 @WebSocketGateway({ cors: { origin: { origin: '*' } } })
 @Injectable()
@@ -122,6 +123,8 @@ export class WebhookService implements OnModuleInit {
         // Emit to client by public business id new order has been created
         this.logger.log(`emit order created because of ${business.publicId}`);
         this.server.to(business.orderingBusinessId).emit('orders_register', formattedWoltOrder);
+        this.notificationService.sendNewOrderNotification(business.orderingBusinessId.toString());
+
         return 'Order sent';
       } catch (error) {
         this.utils.logError(error);
@@ -139,7 +142,11 @@ export class WebhookService implements OnModuleInit {
       });
     } else {
       // Notify up update client UI
-      await this.woltService.syncWoltOrder(woltWebhookdata.order.id);
+      const order = await this.woltService.syncWoltOrder(woltWebhookdata.order.id);
+
+      if (order.status !== OrderStatusEnum.PREORDER) {
+        await this.notificationService.removePreorderQueue(order.id);
+      }
       this.server.to(business.orderingBusinessId).emit('order_change', formattedWoltOrder);
     }
   }

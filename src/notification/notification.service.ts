@@ -7,6 +7,7 @@ import { OneSignalService } from 'src/onesignal/onesignal.service';
 import { BusinessService } from 'src/business/business.service';
 import moment from 'moment-timezone';
 import { SessionService } from 'src/auth/session.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class NotificationService {
@@ -15,6 +16,7 @@ export class NotificationService {
   constructor(
     private readonly onesignal: OneSignalService,
     private readonly sessionService: SessionService,
+    private readonly prismaService: PrismaService,
     @Inject(forwardRef(() => BusinessService)) private businessService: BusinessService,
     @Inject(forwardRef(() => WebhookService)) private webhookService: WebhookService,
   ) {}
@@ -143,19 +145,11 @@ export class NotificationService {
 
   async sendWoltNotifiaction() {}
 
-  // @Interval(30000) // Emit update app state
-  // async emitUpdateAppState() {
-  //   this.logger.warn('emit update app state');
-
-  //   const sessions = await this.sessionService.getSessionToEmitUpdateAppState();
-
-  //   if (sessions.length == 0) {
-  //     this.logger.warn('no session need to emit update app state');
-  //   }
-
-  //   for (const session of sessions) {
-  //     this.logger.warn(`emit update app state for ${session.deviceId}`);
-  //     this.webhookService.emitUpdateAppState(session.deviceId);
-  //   }
-  // }
+  async removePreorderQueue(orderId: number) {
+    await this.prismaService.preorderQueue.delete({
+      where: {
+        orderId: orderId,
+      },
+    });
+  }
 }
