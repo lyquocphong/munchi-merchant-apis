@@ -135,7 +135,7 @@ model Preorder {
 
 model PreorderQueue {
   id               Int      @id @default(autoincrement())
-  orderId          Int
+  orderId          Int      @unique
   providerOrderId  String   @unique
   businessPublicId String
   processing       Boolean  @default(false)
