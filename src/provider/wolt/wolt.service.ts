@@ -104,6 +104,7 @@ export class WoltService implements ProviderService {
   async sendWoltUpdateRequest(
     woltOrderId: string,
     endpoint: string,
+    orderType: WoltOrderType,
     updateData?: Omit<OrderData, 'provider'>,
   ) {
     const option = {
@@ -117,21 +118,19 @@ export class WoltService implements ProviderService {
                 ? updateData.reason
                 : 'Your order has been rejected, please contact the restaurant for more info',
             }
-          : endpoint === 'accept'
+          : endpoint === 'accept' && orderType === WoltOrderType.Instant
           ? {
               adjusted_pickup_time: updateData.preparedIn,
             }
-          : endpoint === 'reject'
-          ? {
-              reason: updateData.reason,
-            }
           : null,
     };
+    console.log('🚀 ~ WoltService ~ option:', option);
+
     try {
       const response = await axios.request(option);
-
       return response.data;
     } catch (error: any) {
+      console.log('🚀 ~ WoltService ~ error:', error);
       this.logger.log(
         `Error when updating wolt Order with order id:${woltOrderId}. Error: ${error}`,
       );
@@ -168,8 +167,7 @@ export class WoltService implements ProviderService {
       const adjustedPickupTime = preparedIn
         ? moment(order.createdAt).add(preparedIn, 'minutes').format()
         : order.pickupEta;
-
-      await this.sendWoltUpdateRequest(order.orderId, updateEndPoint, {
+      await this.sendWoltUpdateRequest(order.orderId, updateEndPoint, order.type as WoltOrderType, {
         orderStatus: OrderStatusEnum.IN_PROGRESS,
         preparedIn: adjustedPickupTime,
       });
@@ -227,7 +225,7 @@ export class WoltService implements ProviderService {
   ) {
     const order = await this.getOrderByIdFromDb(orderId);
 
-    await this.sendWoltUpdateRequest(order.orderId, 'reject', {
+    await this.sendWoltUpdateRequest(order.orderId, 'reject', order.type as WoltOrderType, {
       reason: orderRejectData.reason,
       orderStatus: OrderStatusEnum.REJECTED,
       preparedIn: null,
