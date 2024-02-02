@@ -123,7 +123,7 @@ export class WebhookService implements OnModuleInit {
         // Emit to client by public business id new order has been created
         this.logger.log(`emit order created because of ${business.publicId}`);
         this.server.to(business.orderingBusinessId).emit('orders_register', formattedWoltOrder);
-        this.notificationService.sendNewOrderNotification(business.orderingBusinessId.toString());
+        this.notificationService.sendNewOrderNotification(business.orderingBusinessId);
 
         return 'Order sent';
       } catch (error) {
@@ -136,17 +136,17 @@ export class WebhookService implements OnModuleInit {
     ) {
       // Notify user that preorder order has changed to PRODUCTION state
       const orderSynced: Order = await this.woltService.syncWoltOrder(woltWebhookdata.order.id);
+
+      const message = `Order number ${orderSynced.orderNumber} has been changed to ${woltWebhookdata.order.status}`;
+
       this.server.to(business.orderingBusinessId).emit('notification', {
-        orderId: orderSynced.id,
-        status: woltWebhookdata.order.status,
+        order: orderSynced,
+        message: message,
       });
     } else {
       // Notify up update client UI
-      const order = await this.woltService.syncWoltOrder(woltWebhookdata.order.id);
+      await this.woltService.syncWoltOrder(woltWebhookdata.order.id);
 
-      if (order.status !== OrderStatusEnum.PREORDER) {
-        await this.notificationService.removePreorderQueue(order.id);
-      }
       this.server.to(business.orderingBusinessId).emit('order_change', formattedWoltOrder);
     }
   }
@@ -160,6 +160,8 @@ export class WebhookService implements OnModuleInit {
 
   async remindPreOrder({ businessPublicId, orderId, provider }: PreorderQueue) {
     const business = await this.businessService.findBusinessByPublicId(businessPublicId);
+
+    //
     const orderingApiKey = await this.prismaService.apiKey.findFirst({
       where: {
         name: 'ORDERING_API_KEY',
@@ -178,6 +180,7 @@ export class WebhookService implements OnModuleInit {
       order = await this.orderingService.mapOrderToOrderResponse(orderingOrder);
     }
     const message = `It's time for you to prepair order ${order.orderNumber}`;
+
     this.server.to(business.orderingBusinessId).emit('preorder', {
       message: message,
       order: order,
