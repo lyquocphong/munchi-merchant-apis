@@ -30,8 +30,16 @@ export class WoltService implements ProviderService {
     private prismaService: PrismaService,
     private utilsService: UtilsService,
   ) {
-    this.woltApiUrl = this.configService.get('WOLT_API_DEV_URL');
-    this.woltApiKey = this.configService.get('WOLT_API_KEY');
+    const isDevEnv = this.configService.get('NODE_ENV') === 'development';
+
+    this.woltApiUrl = isDevEnv
+      ? this.configService.get('WOLT_API_DEV_URL')
+      : this.configService.get('WOLT_API_PROD_URL');
+
+    this.woltApiKey = isDevEnv
+      ? this.configService.get('WOLT_API_DEV_KEY')
+      : this.configService.get('WOLT_API_PROD_KEY');
+
     this.header = {
       'WOLT-API-KEY': this.woltApiKey,
     } as any;
