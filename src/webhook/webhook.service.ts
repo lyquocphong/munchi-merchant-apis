@@ -130,19 +130,6 @@ export class WebhookService implements OnModuleInit {
         this.utils.logError(error);
       }
       return `Order ${woltWebhookdata.order.status.toLocaleLowerCase()}`;
-    } else if (
-      woltWebhookdata.order.status === 'PRODUCTION' &&
-      formattedWoltOrder.type === WoltOrderType.PreOrder
-    ) {
-      // Notify user that preorder order has changed to PRODUCTION state
-      const orderSynced: Order = await this.woltService.syncWoltOrder(woltWebhookdata.order.id);
-
-      const message = `Order number ${orderSynced.orderNumber} has been changed to ${woltWebhookdata.order.status}`;
-
-      this.server.to(business.orderingBusinessId).emit('notification', {
-        order: orderSynced,
-        message: message,
-      });
     } else {
       // Notify up update client UI
       await this.woltService.syncWoltOrder(woltWebhookdata.order.id);
