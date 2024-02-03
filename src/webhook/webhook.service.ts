@@ -132,7 +132,11 @@ export class WebhookService implements OnModuleInit {
       return `Order ${woltWebhookdata.order.status.toLocaleLowerCase()}`;
     } else {
       // Notify up update client UI
-      await this.woltService.syncWoltOrder(woltWebhookdata.order.id);
+      const orderSynced = await this.woltService.syncWoltOrder(woltWebhookdata.order.id);
+
+      if (formattedWoltOrder.type === WoltOrderType.PreOrder && formattedWoltOrder.status === OrderStatusEnum.IN_PROGRESS) {
+        await this.notificationService.validatePreorderQueue(orderSynced.id);
+      }
 
       this.server.to(business.orderingBusinessId).emit('order_change', formattedWoltOrder);
     }

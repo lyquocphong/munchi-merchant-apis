@@ -145,11 +145,20 @@ export class NotificationService {
 
   async sendWoltNotifiaction() {}
 
-  async removePreorderQueue(orderId: number) {
-    await this.prismaService.preorderQueue.delete({
+  async validatePreorderQueue(orderId: number) {
+    const queue = await this.prismaService.preorderQueue.findUnique({
       where: {
         orderId: orderId,
       },
     });
+    if (queue) {
+      await this.prismaService.preorderQueue.delete({
+        where: {
+          orderId: queue.orderId,
+        },
+      });
+    }
+
+    return;
   }
 }
