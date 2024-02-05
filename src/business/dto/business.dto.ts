@@ -1,9 +1,8 @@
-/* eslint-disable prettier/prettier */
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Exclude, Expose, Transform, Type } from 'class-transformer';
-import { OwnerDto } from './owner.dto';
+import { Exclude, Expose, Type } from 'class-transformer';
 import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
 import { AvailableProvider } from 'src/provider/provider.type';
+import { OwnerDto } from './owner.dto';
 
 @Exclude()
 export class BusinessDto {

@@ -41,9 +41,6 @@ export class QueueService {
   async activeBusinessStatus() {
     // 1. Get queue
     const now = moment.utc();
-    // console.log('now', now.toISOString());
-    const from = now.subtract(1, 'minutes');
-    // console.log('from', from.toISOString());
 
     const items = await this.prismaService.activeStatusQueue.findMany({
       where: {

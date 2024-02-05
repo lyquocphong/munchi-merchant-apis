@@ -251,10 +251,6 @@ export class WoltService implements ProviderService {
     return updatedOrder;
   }
 
-  public async deleteOrder<OrderResponse>(woltOrdeId: string): Promise<OrderResponse> {
-    return;
-  }
-
   async getWoltBusinessById(woltVenueId: string) {
     const option = {
       method: 'GET',

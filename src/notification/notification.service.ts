@@ -143,8 +143,6 @@ export class NotificationService {
     await this.sessionService.setOpenAppNotificationSending(false, sessionIds);
   }
 
-  async sendWoltNotifiaction() {}
-
   async validatePreorderQueue(orderId: number) {
     const queue = await this.prismaService.preorderQueue.findUnique({
       where: {
