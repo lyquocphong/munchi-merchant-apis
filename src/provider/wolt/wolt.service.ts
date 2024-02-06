@@ -95,6 +95,7 @@ export class WoltService implements ProviderService {
    *
    * @return  {Promise<WoltOrder>}              A promise that resolves with the Wolt order data from the Wolt server.
    */
+  // TODO: Get api key by business
   public async getOrderById(woltOrdeId: string): Promise<WoltOrder> {
     try {
       const response = await axios.request({
@@ -109,6 +110,7 @@ export class WoltService implements ProviderService {
     }
   }
 
+    // TODO: Get api key by business
   async sendWoltUpdateRequest(
     woltOrderId: string,
     endpoint: string,
@@ -255,6 +257,7 @@ export class WoltService implements ProviderService {
     return;
   }
 
+  // TODO: Get api key by business
   async getWoltBusinessById(woltVenueId: string) {
     const option = {
       method: 'GET',
@@ -271,6 +274,7 @@ export class WoltService implements ProviderService {
     }
   }
 
+  // TODO: Get api key by business
   async setWoltVenueStatus(woltVenueId: string, status: boolean, time?: string) {
     const option = {
       method: 'PATCH',
