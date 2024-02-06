@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { AvailableProvider, ProviderEnum } from './provider.type';
-import { WoltService } from './wolt/wolt.service';
+import { AvailableOrderStatus } from '../order/dto/order.dto';
 import { OrderingService } from './ordering/ordering.service';
 import { OrderingOrder } from './ordering/ordering.type';
-import { AvailableOrderStatus, OrderResponse } from '../order/dto/order.dto';
+import { AvailableProvider, ProviderEnum } from './provider.type';
+import { WoltService } from './wolt/wolt.service';
 @Injectable()
 export class ProviderManagmentService {
   constructor(private woltService: WoltService, private orderingService: OrderingService) {}

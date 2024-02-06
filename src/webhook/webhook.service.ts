@@ -1,8 +1,9 @@
 import { Inject, Injectable, Logger, OnModuleInit, forwardRef } from '@nestjs/common';
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets/decorators';
-import { Order, PreorderQueue } from '@prisma/client';
+import { PreorderQueue } from '@prisma/client';
 import { Server } from 'socket.io';
 import { BusinessService } from 'src/business/business.service';
+import { OrderStatusEnum } from 'src/order/dto/order.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { OrderingService } from 'src/provider/ordering/ordering.service';
 import { OrderingOrder, OrderingOrderStatus } from 'src/provider/ordering/ordering.type';
@@ -12,7 +13,6 @@ import { WoltService } from 'src/provider/wolt/wolt.service';
 import { WoltOrderNotification, WoltOrderType } from 'src/provider/wolt/wolt.type';
 import { UtilsService } from 'src/utils/utils.service';
 import { NotificationService } from './../notification/notification.service';
-import { OrderStatusEnum } from 'src/order/dto/order.dto';
 
 @WebSocketGateway({ cors: { origin: { origin: '*' } } })
 @Injectable()
@@ -134,7 +134,10 @@ export class WebhookService implements OnModuleInit {
       // Notify up update client UI
       const orderSynced = await this.woltService.syncWoltOrder(woltWebhookdata.order.id);
 
-      if (formattedWoltOrder.type === WoltOrderType.PreOrder && formattedWoltOrder.status === OrderStatusEnum.IN_PROGRESS) {
+      if (
+        formattedWoltOrder.type === WoltOrderType.PreOrder &&
+        formattedWoltOrder.status === OrderStatusEnum.IN_PROGRESS
+      ) {
         await this.notificationService.validatePreorderQueue(orderSynced.id);
       }
 

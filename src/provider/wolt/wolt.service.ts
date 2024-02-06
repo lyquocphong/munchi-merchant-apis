@@ -253,11 +253,6 @@ export class WoltService implements ProviderService {
     return updatedOrder;
   }
 
-  public async deleteOrder<OrderResponse>(woltOrdeId: string): Promise<OrderResponse> {
-    return;
-  }
-
-  // TODO: Get api key by business
   async getWoltBusinessById(woltVenueId: string) {
     const option = {
       method: 'GET',
