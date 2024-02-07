@@ -102,8 +102,10 @@ export class WebhookService implements OnModuleInit {
   }
 
   async woltOrderNotification(woltWebhookdata: WoltOrderNotification) {
+    const venueId = woltWebhookdata.order.venue_id;
+
     // Get order data from Wolt
-    const woltOrder = await this.woltService.getOrderById(woltWebhookdata.order.id);
+    const woltOrder = await this.woltService.getOrderById(woltWebhookdata.order.id, venueId);
 
     //Mapped wolt response to general order response
     const formattedWoltOrder = await this.woltService.mapOrderToOrderResponse(woltOrder);
@@ -132,7 +134,7 @@ export class WebhookService implements OnModuleInit {
       return `Order ${woltWebhookdata.order.status.toLocaleLowerCase()}`;
     } else {
       // Notify up update client UI
-      const orderSynced = await this.woltService.syncWoltOrder(woltWebhookdata.order.id);
+      const orderSynced = await this.woltService.syncWoltOrder(woltWebhookdata.order.id, venueId);
 
       if (
         formattedWoltOrder.type === WoltOrderType.PreOrder &&
@@ -155,7 +157,7 @@ export class WebhookService implements OnModuleInit {
   async remindPreOrder({ businessPublicId, orderId, provider }: PreorderQueue) {
     const business = await this.businessService.findBusinessByPublicId(businessPublicId);
 
-    //
+    //Get munchi api key
     const orderingApiKey = await this.prismaService.apiKey.findFirst({
       where: {
         name: 'ORDERING_API_KEY',
@@ -174,7 +176,6 @@ export class WebhookService implements OnModuleInit {
       order = await this.orderingService.mapOrderToOrderResponse(orderingOrder);
     }
     const message = `It's time for you to prepair order ${order.orderNumber}`;
-
     this.server.to(business.orderingBusinessId).emit('preorder', {
       message: message,
       order: order,
