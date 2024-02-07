@@ -73,6 +73,7 @@ model Provider {
   business           Business @relation("Provider", fields: [orderingBusinessId], references: [orderingBusinessId])
   name               String
   providerId         String   @unique
+  apiKey             String
   open               Boolean  @default(true)
   enabled            Boolean  @default(true)
   ipadFree           Boolean?
