@@ -1,7 +1,7 @@
 import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma, Provider } from '@prisma/client';
-import axios, { AxiosHeaders } from 'axios';
+import axios from 'axios';
 import moment from 'moment';
 import {
   AvailableOrderStatus,
