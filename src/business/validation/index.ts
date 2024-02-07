@@ -20,8 +20,16 @@ export class ProviderDto {
   name: AvailableProvider;
 
   @ApiProperty({
+    description: 'The api key of the venue',
+    example: 'apikey',
+  })
+  @IsNotEmpty()
+  @IsString()
+  apiKey: string;
+
+  @ApiProperty({
     description: 'The id of the provider',
-    example: 'Status',
+    example: '1234abcde',
   })
   @IsNotEmpty()
   @IsString()

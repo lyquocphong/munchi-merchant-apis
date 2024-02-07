@@ -243,7 +243,6 @@ export class BusinessService {
       }
 
       const time = moment.utc().add(duration, 'minutes').toDate();
-      console.log('🚀 ~ BusinessService ~ time:', time);
 
       this.queueService.upsertActiveStatusQueue({
         provider: provider,
@@ -395,6 +394,7 @@ export class BusinessService {
     const dataUpsert = Prisma.validator<Prisma.ProviderUncheckedCreateInput>()({
       name: data.name,
       providerId: data.providerId,
+      apiKey: data.apiKey,
       orderingBusinessId: business.orderingBusinessId,
     });
 
@@ -406,7 +406,9 @@ export class BusinessService {
       update: dataUpsert,
     });
 
-    return 'Success';
+    return {
+      message: 'Added provider succesfully',
+    };
   }
 
   async saveMultipleBusinessToDb(businesses: BusinessDto[]) {
