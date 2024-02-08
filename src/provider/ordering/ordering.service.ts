@@ -70,6 +70,7 @@ export class OrderingService implements ProviderService {
       'offers',
       'paymethod_id',
     ].join(',');
+
     const options = {
       method: 'GET',
       url: `${this.utilService.getEnvUrl(
@@ -80,8 +81,10 @@ export class OrderingService implements ProviderService {
         Authorization: `Bearer ${accessToken}`,
       },
     };
+
     try {
       const response = await axios.request(options);
+
       return response.data.result;
     } catch (error) {
       this.utilService.logError(error);

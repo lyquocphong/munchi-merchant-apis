@@ -143,6 +143,10 @@ export class WebhookService implements OnModuleInit {
         await this.notificationService.validatePreorderQueue(orderSynced.id);
       }
 
+      if (woltWebhookdata.order.status === 'DELIVERED') {
+        this.logger.log(`latest order: ${JSON.stringify(woltOrder)}`);
+      }
+
       this.server.to(business.orderingBusinessId).emit('order_change', formattedWoltOrder);
     }
   }

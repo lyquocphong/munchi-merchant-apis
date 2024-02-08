@@ -61,6 +61,10 @@ export class WoltService implements ProviderService {
       },
     });
 
+    if (!businessProvider) {
+      throw new NotFoundException('No provider found associated with this venue ID.');
+    }
+
     return businessProvider.apiKey;
   }
 

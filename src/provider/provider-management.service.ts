@@ -1,13 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { AvailableOrderStatus } from '../order/dto/order.dto';
 import { OrderingService } from './ordering/ordering.service';
 import { OrderingOrder } from './ordering/ordering.type';
 import { AvailableProvider, ProviderEnum } from './provider.type';
 import { WoltService } from './wolt/wolt.service';
+
 @Injectable()
 export class ProviderManagmentService {
   constructor(private woltService: WoltService, private orderingService: OrderingService) {}
-
+  private readonly logger = new Logger(ProviderManagmentService.name);
   async getAllOrder(provider: string[], { orderingToken }: { orderingToken: string }) {
     const woltOrder = this.woltService.getAllOrder();
     return woltOrder;
@@ -29,6 +30,9 @@ export class ProviderManagmentService {
 
     const formattedOrderingOrders = await Promise.all(
       orderingOrders.map(async (order: OrderingOrder) => {
+        this.logger.log(
+          `Success in retrieving order for ${order.business.name} with status ${order.status}`,
+        );
         return await this.orderingService.mapOrderToOrderResponse(order);
       }),
     );
