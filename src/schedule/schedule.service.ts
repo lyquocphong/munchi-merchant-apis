@@ -55,7 +55,7 @@ export class ScheduleService {
       const hours = date.hours();
       const dayOfMonth = date.date();
       const month = date.month(); // Months are 0-based in moment.js
-      console.log('🚀 ~ ScheduleService ~ isoToCronExpression ~ month:', month);
+
       const dayOfWeek = date.day();
 
       return `${minutes} ${hours} ${dayOfMonth} ${month} ${dayOfWeek}`;
@@ -67,7 +67,7 @@ export class ScheduleService {
 
   async getReminder() {
     const allCrons = this.schedulerRegistry.getCronJobs();
-    console.log('🚀 ~ ScheduleService ~ setPreOrderReminder ~ allCrons:', allCrons);
+
     return allCrons;
   }
 }
