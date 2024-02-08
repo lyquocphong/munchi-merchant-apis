@@ -28,7 +28,7 @@ import { ProviderDto } from './validation';
 @ApiBadRequestResponse({
   description: 'Something wrong happened',
 })
-@ApiTags('business')
+@ApiTags('Business')
 export class BusinessController {
   constructor(private businessService: BusinessService, private sessionService: SessionService) {}
 

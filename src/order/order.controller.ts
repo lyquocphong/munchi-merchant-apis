@@ -10,7 +10,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { Query } from '@nestjs/common/decorators';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtGuard } from 'src/auth/guard/jwt.guard';
 
 import { SessionService } from 'src/auth/session.service';
@@ -21,6 +21,7 @@ import { OrderService } from './order.service';
 @UseGuards(JwtGuard)
 @ApiBearerAuth('JWT-auth')
 @Controller('orders')
+@ApiTags('Order')
 export class OrderController {
   constructor(private orderService: OrderService, private sessionService: SessionService) {}
 

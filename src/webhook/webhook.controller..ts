@@ -4,8 +4,10 @@ import { WebhookService } from './webhook.service';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import { WoltOrderNotification } from 'src/provider/wolt/wolt.type';
+import { ApiTags } from '@nestjs/swagger';
 
 @Controller('webhook')
+@ApiTags('Webhook')
 export class WebhookController {
   constructor(private readonly webhookService: WebhookService) {}
 

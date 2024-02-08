@@ -22,7 +22,7 @@ import { SessionService } from './session.service';
 import { ApiKeyData } from './validation';
 
 @Controller('auth')
-@ApiTags('auth')
+@ApiTags('Auth')
 export class AuthController {
   constructor(
     private authService: AuthService,
