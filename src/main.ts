@@ -53,6 +53,7 @@ async function bootstrap() {
 
   app.enableCors({
     credentials: true,
+    origin: '*',
   });
 
   app.useGlobalPipes(
@@ -65,6 +66,7 @@ async function bootstrap() {
   app.useGlobalInterceptors(new LoggerErrorInterceptor());
 
   await app.listen(process.env.PORT);
+
   if (module.hot) {
     module.hot.accept();
     module.hot.dispose(() => app.close());
