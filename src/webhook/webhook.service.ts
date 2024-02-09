@@ -14,7 +14,11 @@ import { WoltOrderNotification, WoltOrderType } from 'src/provider/wolt/wolt.typ
 import { UtilsService } from 'src/utils/utils.service';
 import { NotificationService } from './../notification/notification.service';
 
-@WebSocketGateway({ cors: { origin: { origin: '*' } } })
+@WebSocketGateway({
+  cors: {
+    origin: '*',
+  },
+})
 @Injectable()
 export class WebhookService implements OnModuleInit {
   private readonly logger = new Logger(WebhookService.name);
@@ -58,7 +62,7 @@ export class WebhookService implements OnModuleInit {
       });
 
       socket.on('ping', async (data: string) => {
-        this.logger.warn(`Recieved ping from client ${data}`);
+        return;
       });
 
       /**
