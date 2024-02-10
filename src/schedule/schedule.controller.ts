@@ -5,7 +5,7 @@ import { JwtGuard } from 'src/auth/guard/jwt.guard';
 import { ApiTags } from '@nestjs/swagger';
 
 @Controller('schedule')
-@ApiTags("Schedule")
+@ApiTags('Schedule')
 export class ScheduleController {
   constructor(private readonly scheduleService: ScheduleService) {}
 
