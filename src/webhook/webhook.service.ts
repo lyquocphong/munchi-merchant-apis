@@ -18,6 +18,8 @@ import { NotificationService } from './../notification/notification.service';
   cors: {
     origin: '*',
   },
+  transports: ['websocket'],
+  path: '/socket.io',
 })
 @Injectable()
 export class WebhookService implements OnModuleInit {
