@@ -63,10 +63,6 @@ export class WebhookService implements OnModuleInit {
         }
       });
 
-      socket.on('ping', async (data: string) => {
-        return;
-      });
-
       /**
        * Notify when new order popup is closed and server emit event
        * back for other apps if avaiable to close the popup for same order
