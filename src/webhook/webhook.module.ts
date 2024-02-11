@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import { Module, forwardRef } from '@nestjs/common';
 import { BusinessModule } from 'src/business/business.module';
 import { UtilsModule } from 'src/utils/utils.module';
