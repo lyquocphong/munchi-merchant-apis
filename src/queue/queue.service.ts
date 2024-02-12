@@ -137,8 +137,9 @@ export class QueueService {
 
     for (const queue of processingQueue) {
       const timeDiff = moment(queue.reminderTime).local().diff(moment(), 'minutes');
+      this.logger.warn(`${timeDiff} left to remind order ${queue.orderNumber}`);
 
-      if (timeDiff > 0 && timeDiff <= 1) {
+      if (timeDiff == 0) {
         this.logger.warn(`Time to send reminder for order ${queue.orderNumber}`);
         await this.webhookService.remindPreOrder(queue);
       } else if (timeDiff < 0) {
