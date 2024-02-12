@@ -181,7 +181,7 @@ export class WebhookService implements OnModuleInit {
       );
       order = await this.orderingService.mapOrderToOrderResponse(orderingOrder);
     }
-    const message = `It's time for you to prepair order ${order.orderNumber}`;
+    const message = `It's time for you to prepare order ${order.orderNumber}`;
     this.server.to(business.orderingBusinessId).emit('preorder', {
       message: message,
       order: order,
