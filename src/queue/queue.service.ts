@@ -121,7 +121,7 @@ export class QueueService {
     });
   }
 
-  @Interval(6000)
+  @Interval(60000)
   async processingPreorderReminder() {
     const processingQueue = await this.prismaService.preorderQueue.findMany({
       where: {
