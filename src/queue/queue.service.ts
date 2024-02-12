@@ -121,7 +121,7 @@ export class QueueService {
     });
   }
 
-  @Interval(60000)
+  @Interval(6000)
   async processingPreorderReminder() {
     const processingQueue = await this.prismaService.preorderQueue.findMany({
       where: {
@@ -137,7 +137,9 @@ export class QueueService {
 
     for (const queue of processingQueue) {
       const timeDiff = moment(queue.reminderTime).local().diff(moment(), 'minutes');
-      this.logger.warn(`${timeDiff} left to remind order ${queue.orderNumber}`);
+      this.logger.warn(
+        `${timeDiff} left to remind order ${queue.orderNumber} at ${queue.reminderTime}`,
+      );
 
       if (timeDiff == 0) {
         this.logger.warn(`Time to send reminder for order ${queue.orderNumber}`);
