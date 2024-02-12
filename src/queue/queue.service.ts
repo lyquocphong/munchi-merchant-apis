@@ -138,7 +138,7 @@ export class QueueService {
     for (const queue of processingQueue) {
       const timeDiff = moment(queue.reminderTime).local().diff(moment(), 'minutes');
       this.logger.warn(
-        `${timeDiff} left to remind order ${queue.orderNumber} at ${queue.reminderTime}`,
+        `${timeDiff} minutes left to remind order ${queue.orderNumber} at ${queue.reminderTime}`,
       );
 
       if (timeDiff == 0) {
