@@ -20,6 +20,7 @@ import { NotificationService } from './../notification/notification.service';
   },
   transports: ['websocket'],
   path: '/socket.io',
+  pingInterval: 60000,
 })
 @Injectable()
 export class WebhookService implements OnModuleInit {
@@ -61,6 +62,10 @@ export class WebhookService implements OnModuleInit {
           this.logger.warn(`leave ${room} and business is ${business.name}`);
           socket.leave(business.orderingBusinessId.toString());
         }
+      });
+
+      socket.on('ping', async (data: string) => {
+        this.logger.log(`Event emiited from user ${data}`);
       });
 
       /**
