@@ -5,6 +5,7 @@ import { WebhookController } from './webhook.controller.';
 import { WebhookService } from './webhook.service';
 import { NotificationModule } from 'src/notification/notification.module';
 import { ProviderModule } from 'src/provider/provider.module';
+import { QueueModule } from 'src/queue/queue.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { ProviderModule } from 'src/provider/provider.module';
     UtilsModule,
     forwardRef(() => NotificationModule),
     ProviderModule,
+    forwardRef(() => QueueModule),
   ],
   controllers: [WebhookController],
   providers: [WebhookService],

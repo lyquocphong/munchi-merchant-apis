@@ -7,10 +7,10 @@ import { OrderStatusEnum } from 'src/order/dto/order.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { OrderingService } from 'src/provider/ordering/ordering.service';
 import { OrderingOrder, OrderingOrderStatus } from 'src/provider/ordering/ordering.type';
-import { ProviderManagmentService } from 'src/provider/provider-management.service';
 import { ProviderEnum } from 'src/provider/provider.type';
 import { WoltService } from 'src/provider/wolt/wolt.service';
 import { WoltOrderNotification, WoltOrderType } from 'src/provider/wolt/wolt.type';
+import { QueueService } from 'src/queue/queue.service';
 import { UtilsService } from 'src/utils/utils.service';
 import { NotificationService } from './../notification/notification.service';
 
@@ -28,12 +28,12 @@ export class WebhookService implements OnModuleInit {
   @WebSocketServer() public server: Server;
   constructor(
     @Inject(forwardRef(() => BusinessService)) private businessService: BusinessService,
+    @Inject(forwardRef(() => QueueService)) private queueService: QueueService,
     private utils: UtilsService,
     private notificationService: NotificationService,
     private woltService: WoltService,
     private orderingService: OrderingService,
     private prismaService: PrismaService,
-    private readonly providerManagementService: ProviderManagmentService,
   ) {}
 
   onModuleInit() {
@@ -147,7 +147,7 @@ export class WebhookService implements OnModuleInit {
         formattedWoltOrder.type === WoltOrderType.PreOrder &&
         formattedWoltOrder.status === OrderStatusEnum.IN_PROGRESS
       ) {
-        await this.notificationService.validatePreorderQueue(orderSynced.id);
+        await this.queueService.validatePreorderQueue(orderSynced.id);
       }
 
       if (woltWebhookdata.order.status === 'DELIVERED') {
