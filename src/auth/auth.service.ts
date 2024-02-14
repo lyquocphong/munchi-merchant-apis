@@ -108,5 +108,7 @@ export class AuthService {
     await this.sessionService.deleteSession({
       publicId: sessionPublicId,
     });
+
+    return { message: 'Logout successfully' };
   }
 }
