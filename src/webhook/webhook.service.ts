@@ -28,7 +28,6 @@ export class WebhookService implements OnModuleInit {
   @WebSocketServer() public server: Server;
   constructor(
     @Inject(forwardRef(() => BusinessService)) private businessService: BusinessService,
-    @Inject(forwardRef(() => QueueService)) private queueService: QueueService,
     private utils: UtilsService,
     private notificationService: NotificationService,
     private woltService: WoltService,
@@ -141,14 +140,7 @@ export class WebhookService implements OnModuleInit {
       return `Order ${woltWebhookdata.order.status.toLocaleLowerCase()}`;
     } else {
       // Notify up update client UI
-      const orderSynced = await this.woltService.syncWoltOrder(woltWebhookdata.order.id, venueId);
-
-      if (
-        formattedWoltOrder.type === WoltOrderType.PreOrder &&
-        formattedWoltOrder.status === OrderStatusEnum.IN_PROGRESS
-      ) {
-        await this.queueService.validatePreorderQueue(orderSynced.id);
-      }
+      await this.woltService.syncWoltOrder(woltWebhookdata.order.id, venueId);
 
       if (woltWebhookdata.order.status === 'DELIVERED') {
         this.logger.log(`latest order: ${JSON.stringify(woltOrder)}`);

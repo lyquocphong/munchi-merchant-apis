@@ -13,7 +13,6 @@ import { QueueModule } from 'src/queue/queue.module';
     UtilsModule,
     forwardRef(() => NotificationModule),
     ProviderModule,
-    forwardRef(() => QueueModule),
   ],
   controllers: [WebhookController],
   providers: [WebhookService],
