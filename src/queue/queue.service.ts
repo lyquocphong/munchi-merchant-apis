@@ -6,6 +6,7 @@ import { BusinessService } from 'src/business/business.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { WebhookService } from './../webhook/webhook.service';
 import { AvailableProvider } from 'src/provider/provider.type';
+import { OnEvent } from '@nestjs/event-emitter';
 
 @Injectable()
 export class QueueService {
@@ -149,6 +150,7 @@ export class QueueService {
     }
   }
 
+  @OnEvent('preorderQueue.validate')
   async validatePreorderQueue(orderId: number) {
     const queue = await this.prismaService.preorderQueue.findUnique({
       where: {
