@@ -1,13 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { AvailableOrderStatus } from '../order/dto/order.dto';
 import { OrderingService } from './ordering/ordering.service';
 import { OrderingOrder } from './ordering/ordering.type';
 import { AvailableProvider, ProviderEnum } from './provider.type';
 import { WoltService } from './wolt/wolt.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class ProviderManagmentService {
-  constructor(private woltService: WoltService, private orderingService: OrderingService) {}
+  constructor(
+    private woltService: WoltService,
+    private orderingService: OrderingService,
+    private eventEmitter: EventEmitter2,
+  ) {}
   private readonly logger = new Logger(ProviderManagmentService.name);
   async getAllOrder(provider: string[], { orderingToken }: { orderingToken: string }) {
     const woltOrder = this.woltService.getAllOrder();
@@ -39,10 +45,15 @@ export class ProviderManagmentService {
 
     //If wolt provider included in the body data
     if (provider.includes(ProviderEnum.Wolt)) {
+      const orderBy = Prisma.validator<Prisma.OrderOrderByWithRelationInput>()({
+        id: 'desc',
+      });
+
       const woltOrders = await this.woltService.getOrderByStatus(
         orderingToken,
         status,
         businessOrderingIds,
+        orderBy,
       );
       return [
         ...woltOrders,
@@ -94,13 +105,18 @@ export class ProviderManagmentService {
     },
     { orderingToken }: { orderingToken: string },
   ) {
+    let order: any;
     if (provider === ProviderEnum.Wolt) {
-      return await this.woltService.rejectOrder(orderingToken, orderId, orderRejectData);
+      order = await this.woltService.rejectOrder(orderingToken, orderId, orderRejectData);
     } else if (provider === ProviderEnum.Munchi) {
       const orderingOrder = await this.orderingService.rejectOrder(orderingToken, orderId);
-      const order = await this.orderingService.mapOrderToOrderResponse(orderingOrder);
-      return order;
+      order = await this.orderingService.mapOrderToOrderResponse(orderingOrder);
     }
+
+    // Validating preoder queue in case preorder been rejected after confirmed
+    this.eventEmitter.emit('preorderQueue.validate', parseInt(orderId));
+
+    return order;
   }
 
   async validateProvider(providers: string[] | string): Promise<boolean> {
