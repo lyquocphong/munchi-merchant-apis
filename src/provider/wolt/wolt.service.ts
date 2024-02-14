@@ -35,6 +35,7 @@ export class WoltService implements ProviderService {
     accessToken: string,
     status: AvailableOrderStatus[],
     businessIds: string[],
+    orderBy?: Prisma.OrderOrderByWithRelationInput,
   ): Promise<any[]> {
     const orders = await this.prismaService.order.findMany({
       where: {
@@ -45,9 +46,7 @@ export class WoltService implements ProviderService {
           in: businessIds,
         },
       },
-      orderBy: {
-        id: 'desc',
-      },
+      orderBy: orderBy,
       include: WoltOrderPrismaSelectArgs,
     });
 
