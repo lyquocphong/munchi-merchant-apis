@@ -22,13 +22,13 @@ export class NotificationService {
   ) {}
 
   async sendNewOrderNotification(orderingBusinessId: string) {
-    this.logger.warn('Send new order push notification');
-
     const business = await this.businessService.findBusinessByOrderingId(orderingBusinessId, {
       include: {
         sessions: true,
       },
     });
+
+    this.logger.warn(`Send new order push notification to ${business.name}`);
 
     if (!business) {
       return;

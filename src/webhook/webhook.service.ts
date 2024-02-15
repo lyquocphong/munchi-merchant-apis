@@ -18,9 +18,9 @@ import { NotificationService } from './../notification/notification.service';
   cors: {
     origin: '*',
   },
-  transports: ['websocket'],
+  transports: ['websocket', 'polling'],
+  allowEIO3: true,
   path: '/socket.io',
-  pingInterval: 60000,
 })
 @Injectable()
 export class WebhookService implements OnModuleInit {
@@ -84,6 +84,7 @@ export class WebhookService implements OnModuleInit {
   async newOrderNotification(order: OrderingOrder) {
     const formattedOrder = await this.orderingService.mapOrderToOrderResponse(order);
     try {
+      this.logger.log(`Emit order register to business ${order.business.name}`);
       this.server.to(order.business_id.toString()).emit('orders_register', formattedOrder);
       this.notificationService.sendNewOrderNotification(order.business_id.toString());
     } catch (error) {
@@ -129,7 +130,7 @@ export class WebhookService implements OnModuleInit {
 
       try {
         // Emit to client by public business id new order has been created
-        this.logger.log(`emit order created because of ${business.publicId}`);
+        this.logger.log(`Emit new order created by Wolt to ${business.name}`);
         this.server.to(business.orderingBusinessId).emit('orders_register', formattedWoltOrder);
         this.notificationService.sendNewOrderNotification(business.orderingBusinessId);
 
@@ -152,7 +153,7 @@ export class WebhookService implements OnModuleInit {
 
   async notifyCheckBusinessStatus(businessPublicId: string) {
     const business = await this.businessService.findBusinessByPublicId(businessPublicId);
-    this.logger.warn(`emit business_status_change because of ${businessPublicId}`);
+    this.logger.warn(`Business status changed: ${business.name}`);
     const message = `${business.name} status changed`;
     this.server.to(business.orderingBusinessId).emit('business_status_change', message);
   }
