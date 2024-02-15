@@ -3,20 +3,20 @@ import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets/decorators
 import { PreorderQueue } from '@prisma/client';
 import { Server } from 'socket.io';
 import { BusinessService } from 'src/business/business.service';
-import { OrderStatusEnum } from 'src/order/dto/order.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { OrderingService } from 'src/provider/ordering/ordering.service';
 import { OrderingOrder, OrderingOrderStatus } from 'src/provider/ordering/ordering.type';
 import { ProviderEnum } from 'src/provider/provider.type';
 import { WoltService } from 'src/provider/wolt/wolt.service';
-import { WoltOrderNotification, WoltOrderType } from 'src/provider/wolt/wolt.type';
-import { QueueService } from 'src/queue/queue.service';
+import { WoltOrderNotification } from 'src/provider/wolt/wolt.type';
 import { UtilsService } from 'src/utils/utils.service';
 import { NotificationService } from './../notification/notification.service';
 
 @WebSocketGateway({
   cors: {
     origin: '*',
+    methods: ['GET', 'POST'],
+    credentials: true,
   },
   transports: ['websocket', 'polling'],
   allowEIO3: true,
