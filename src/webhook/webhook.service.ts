@@ -109,45 +109,44 @@ export class WebhookService implements OnModuleInit {
   }
 
   async woltOrderNotification(woltWebhookdata: WoltOrderNotification) {
+    const maxRetries = 10;
+    const retryInterval = 500;
     const venueId = woltWebhookdata.order.venue_id;
 
-    // Get order data from Wolt
-    const woltOrder = await this.woltService.getOrderById(woltWebhookdata.order.id, venueId);
+    for (let i = 0; i < maxRetries; i++) {
+      const woltOrder = await this.woltService.getOrderById(woltWebhookdata.order.id, venueId);
+      const formattedWoltOrder = await this.woltService.mapOrderToOrderResponse(woltOrder);
+      const business = await this.businessService.findBusinessByWoltVenueid(
+        woltWebhookdata.order.venue_id,
+      );
+      if (woltOrder.pickup_eta !== null) {
+        if (
+          woltWebhookdata.order.status === 'CREATED' &&
+          woltWebhookdata.type === 'order.notification'
+        ) {
+          await this.woltService.saveWoltOrder(formattedWoltOrder);
 
-    //Mapped wolt response to general order response
-    const formattedWoltOrder = await this.woltService.mapOrderToOrderResponse(woltOrder);
+          try {
+            // Emit to client by public business id new order has been created
+            this.logger.log(`Emit new order created by Wolt to ${business.name}`);
+            this.server.to(business.orderingBusinessId).emit('orders_register', formattedWoltOrder);
+            this.notificationService.sendNewOrderNotification(business.orderingBusinessId);
 
-    //Find business by venue Id
-    const business = await this.businessService.findBusinessByWoltVenueid(
-      woltWebhookdata.order.venue_id,
-    );
+            return 'Order sent';
+          } catch (error) {
+            this.utils.logError(error);
+          }
+          return `Order ${woltWebhookdata.order.status.toLocaleLowerCase()}`;
+        } else {
+          if (woltWebhookdata.order.status === 'DELIVERED') {
+            this.logger.log(`latest order: ${JSON.stringify(woltOrder)}`);
+          }
 
-    if (
-      woltWebhookdata.order.status === 'CREATED' &&
-      woltWebhookdata.type === 'order.notification'
-    ) {
-      await this.woltService.saveWoltOrder(formattedWoltOrder);
-
-      try {
-        // Emit to client by public business id new order has been created
-        this.logger.log(`Emit new order created by Wolt to ${business.name}`);
-        this.server.to(business.orderingBusinessId).emit('orders_register', formattedWoltOrder);
-        this.notificationService.sendNewOrderNotification(business.orderingBusinessId);
-
-        return 'Order sent';
-      } catch (error) {
-        this.utils.logError(error);
+          this.server.to(business.orderingBusinessId).emit('order_change', formattedWoltOrder);
+        }
+      } else {
+        await new Promise((resolve) => setTimeout(resolve, retryInterval));
       }
-      return `Order ${woltWebhookdata.order.status.toLocaleLowerCase()}`;
-    } else {
-      // Notify up update client UI
-      await this.woltService.syncWoltOrder(woltWebhookdata.order.id, venueId);
-
-      if (woltWebhookdata.order.status === 'DELIVERED') {
-        this.logger.log(`latest order: ${JSON.stringify(woltOrder)}`);
-      }
-
-      this.server.to(business.orderingBusinessId).emit('order_change', formattedWoltOrder);
     }
   }
 
