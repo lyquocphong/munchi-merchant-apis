@@ -46,7 +46,7 @@ export class ProviderManagmentService {
     //If wolt provider included in the body data
     if (provider.includes(ProviderEnum.Wolt)) {
       const orderBy = Prisma.validator<Prisma.OrderOrderByWithRelationInput>()({
-        id: 'desc',
+        id: 'asc',
       });
 
       const woltOrders = await this.woltService.getOrderByStatus(
@@ -57,7 +57,7 @@ export class ProviderManagmentService {
       );
       return [
         ...woltOrders,
-        ...formattedOrderingOrders.sort((a, b) => parseInt(b.id) - parseInt(a.id)),
+        ...formattedOrderingOrders.sort((a, b) => parseInt(a.id) - parseInt(b.id)),
       ];
     }
 
