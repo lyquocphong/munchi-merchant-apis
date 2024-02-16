@@ -140,13 +140,10 @@ export class WoltService implements ProviderService {
             }
           : null,
     };
-    console.log('🚀 ~ WoltService ~ option:', option);
-
     try {
       const response = await axios.request(option);
       return response.data;
     } catch (error: any) {
-      console.log('🚀 ~ WoltService ~ error:', error);
       this.logger.log(
         `Error when updating wolt Order with order id:${woltOrderId}. Error: ${error}`,
       );
@@ -396,12 +393,10 @@ export class WoltService implements ProviderService {
       woltOrder.modified_at,
       businessData.business.timeZone,
     );
-
     const pickupEta = this.utilsService.convertTimeToTimeZone(
       woltOrder.pickup_eta,
       businessData.business.timeZone,
     );
-
     const preOrderTime =
       woltOrder.type === WoltOrderType.PreOrder && woltOrder.pre_order !== null
         ? this.utilsService.convertTimeToTimeZone(
