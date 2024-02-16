@@ -125,8 +125,6 @@ export class WebhookService implements OnModuleInit {
           woltOrder = await this.woltService.getOrderById(woltWebhookdata.order.id, venueId); // Refetch
         }
       }
-
-      // ... (Timeout Handling - Same as before) ...
     }
     const formattedWoltOrder = await this.woltService.mapOrderToOrderResponse(woltOrder);
     // Common processing for CREATED orders
@@ -135,7 +133,8 @@ export class WebhookService implements OnModuleInit {
       woltWebhookdata.type === 'order.notification'
     ) {
       await this.woltService.saveWoltOrder(formattedWoltOrder);
-      // ... (Emit events and Notifications - As before) ...
+      this.server.to(business.orderingBusinessId).emit('orders_register', formattedWoltOrder);
+      this.notificationService.sendNewOrderNotification(business.orderingBusinessId);
       return 'Order sent';
     }
 
