@@ -138,6 +138,11 @@ export class WebhookService implements OnModuleInit {
       return 'Order sent';
     }
 
+    // Sync order again
+
+    await this.woltService.syncWoltOrder(woltWebhookdata.order.id, venueId);
+
+    //Log the last order
     if (woltWebhookdata.order.status === 'DELIVERED') {
       this.logger.log(`latest order: ${JSON.stringify(woltOrder)}`);
     }
