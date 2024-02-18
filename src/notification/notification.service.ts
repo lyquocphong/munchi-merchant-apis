@@ -22,13 +22,13 @@ export class NotificationService {
   ) {}
 
   async sendNewOrderNotification(orderingBusinessId: string) {
-    this.logger.warn('Send new order push notification');
-
     const business = await this.businessService.findBusinessByOrderingId(orderingBusinessId, {
       include: {
         sessions: true,
       },
     });
+
+    this.logger.warn(`Send new order push notification to ${business.name}`);
 
     if (!business) {
       return;
@@ -141,22 +141,5 @@ export class NotificationService {
     }
 
     await this.sessionService.setOpenAppNotificationSending(false, sessionIds);
-  }
-
-  async validatePreorderQueue(orderId: number) {
-    const queue = await this.prismaService.preorderQueue.findUnique({
-      where: {
-        orderId: orderId,
-      },
-    });
-    if (queue) {
-      await this.prismaService.preorderQueue.delete({
-        where: {
-          orderId: queue.orderId,
-        },
-      });
-    }
-
-    return;
   }
 }

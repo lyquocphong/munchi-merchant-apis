@@ -6,6 +6,7 @@ import { BusinessService } from 'src/business/business.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { WebhookService } from './../webhook/webhook.service';
 import { AvailableProvider } from 'src/provider/provider.type';
+import { OnEvent } from '@nestjs/event-emitter';
 
 @Injectable()
 export class QueueService {
@@ -144,20 +145,26 @@ export class QueueService {
       if (timeDiff == 0) {
         this.logger.warn(`Time to send reminder for order ${queue.orderNumber}`);
         await this.webhookService.remindPreOrder(queue);
-      } else if (timeDiff < 0) {
-        await this.prismaService.preorderQueue.delete({
-          where: {
-            providerOrderId: queue.providerOrderId,
-          },
-        });
+        await this.validatePreorderQueue(queue.orderId);
       }
-      //else {
-      //   await this.prismaService.preorderQueue.delete({
-      //     where: {
-      //       providerOrderId: queue.providerOrderId,
-      //     },
-      //   });
-      // }
     }
+  }
+
+  @OnEvent('preorderQueue.validate')
+  async validatePreorderQueue(orderId: number) {
+    const queue = await this.prismaService.preorderQueue.findUnique({
+      where: {
+        orderId: orderId,
+      },
+    });
+    if (queue) {
+      await this.prismaService.preorderQueue.delete({
+        where: {
+          orderId: queue.orderId,
+        },
+      });
+    }
+
+    return;
   }
 }

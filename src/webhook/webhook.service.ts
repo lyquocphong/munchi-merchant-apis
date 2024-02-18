@@ -3,22 +3,23 @@ import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets/decorators
 import { PreorderQueue } from '@prisma/client';
 import { Server } from 'socket.io';
 import { BusinessService } from 'src/business/business.service';
-import { OrderStatusEnum } from 'src/order/dto/order.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { OrderingService } from 'src/provider/ordering/ordering.service';
 import { OrderingOrder, OrderingOrderStatus } from 'src/provider/ordering/ordering.type';
-import { ProviderManagmentService } from 'src/provider/provider-management.service';
 import { ProviderEnum } from 'src/provider/provider.type';
 import { WoltService } from 'src/provider/wolt/wolt.service';
-import { WoltOrderNotification, WoltOrderType } from 'src/provider/wolt/wolt.type';
+import { WoltOrderNotification } from 'src/provider/wolt/wolt.type';
 import { UtilsService } from 'src/utils/utils.service';
 import { NotificationService } from './../notification/notification.service';
 
 @WebSocketGateway({
   cors: {
     origin: '*',
+    methods: ['GET', 'POST'],
+    credentials: true,
   },
-  transports: ['websocket'],
+  transports: ['websocket', 'polling'],
+  allowEIO3: true,
   path: '/socket.io',
 })
 @Injectable()
@@ -32,7 +33,6 @@ export class WebhookService implements OnModuleInit {
     private woltService: WoltService,
     private orderingService: OrderingService,
     private prismaService: PrismaService,
-    private readonly providerManagementService: ProviderManagmentService,
   ) {}
 
   onModuleInit() {
@@ -63,6 +63,10 @@ export class WebhookService implements OnModuleInit {
         }
       });
 
+      socket.on('ping', async (data: string) => {
+        this.logger.log(`Event emiited from user ${data}`);
+      });
+
       /**
        * Notify when new order popup is closed and server emit event
        * back for other apps if avaiable to close the popup for same order
@@ -80,6 +84,7 @@ export class WebhookService implements OnModuleInit {
   async newOrderNotification(order: OrderingOrder) {
     const formattedOrder = await this.orderingService.mapOrderToOrderResponse(order);
     try {
+      this.logger.log(`Emit order register to business ${order.business.name}`);
       this.server.to(order.business_id.toString()).emit('orders_register', formattedOrder);
       this.notificationService.sendNewOrderNotification(order.business_id.toString());
     } catch (error) {
@@ -105,57 +110,48 @@ export class WebhookService implements OnModuleInit {
 
   async woltOrderNotification(woltWebhookdata: WoltOrderNotification) {
     const venueId = woltWebhookdata.order.venue_id;
+    let woltOrder = await this.woltService.getOrderById(woltWebhookdata.order.id, venueId);
+    const business = await this.businessService.findBusinessByWoltVenueid(venueId);
 
-    // Get order data from Wolt
-    const woltOrder = await this.woltService.getOrderById(woltWebhookdata.order.id, venueId);
+    if (woltOrder.delivery.type === 'homedelivery') {
+      const maxRetries = 10;
+      const retryInterval = 500;
 
-    //Mapped wolt response to general order response
+      for (let i = 0; i < maxRetries; i++) {
+        if (woltOrder.pickup_eta !== null) {
+          break; // Exit loop if pickup_eta is present
+        } else {
+          await new Promise((resolve) => setTimeout(resolve, retryInterval));
+          woltOrder = await this.woltService.getOrderById(woltWebhookdata.order.id, venueId); // Refetch
+        }
+      }
+    }
     const formattedWoltOrder = await this.woltService.mapOrderToOrderResponse(woltOrder);
-
-    //Find business by venue Id
-    const business = await this.businessService.findBusinessByWoltVenueid(
-      woltWebhookdata.order.venue_id,
-    );
-
+    // Common processing for CREATED orders
     if (
       woltWebhookdata.order.status === 'CREATED' &&
       woltWebhookdata.type === 'order.notification'
     ) {
       await this.woltService.saveWoltOrder(formattedWoltOrder);
-
-      try {
-        // Emit to client by public business id new order has been created
-        this.logger.log(`emit order created because of ${business.publicId}`);
-        this.server.to(business.orderingBusinessId).emit('orders_register', formattedWoltOrder);
-        this.notificationService.sendNewOrderNotification(business.orderingBusinessId);
-
-        return 'Order sent';
-      } catch (error) {
-        this.utils.logError(error);
-      }
-      return `Order ${woltWebhookdata.order.status.toLocaleLowerCase()}`;
-    } else {
-      // Notify up update client UI
-      const orderSynced = await this.woltService.syncWoltOrder(woltWebhookdata.order.id, venueId);
-
-      if (
-        formattedWoltOrder.type === WoltOrderType.PreOrder &&
-        formattedWoltOrder.status === OrderStatusEnum.IN_PROGRESS
-      ) {
-        await this.notificationService.validatePreorderQueue(orderSynced.id);
-      }
-
-      if (woltWebhookdata.order.status === 'DELIVERED') {
-        this.logger.log(`latest order: ${JSON.stringify(woltOrder)}`);
-      }
-
-      this.server.to(business.orderingBusinessId).emit('order_change', formattedWoltOrder);
+      this.server.to(business.orderingBusinessId).emit('orders_register', formattedWoltOrder);
+      this.notificationService.sendNewOrderNotification(business.orderingBusinessId);
+      return 'Order sent';
     }
+
+    // Sync order again
+
+    await this.woltService.syncWoltOrder(woltWebhookdata.order.id, venueId);
+
+    //Log the last order
+    if (woltWebhookdata.order.status === 'DELIVERED') {
+      this.logger.log(`latest order: ${JSON.stringify(woltOrder)}`);
+    }
+    this.server.to(business.orderingBusinessId).emit('order_change', formattedWoltOrder);
   }
 
   async notifyCheckBusinessStatus(businessPublicId: string) {
     const business = await this.businessService.findBusinessByPublicId(businessPublicId);
-    this.logger.warn(`emit business_status_change because of ${businessPublicId}`);
+    this.logger.warn(`Business status changed: ${business.name}`);
     const message = `${business.name} status changed`;
     this.server.to(business.orderingBusinessId).emit('business_status_change', message);
   }
