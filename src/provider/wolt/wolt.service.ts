@@ -187,6 +187,7 @@ export class WoltService implements ProviderService {
       const adjustedPickupTime = preparedIn
         ? moment(order.createdAt).add(preparedIn, 'minutes').format()
         : order.pickupEta;
+
       await this.sendWoltUpdateRequest(
         order.orderId,
         updateEndPoint,
@@ -197,6 +198,29 @@ export class WoltService implements ProviderService {
           preparedIn: adjustedPickupTime,
         },
       );
+
+      if (
+        order.deliveryType === OrderingDeliveryType.Delivery &&
+        order.status === OrderStatusEnum.PENDING
+      ) {
+        const maxRetries = 10;
+        const retryInterval = 500;
+        const syncPickUpTime = await this.getOrderById(order.orderId, businessProvider.providerId);
+        const formattedSyncOrder = await this.mapOrderToOrderResponse(syncPickUpTime);
+
+        const woltOrderMoment = moment(formattedSyncOrder.pickupEta);
+        const formattedSyncOrderMoment = moment(order.pickupEta);
+
+        for (let i = 0; i < maxRetries; i++) {
+          if (!woltOrderMoment.isSame(formattedSyncOrderMoment, 'millisecond')) {
+            break; // Exit loop if pickup_eta is present
+          } else {
+            await new Promise((resolve) => setTimeout(resolve, retryInterval));
+          }
+        }
+
+        await this.syncWoltOrder(order.orderId, businessProvider.providerId);
+      }
 
       return this.updateAndReturn(order, preparedIn, orderStatus);
     } catch (error) {
