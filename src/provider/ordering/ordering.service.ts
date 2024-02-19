@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import axios from 'axios';
 import { plainToInstance } from 'class-transformer';
 import moment from 'moment';
@@ -16,7 +16,7 @@ import { AuthCredentials, OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
 import { ProviderService } from '../provider.service';
 import { ProviderEnum } from '../provider.type';
-import { WoltOrderType } from '../wolt/wolt.type';
+import { WoltOrderPrismaSelectArgs, WoltOrderType } from '../wolt/wolt.type';
 import {
   OrderingDeliveryType,
   OrderingOrder,
@@ -28,6 +28,7 @@ import {
   pendingStatus,
   rejectedStatus,
 } from './ordering.type';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class OrderingService implements ProviderService {
@@ -353,6 +354,10 @@ export class OrderingService implements ProviderService {
     }
   }
 
+  // async updateOrderInDb(){
+
+  // }
+
   async rejectOrder(accessToken: string, orderId: string): Promise<OrderingOrder> {
     const options = {
       method: 'PUT',
@@ -541,6 +546,174 @@ export class OrderingService implements ProviderService {
     }
 
     return business;
+  }
+
+  async saveOrderingOrderToDb(mappedOrderingOrder: OrderResponse) {
+    const orderData: Prisma.OrderCreateArgs = {
+      data: {
+        orderId: mappedOrderingOrder.id,
+        provider: mappedOrderingOrder.provider,
+        business: {
+          connect: {
+            publicId: mappedOrderingOrder.business.publicId,
+          },
+        },
+        customer: {
+          create: {
+            name: mappedOrderingOrder.customer.name,
+            phone: mappedOrderingOrder.customer.phone,
+          },
+        },
+        summary: {
+          create: {
+            total: mappedOrderingOrder.summary.total,
+          },
+        },
+        orderNumber: mappedOrderingOrder.orderNumber,
+        table: mappedOrderingOrder.table,
+        deliveryEta: mappedOrderingOrder.deliveryEta,
+        pickupEta: mappedOrderingOrder.pickupEta,
+        preparedIn: mappedOrderingOrder.preparedIn,
+        lastModified: mappedOrderingOrder.lastModified,
+        type: mappedOrderingOrder.type,
+        payMethodId: mappedOrderingOrder.payMethodId,
+        status: mappedOrderingOrder.status,
+        deliveryType: mappedOrderingOrder.deliveryType,
+        createdAt: mappedOrderingOrder.createdAt,
+        comment: mappedOrderingOrder.comment || undefined,
+        preorder: mappedOrderingOrder.preorder
+          ? {
+              create: {
+                preorderTime: mappedOrderingOrder.preorder.preorderTime,
+                status: mappedOrderingOrder.preorder.status,
+              },
+            }
+          : undefined,
+      },
+      include: {
+        products: true,
+      },
+    };
+
+    // Save order to database
+    const order = await this.prismaService.order.create(orderData);
+
+    await Promise.all(
+      mappedOrderingOrder.products.map(async (product) => {
+        const data: Prisma.ProductCreateInput = {
+          productId: product.id,
+          name: product.name,
+          comment: product.comment || undefined,
+          price: product.price,
+          quantity: product.quantity,
+          order: {
+            connect: {
+              orderId: order.orderId,
+            },
+          },
+        };
+        const productSaved = await this.prismaService.product.create({
+          data,
+        });
+        // Save product options to database
+        await Promise.all(
+          product.options.map(async (option) => {
+            const subOptions: Prisma.SubOptionCreateManyOptionInput[] = option.subOptions.map(
+              (subOption) => ({
+                subOptionId: subOption.id.toString(),
+                name: subOption.name,
+                price: subOption.price.toString(),
+                quantity: subOption.quantity,
+                image: subOption.image,
+                position: 0,
+              }),
+            );
+            const optionData: Prisma.OptionUncheckedCreateInput = {
+              optionId: option.id.toString(),
+              name: option.name,
+              productId: productSaved.id,
+              image: option.image,
+              price: option.price,
+              subOption: {
+                createMany: {
+                  data: subOptions,
+                  skipDuplicates: true,
+                },
+              },
+            };
+
+            await this.prismaService.option.create({
+              data: optionData,
+            });
+          }),
+        );
+      }),
+    );
+
+    return 'Save data successfully';
+  }
+
+  async saveOrderingOrder(formattedOrderingOrder: OrderResponse) {
+    await this.validateOrderingOrder(formattedOrderingOrder.id);
+
+    //Save order to database
+    await this.saveOrderingOrderToDb(formattedOrderingOrder);
+
+    return formattedOrderingOrder;
+  }
+
+  private async validateOrderingOrder(orderingOrderid: string) {
+    const order = await this.prismaService.order.findUnique({
+      where: {
+        orderId: orderingOrderid,
+      },
+    });
+    if (order) {
+      throw new ForbiddenException('Order existed');
+    }
+  }
+
+  async syncOrderingOrder(orderingOrderId: string) {
+    const orderingApiKey = await this.prismaService.apiKey.findFirst({
+      where: {
+        name: 'ORDERING_API_KEY',
+      },
+    });
+
+    const orderingOrder = await this.getOrderById('', orderingOrderId, orderingApiKey.value);
+    const mappedOrderingOrder = await this.mapOrderToOrderResponse(orderingOrder);
+
+    const orderUpdateInputAgrs = Prisma.validator<Prisma.OrderUpdateInput>()({
+      orderId: mappedOrderingOrder.id,
+      provider: mappedOrderingOrder.provider,
+      status: mappedOrderingOrder.status,
+      deliveryType: mappedOrderingOrder.deliveryType,
+      createdAt: mappedOrderingOrder.createdAt,
+      comment: mappedOrderingOrder.comment,
+      type: mappedOrderingOrder.type,
+      orderNumber: mappedOrderingOrder.orderNumber,
+      preorder: mappedOrderingOrder.preorder
+        ? {
+            update: {
+              status: mappedOrderingOrder.preorder.status,
+              preorderTime: mappedOrderingOrder.preorder.preorderTime,
+            },
+          }
+        : undefined,
+
+      lastModified: mappedOrderingOrder.lastModified,
+      deliveryEta: mappedOrderingOrder.deliveryEta,
+      pickupEta: mappedOrderingOrder.pickupEta,
+      payMethodId: mappedOrderingOrder.payMethodId,
+    });
+
+    return await this.prismaService.order.update({
+      where: {
+        orderId: orderingOrderId,
+      },
+      data: orderUpdateInputAgrs,
+      include: WoltOrderPrismaSelectArgs,
+    });
   }
 
   mapOrderingStatusToOrderStatus(
