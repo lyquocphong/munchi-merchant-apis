@@ -483,10 +483,10 @@ export class OrderingService implements ProviderService {
 
     // Assuming the input time is in UTC, convert to local time
 
-    this.utilService.convertTimeToTimeZone(
-      moment(orderingOrder.created_at).toISOString(),
-      business.timeZone,
-    );
+    const deliveryDatetime = orderingOrder.delivery_datetime
+      ? moment.utc(orderingOrder.created_at, inputFormat).local().toISOString(true)
+      : null;
+
     const createdAt = orderingOrder.created_at
       ? moment.utc(orderingOrder.created_at, inputFormat).local().toISOString(true)
       : null;
@@ -514,7 +514,7 @@ export class OrderingService implements ProviderService {
         name: `${orderingOrder.customer.name} ${orderingOrder.customer.lastname}`,
         phone: orderingOrder.customer.cellphone,
       },
-      deliveryEta: orderingOrder.delivery_datetime,
+      deliveryEta: deliveryDatetime,
       pickupEta: null,
       lastModified: lastModified,
       provider: ProviderEnum.Munchi,
@@ -527,7 +527,7 @@ export class OrderingService implements ProviderService {
               !orderingOrder.prepared_in && orderingOrder.status === OrderingOrderStatus.Preorder
                 ? OrderResponsePreOrderStatusEnum.Waiting
                 : OrderResponsePreOrderStatusEnum.Confirm,
-            preorderTime: orderingOrder.delivery_datetime,
+            preorderTime: deliveryDatetime,
           }
         : null,
       products: productDto,
