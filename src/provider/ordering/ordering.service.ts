@@ -692,6 +692,7 @@ export class OrderingService implements ProviderService {
       comment: mappedOrderingOrder.comment,
       type: mappedOrderingOrder.type,
       orderNumber: mappedOrderingOrder.orderNumber,
+      preparedIn: mappedOrderingOrder.preparedIn,
       preorder: mappedOrderingOrder.preorder
         ? {
             update: {
