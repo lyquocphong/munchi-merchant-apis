@@ -543,6 +543,15 @@ export class WoltService implements ProviderService {
    * @return  {[string]}               [return void]
    */
   async syncWoltOrder(woltOrderId: string, venueId: string): Promise<any> {
+    const order = await this.prismaService.order.findUnique({
+      where: {
+        orderId: woltOrderId,
+      },
+    });
+
+    if (!order) {
+      return 'No order found in the database';
+    }
     //Get order from wolt
     const woltOrder = await this.getOrderById(woltOrderId, venueId);
     // Mapp to general order response

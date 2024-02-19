@@ -680,6 +680,18 @@ export class OrderingService implements ProviderService {
       },
     });
 
+    // Validate order exist to update or not
+
+    const order = await this.prismaService.order.findUnique({
+      where: {
+        orderId: orderingOrderId,
+      },
+    });
+
+    if (!order) {
+      return 'No order found in the database';
+    }
+
     const orderingOrder = await this.getOrderById('', orderingOrderId, orderingApiKey.value);
     const mappedOrderingOrder = await this.mapOrderToOrderResponse(orderingOrder);
 
