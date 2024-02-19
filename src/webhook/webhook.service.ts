@@ -83,10 +83,14 @@ export class WebhookService implements OnModuleInit {
 
   async newOrderNotification(order: OrderingOrder) {
     const formattedOrder = await this.orderingService.mapOrderToOrderResponse(order);
+
+    await this.orderingService.saveOrderingOrder(formattedOrder);
     try {
       this.logger.log(`Emit order register to business ${order.business.name}`);
       this.server.to(order.business_id.toString()).emit('orders_register', formattedOrder);
       this.notificationService.sendNewOrderNotification(order.business_id.toString());
+
+      return 'Order sent';
     } catch (error) {
       this.utils.logError(error);
     }
@@ -102,6 +106,7 @@ export class WebhookService implements OnModuleInit {
     } else {
       try {
         this.server.to(order.business_id.toString()).emit('order_change', formattedOrder);
+        await this.orderingService.syncOrderingOrder(order.id.toString());
       } catch (error) {
         this.utils.logError(error);
       }
