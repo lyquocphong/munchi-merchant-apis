@@ -42,6 +42,7 @@ export class WoltService implements ProviderService {
         status: {
           in: status,
         },
+        provider: ProviderEnum.Wolt,
         orderingBusinessId: {
           in: businessIds,
         },
@@ -417,10 +418,12 @@ export class WoltService implements ProviderService {
       woltOrder.modified_at,
       businessData.business.timeZone,
     );
+
     const pickupEta = this.utilsService.convertTimeToTimeZone(
       woltOrder.pickup_eta,
       businessData.business.timeZone,
     );
+
     const preOrderTime =
       woltOrder.type === WoltOrderType.PreOrder && woltOrder.pre_order !== null
         ? this.utilsService.convertTimeToTimeZone(
