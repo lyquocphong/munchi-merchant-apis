@@ -728,6 +728,8 @@ export class OrderingService implements ProviderService {
         [OrderingOrderStatus.AcceptedByDriver]: OrderStatusEnum.DRIVER_FOUND,
         [OrderingOrderStatus.PreparationCompleted]: OrderStatusEnum.COMPLETED,
         [OrderingOrderStatus.PickUpCompletedByDriver]: OrderStatusEnum.PICK_UP_COMPLETED_BY_DRIVER,
+        [OrderingOrderStatus.DeliveryCompletedByDriver]: OrderStatusEnum.DELIVERED,
+        [OrderingOrderStatus.PickupCompletedByCustomer]: OrderStatusEnum.DELIVERED,
       };
 
       if (rejectedStatus.includes(orderingStatus)) {
