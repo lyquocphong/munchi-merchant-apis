@@ -55,10 +55,15 @@ export class ProviderManagmentService {
         businessOrderingIds,
         orderBy,
       );
-      return [
-        ...woltOrders,
-        ...formattedOrderingOrders.sort((a, b) => parseInt(a.id) - parseInt(b.id)),
-      ];
+
+      const allOrders = [...woltOrders, ...formattedOrderingOrders];
+      const sortedOrders = allOrders.sort((a, b) => {
+        const dateA = new Date(a.createdAt);
+        const dateB = new Date(b.createdAt);
+        return dateA.getTime() - dateB.getTime();
+      });
+
+      return sortedOrders;
     }
 
     return formattedOrderingOrders;
