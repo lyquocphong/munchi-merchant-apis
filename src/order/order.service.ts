@@ -6,6 +6,9 @@ import { OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
 import { AvailableOrderStatus, OrderStatusEnum } from './dto/order.dto';
 import { OrderRejectData } from './validation/order.validation';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { Prisma } from '@prisma/client';
+import { WoltOrderPrismaSelectArgs } from 'src/provider/wolt/wolt.type';
 
 @Injectable()
 export class OrderService {
@@ -13,6 +16,7 @@ export class OrderService {
     private readonly providerManagementService: ProviderManagmentService,
     private readonly utils: UtilsService,
     private readonly businessService: BusinessService,
+    private readonly prismaService: PrismaService,
   ) {}
 
   async getOrderByStatus(
@@ -122,5 +126,60 @@ export class OrderService {
     const orderStatusArray: string[] = Object.values(OrderStatusEnum);
 
     return orderStatus.every((element) => orderStatusArray.includes(element));
+  }
+
+  async getOrderByDate(
+    orderingBusinessIds: string[],
+    startDate: string,
+    endDate: string,
+    take?: number,
+    page?: number,
+  ) {
+    console.log('🚀 ~ OrderService ~ endDate:', endDate);
+    console.log('🚀 ~ OrderService ~ startDate:', startDate);
+
+    const orderFindManyArgs = Prisma.validator<Prisma.OrderFindManyArgs>()({
+      where: {
+        orderingBusinessId: {
+          in: orderingBusinessIds,
+        },
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      include: WoltOrderPrismaSelectArgs,
+      orderBy: {
+        orderNumber: 'desc',
+      },
+    });
+
+    if (take) {
+      (orderFindManyArgs as Prisma.OrderFindManyArgs).take = take;
+    }
+
+    if (page) {
+      (orderFindManyArgs as Prisma.OrderFindManyArgs).skip = (page - 1) * 10;
+    }
+
+    console.log(orderFindManyArgs);
+    const order = await this.prismaService.order.findMany(orderFindManyArgs);
+
+    return order;
+  }
+
+  async countTotalOrderByDate(orderingBusinessIds: string[], startDate: string, endDate: string) {
+    const orderFindManyArgs = Prisma.validator<Prisma.OrderCountArgs>()({
+      where: {
+        orderingBusinessId: {
+          in: orderingBusinessIds,
+        },
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+    });
+    return await this.prismaService.order.count(orderFindManyArgs);
   }
 }
