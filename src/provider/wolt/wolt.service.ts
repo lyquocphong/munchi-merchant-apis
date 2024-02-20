@@ -211,16 +211,18 @@ export class WoltService implements ProviderService {
 
         const woltOrderMoment = moment(formattedSyncOrder.pickupEta);
         const formattedSyncOrderMoment = moment(order.pickupEta);
-
+        let hasPickupTimeUpdated = false;
         for (let i = 0; i < maxRetries; i++) {
           if (!woltOrderMoment.isSame(formattedSyncOrderMoment, 'millisecond')) {
-            break; // Exit loop if pickup_eta is present
+            hasPickupTimeUpdated = true;
           } else {
             await new Promise((resolve) => setTimeout(resolve, retryInterval));
           }
         }
 
-        await this.syncWoltOrder(order.orderId, businessProvider.providerId);
+        if (hasPickupTimeUpdated) {
+          await this.syncWoltOrder(order.orderId, businessProvider.providerId);
+        }
       }
 
       return this.updateAndReturn(order, preparedIn, orderStatus);
