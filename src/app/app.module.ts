@@ -17,6 +17,7 @@ import { UserModule } from 'src/user/user.module';
 import { WebhookModule } from 'src/webhook/webhook.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { HistoryModule } from 'src/history/history.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { AppService } from './app.service';
     WebhookModule,
     AuthModule,
     ReportModule,
+    HistoryModule,
     ScheduleModule.forRoot(),
     NotificationModule,
     CustomScheduleModule,
