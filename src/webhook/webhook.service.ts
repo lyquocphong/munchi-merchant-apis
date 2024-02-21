@@ -15,11 +15,8 @@ import { NotificationService } from './../notification/notification.service';
 @WebSocketGateway({
   cors: {
     origin: '*',
-    methods: ['GET', 'POST'],
-    credentials: true,
   },
-  transports: ['websocket', 'polling'],
-  allowEIO3: true,
+  transports: ['websocket'],
   path: '/socket.io',
 })
 @Injectable()
