@@ -484,7 +484,7 @@ export class OrderingService implements ProviderService {
     // Assuming the input time is in UTC, convert to local time
 
     const deliveryDatetime = orderingOrder.delivery_datetime
-      ? moment.utc(orderingOrder.delivery_datetime, inputFormat).local().toISOString(true)
+      ? this.utilService.convertTimeToTimeZone(orderingOrder.delivery_datetime, business.timeZone)
       : null;
 
     const createdAt = orderingOrder.created_at
