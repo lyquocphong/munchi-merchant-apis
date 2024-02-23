@@ -85,10 +85,11 @@ export class HistoryService {
         orderNumber: 'desc',
       },
       take: rowPerPageInNumber,
-      skip: (pageInNumber - 1) * 10,
+      skip: (pageInNumber - 1) * rowPerPageInNumber,
     });
 
     const order = await this.orderService.getManyOrderByArgs(orderArgs);
+    console.log('🚀 ~ HistoryService ~ getOrderHistory ~ order:', order);
 
     const analyticsData = await this.financialAnalyticsService.analyzeOrderData(
       orderingBusinessIds,
