@@ -1,22 +1,42 @@
 import { Injectable } from '@nestjs/common';
-import { Order } from '@prisma/client';
+import { Order, Prisma } from '@prisma/client';
 import { OrderStatusEnum } from 'src/order/dto/order.dto';
 import { OrderService } from 'src/order/order.service';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { WoltOrderPrismaSelectArgs } from 'src/provider/wolt/wolt.type';
 
 @Injectable()
 export class FinancialAnalyticsService {
   constructor(private prismaService: PrismaService, private orderService: OrderService) {}
   async analyzeOrderData(orderingBusinessIds: string[], startDate: string, endDate: string) {
-    const order = await this.orderService.getOrderByDate(orderingBusinessIds, startDate, endDate);
+    // Initialize base query
+    const baseOrderArgs = Prisma.validator<Prisma.OrderFindManyArgs>()({
+      where: {
+        orderingBusinessId: { in: orderingBusinessIds },
+        createdAt: { gte: startDate, lte: endDate },
+      },
+      include: WoltOrderPrismaSelectArgs,
+      orderBy: { orderNumber: 'desc' },
+    });
 
-    const deliveredOrders = order.filter(
-      (order: Order) => order.status === OrderStatusEnum.DELIVERED,
-    );
+    // Initialize reject order query extend base query
+    const rejectOrderArgs = Prisma.validator<Prisma.OrderFindManyArgs>()({
+      ...baseOrderArgs,
+      where: { ...baseOrderArgs.where, status: OrderStatusEnum.REJECTED },
+    });
 
-    const rejectedOrders = order.filter(
-      (order: Order) => order.status === OrderStatusEnum.REJECTED,
-    );
+    // Initialize delivered order query extend base query
+    const deliveredOrderArgs = Prisma.validator<Prisma.OrderFindManyArgs>()({
+      ...baseOrderArgs,
+      where: { ...baseOrderArgs.where, status: OrderStatusEnum.DELIVERED },
+    });
+
+    const rejectedOrders = await this.orderService.getManyOrderByArgs(rejectOrderArgs);
+
+    const deliveredOrders = await this.orderService.getManyOrderByArgs(deliveredOrderArgs);
+
+    const totalOrderCount = rejectedOrders.length + deliveredOrders.length;
+
     const totalRejections = rejectedOrders.length;
 
     const totalRejectionValue = rejectedOrders.reduce(
@@ -30,7 +50,7 @@ export class FinancialAnalyticsService {
     );
 
     return {
-      totalOrders: order.length,
+      totalOrders: totalOrderCount,
       totalSales,
       totalRejections,
       totalRejectionValue,

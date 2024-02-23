@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Business } from '@prisma/client';
+import { Business, Prisma } from '@prisma/client';
 import moment from 'moment';
 import { SessionService } from 'src/auth/session.service';
 import { FinancialAnalyticsService } from 'src/financial-analytics/financial-analytics.service';
@@ -11,6 +11,8 @@ import {
   getThisMonthRange,
   getThisWeekRange,
 } from './utils/getTimeRange';
+import { WoltOrderPrismaSelectArgs } from 'src/provider/wolt/wolt.type';
+import { OrderStatusEnum } from 'src/order/dto/order.dto';
 
 @Injectable()
 export class HistoryService {
@@ -61,16 +63,32 @@ export class HistoryService {
       endDate = lastMonthEnd.toISOString();
     }
 
-    const rowPerPageInNumbrt = parseInt(rowPerPage);
-    const pageInNumbrt = parseInt(page);
+    const rowPerPageInNumber = parseInt(rowPerPage);
+    const pageInNumber = parseInt(page);
 
-    const order = await this.orderService.getOrderByDate(
-      orderingBusinessIds,
-      startDate,
-      endDate,
-      rowPerPageInNumbrt,
-      pageInNumbrt,
-    );
+    //Create a prisma argument to get order data
+    const orderArgs = Prisma.validator<Prisma.OrderFindManyArgs>()({
+      where: {
+        orderingBusinessId: {
+          in: orderingBusinessIds,
+        },
+        status: {
+          in: [OrderStatusEnum.DELIVERED, OrderStatusEnum.REJECTED],
+        },
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      include: WoltOrderPrismaSelectArgs,
+      orderBy: {
+        orderNumber: 'desc',
+      },
+      take: rowPerPageInNumber,
+      skip: (pageInNumber - 1) * 10,
+    });
+
+    const order = await this.orderService.getManyOrderByArgs(orderArgs);
 
     const analyticsData = await this.financialAnalyticsService.analyzeOrderData(
       orderingBusinessIds,
