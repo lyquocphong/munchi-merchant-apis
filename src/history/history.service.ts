@@ -5,7 +5,12 @@ import { SessionService } from 'src/auth/session.service';
 import { FinancialAnalyticsService } from 'src/financial-analytics/financial-analytics.service';
 import { OrderService } from 'src/order/order.service';
 import { Historyquery } from './dto/history,dto';
-import { getLastWeekRange } from './utils/getLastWeekRange';
+import {
+  getLastMonthRange,
+  getLastWeekRange,
+  getThisMonthRange,
+  getThisWeekRange,
+} from './utils/getTimeRange';
 
 @Injectable()
 export class HistoryService {
@@ -38,12 +43,20 @@ export class HistoryService {
     } else if (date === 'yesterday') {
       startDate = moment().subtract(1, 'days').startOf('day').toISOString();
       endDate = moment().subtract(1, 'days').endOf('day').toISOString();
+    } else if (date === 'this-week') {
+      const [lastWeekStart, lastWeekEnd] = getThisWeekRange();
+      startDate = lastWeekStart.toISOString();
+      endDate = lastWeekEnd.toISOString();
+    } else if (date === 'this-month') {
+      const [lastWeekStart, lastWeekEnd] = getThisMonthRange();
+      startDate = lastWeekStart.toISOString();
+      endDate = lastWeekEnd.toISOString();
     } else if (date === 'last-week') {
       const [lastWeekStart, lastWeekEnd] = getLastWeekRange();
       startDate = lastWeekStart.toISOString();
       endDate = lastWeekEnd.toISOString();
     } else if (date === 'last-month') {
-      const [lastMonthStart, lastMonthEnd] = getLastWeekRange();
+      const [lastMonthStart, lastMonthEnd] = getLastMonthRange();
       startDate = lastMonthStart.toISOString();
       endDate = lastMonthEnd.toISOString();
     }

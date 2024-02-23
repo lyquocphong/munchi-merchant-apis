@@ -1,6 +1,12 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 
-type AvailableDateOption = 'today' | 'yesterday' | 'last-week' | 'last-month';
+type AvailableDateOption =
+  | 'today'
+  | 'yesterday'
+  | 'last-week'
+  | 'last-month'
+  | 'this-month'
+  | 'this-week';
 
 export class Historyquery {
   @IsString()
