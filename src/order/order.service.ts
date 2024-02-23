@@ -128,44 +128,10 @@ export class OrderService {
     return orderStatus.every((element) => orderStatusArray.includes(element));
   }
 
-  async getOrderByDate(
-    orderingBusinessIds: string[],
-    startDate: string,
-    endDate: string,
-    take?: number,
-    page?: number,
-  ) {
-    console.log('🚀 ~ OrderService ~ endDate:', endDate);
-    console.log('🚀 ~ OrderService ~ startDate:', startDate);
+  async getManyOrderByArgs(orderArgs: Prisma.OrderFindManyArgs) {
+    const order = await this.prismaService.order.findMany(orderArgs);
 
-    const orderFindManyArgs = Prisma.validator<Prisma.OrderFindManyArgs>()({
-      where: {
-        orderingBusinessId: {
-          in: orderingBusinessIds,
-        },
-        createdAt: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-      include: WoltOrderPrismaSelectArgs,
-      orderBy: {
-        orderNumber: 'desc',
-      },
-    });
-
-    if (take) {
-      (orderFindManyArgs as Prisma.OrderFindManyArgs).take = take;
-    }
-
-    if (page) {
-      (orderFindManyArgs as Prisma.OrderFindManyArgs).skip = (page - 1) * 10;
-    }
-
-    console.log(orderFindManyArgs);
-    const order = await this.prismaService.order.findMany(orderFindManyArgs);
-
-    return order;
+    return order as any[];
   }
 
   async countTotalOrderByDate(orderingBusinessIds: string[], startDate: string, endDate: string) {
