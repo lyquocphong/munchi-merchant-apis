@@ -469,10 +469,11 @@ export class OrderingService implements ProviderService {
     const inputFormat = 'YYYY-MM-DD HH:mm:ss';
     let lastModified: string | null = null;
     //Calculate total amount without delivery fee and including the discount
-    const total =
+    const total = (
       orderingOrder.summary.total -
       orderingOrder.summary.delivery_price -
-      orderingOrder.summary.driver_tip;
+      orderingOrder.summary.driver_tip
+    ).toFixed(2);
 
     if ('history' in orderingOrder && orderingOrder.history.length !== 0) {
       lastModified = moment

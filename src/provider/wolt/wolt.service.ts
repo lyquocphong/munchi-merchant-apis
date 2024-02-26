@@ -463,7 +463,7 @@ export class WoltService implements ProviderService {
       deliveryType: deliverytype,
       comment: woltOrder.consumer_comment,
       summary: {
-        total: (woltOrder.price.amount / 100).toFixed(1),
+        total: (woltOrder.price.amount / 100).toFixed(2),
       },
       pickupEta: pickupEta,
       deliveryEta: deliveryTime,
