@@ -1,18 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { Business, Prisma } from '@prisma/client';
-import moment from 'moment';
 import { SessionService } from 'src/auth/session.service';
 import { FinancialAnalyticsService } from 'src/financial-analytics/financial-analytics.service';
-import { OrderService } from 'src/order/order.service';
-import { Historyquery } from './dto/history,dto';
-import {
-  getLastMonthRange,
-  getLastWeekRange,
-  getThisMonthRange,
-  getThisWeekRange,
-} from './utils/getTimeRange';
-import { WoltOrderPrismaSelectArgs } from 'src/provider/wolt/wolt.type';
 import { OrderStatusEnum } from 'src/order/dto/order.dto';
+import { OrderService } from 'src/order/order.service';
+import { WoltOrderPrismaSelectArgs } from 'src/provider/wolt/wolt.type';
+import { Historyquery } from './dto/history,dto';
+import { mapToDate } from './utils/getTimeRange';
+import { ProviderEnum } from 'src/provider/provider.type';
 
 @Injectable()
 export class HistoryService {
@@ -36,32 +31,8 @@ export class HistoryService {
       (business: Business) => business.orderingBusinessId,
     );
 
-    let startDate: string;
-    let endDate: string;
-
-    if (date === 'today') {
-      startDate = moment().startOf('day').toISOString();
-      endDate = moment().endOf('day').toISOString();
-    } else if (date === 'yesterday') {
-      startDate = moment().subtract(1, 'days').startOf('day').toISOString();
-      endDate = moment().subtract(1, 'days').endOf('day').toISOString();
-    } else if (date === 'this-week') {
-      const [lastWeekStart, lastWeekEnd] = getThisWeekRange();
-      startDate = lastWeekStart.toISOString();
-      endDate = lastWeekEnd.toISOString();
-    } else if (date === 'this-month') {
-      const [lastWeekStart, lastWeekEnd] = getThisMonthRange();
-      startDate = lastWeekStart.toISOString();
-      endDate = lastWeekEnd.toISOString();
-    } else if (date === 'last-week') {
-      const [lastWeekStart, lastWeekEnd] = getLastWeekRange();
-      startDate = lastWeekStart.toISOString();
-      endDate = lastWeekEnd.toISOString();
-    } else if (date === 'last-month') {
-      const [lastMonthStart, lastMonthEnd] = getLastMonthRange();
-      startDate = lastMonthStart.toISOString();
-      endDate = lastMonthEnd.toISOString();
-    }
+    //Map to date base on date value
+    const [startDate, endDate] = mapToDate(date);
 
     const rowPerPageInNumber = parseInt(rowPerPage);
     const pageInNumber = parseInt(page);
@@ -89,7 +60,6 @@ export class HistoryService {
     });
 
     const order = await this.orderService.getManyOrderByArgs(orderArgs);
-    console.log('🚀 ~ HistoryService ~ getOrderHistory ~ order:', order);
 
     const analyticsData = await this.financialAnalyticsService.analyzeOrderData(
       orderingBusinessIds,
@@ -101,5 +71,95 @@ export class HistoryService {
       ...analyticsData,
       orders: order,
     };
+  }
+
+  async getProductHistory(sessionPublicId: string, { date, page, rowPerPage }: Historyquery) {
+    const rowPerPageInNumber = parseInt(rowPerPage);
+    const pageInNumber = parseInt(page);
+
+    const sessionArgs = {
+      include: {
+        businesses: true,
+      },
+    };
+    const session = await this.sessionService.getSessionByPublicId<any>(
+      sessionPublicId,
+      sessionArgs,
+    );
+    const orderingBusinessIds = session.businesses.map(
+      (business: Business) => business.orderingBusinessId,
+    );
+    console.log(
+      '🚀 ~ HistoryService ~ getProductHistory ~ orderingBusinessIds:',
+      orderingBusinessIds,
+    );
+
+    const [startDate, endDate] = mapToDate(date);
+
+    const result: any[] = [];
+
+    await Promise.all(
+      orderingBusinessIds.map(async (orderingBusinessId: string) => {
+        const orderArgs = Prisma.validator<Prisma.OrderFindManyArgs>()({
+          where: {
+            orderingBusinessId: orderingBusinessId,
+            provider: {
+              in: [ProviderEnum.Munchi, ProviderEnum.Wolt],
+            },
+            status: OrderStatusEnum.DELIVERED,
+            createdAt: {
+              gte: startDate,
+              lte: endDate,
+            },
+          },
+          include: WoltOrderPrismaSelectArgs,
+          orderBy: {
+            orderNumber: 'desc',
+          },
+        });
+
+        const order = await this.orderService.getManyOrderByArgs(orderArgs);
+
+        const analyticsData = await this.financialAnalyticsService.analyzeProductData(order);
+        console.log(
+          '🚀 ~ HistoryService ~ orderingBusinessIds.map ~ analyticsData:',
+          analyticsData,
+        );
+
+        result.push(order);
+      }),
+    );
+
+    //   [ // Array of Restaurant Objects
+    //   {
+    //     "restaurantId": 1,
+    //     "restaurantName": "Pizza Place",
+    //     "salesByProvider": [  // Array of sales data per provider
+    //       {
+    //         "provider": "Wolt",
+    //         "products": [
+    //           {
+    //             "productName": "Margherita Pizza",
+    //             "quantitySold": 10
+    //           },
+    //           // ...
+    //         ]
+    //       },
+    //       {
+    //         "provider": "Uber Eats",
+    //         "products": [
+    //           {
+    //             "productName": "Margherita Pizza",
+    //             "quantitySold": 5
+    //           },
+    //           // ...
+    //         ]
+    //       }
+    //       // ...
+    //     ]
+    //   },
+    //   // ... other restaurants
+    // ]
+    return result;
   }
 }
