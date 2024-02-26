@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 
-type AvailableDateOption =
+export type AvailableDateOption =
   | 'today'
   | 'yesterday'
   | 'last-week'
