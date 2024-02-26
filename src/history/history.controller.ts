@@ -7,9 +7,15 @@ import { Historyquery } from './dto/history,dto';
 @Controller('history')
 export class HistoryController {
   constructor(private historyService: HistoryService) {}
-  @Get()
+  @Get('orders')
   getOrderHistory(@Query(new ValidationPipe()) dateQuery: Historyquery, @Request() request: any) {
     const { sessionPublicId } = request.user;
     return this.historyService.getOrderHistory(sessionPublicId, dateQuery);
+  }
+
+  @Get('product')
+  getProductHistory(@Query(new ValidationPipe()) dateQuery: Historyquery, @Request() request: any) {
+    const { sessionPublicId } = request.user;
+    return this.historyService.getProductHistory(sessionPublicId, dateQuery);
   }
 }
