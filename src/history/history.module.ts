@@ -6,9 +6,10 @@ import { HistoryController } from './history.controller';
 import { HistoryService } from './history.service';
 import { OrderModule } from 'src/order/order.module';
 import { FinancialAnalyticsModule } from 'src/financial-analytics/financial-analytics.module';
+import { BusinessModule } from 'src/business/business.module';
 
 @Module({
-  imports: [AuthModule, UserModule, OrderModule, FinancialAnalyticsModule],
+  imports: [AuthModule, UserModule, OrderModule, FinancialAnalyticsModule, BusinessModule],
   providers: [HistoryService, JwtStrategy],
   controllers: [HistoryController],
 })
