@@ -1,19 +1,21 @@
 import { Injectable } from '@nestjs/common';
-import { Business, Prisma } from '@prisma/client';
+import { Business, Prisma, Provider } from '@prisma/client';
 import { SessionService } from 'src/auth/session.service';
+import { BusinessService } from 'src/business/business.service';
 import { FinancialAnalyticsService } from 'src/financial-analytics/financial-analytics.service';
 import { OrderStatusEnum } from 'src/order/dto/order.dto';
 import { OrderService } from 'src/order/order.service';
+import { ProviderEnum } from 'src/provider/provider.type';
 import { WoltOrderPrismaSelectArgs } from 'src/provider/wolt/wolt.type';
 import { Historyquery } from './dto/history,dto';
 import { mapToDate } from './utils/getTimeRange';
-import { ProviderEnum } from 'src/provider/provider.type';
 
 @Injectable()
 export class HistoryService {
   constructor(
     private orderService: OrderService,
     private sessionService: SessionService,
+    private businessService: BusinessService,
     private financialAnalyticsService: FinancialAnalyticsService,
   ) {}
 
@@ -74,9 +76,6 @@ export class HistoryService {
   }
 
   async getProductHistory(sessionPublicId: string, { date, page, rowPerPage }: Historyquery) {
-    const rowPerPageInNumber = parseInt(rowPerPage);
-    const pageInNumber = parseInt(page);
-
     const sessionArgs = {
       include: {
         businesses: true,
@@ -86,12 +85,9 @@ export class HistoryService {
       sessionPublicId,
       sessionArgs,
     );
+
     const orderingBusinessIds = session.businesses.map(
       (business: Business) => business.orderingBusinessId,
-    );
-    console.log(
-      '🚀 ~ HistoryService ~ getProductHistory ~ orderingBusinessIds:',
-      orderingBusinessIds,
     );
 
     const [startDate, endDate] = mapToDate(date);
@@ -100,12 +96,30 @@ export class HistoryService {
 
     await Promise.all(
       orderingBusinessIds.map(async (orderingBusinessId: string) => {
-        const orderArgs = Prisma.validator<Prisma.OrderFindManyArgs>()({
+        const businessIncludeArgs = Prisma.validator<Prisma.BusinessArgs>()({
+          include: {
+            provider: true,
+          },
+        });
+
+        // Check business provider
+        const business = await this.businessService.findBusinessByOrderingId(
+          orderingBusinessId,
+          businessIncludeArgs,
+        );
+
+        //Initialize the business response with initial data
+        const businessObj = {
+          id: business.publicId,
+          name: business.name,
+          salesByProvider: [],
+        };
+
+        //Munchi productr is compulsory
+        const munchiOrderArgs = Prisma.validator<Prisma.OrderFindManyArgs>()({
           where: {
             orderingBusinessId: orderingBusinessId,
-            provider: {
-              in: [ProviderEnum.Munchi, ProviderEnum.Wolt],
-            },
+            provider: ProviderEnum.Munchi,
             status: OrderStatusEnum.DELIVERED,
             createdAt: {
               gte: startDate,
@@ -118,48 +132,53 @@ export class HistoryService {
           },
         });
 
-        const order = await this.orderService.getManyOrderByArgs(orderArgs);
+        const order = await this.orderService.getManyOrderByArgs(munchiOrderArgs);
 
-        const analyticsData = await this.financialAnalyticsService.analyzeProductData(order);
-        console.log(
-          '🚀 ~ HistoryService ~ orderingBusinessIds.map ~ analyticsData:',
-          analyticsData,
-        );
+        const munchiAnalyticsData = await this.financialAnalyticsService.analyzeProductData(order);
 
-        result.push(order);
+        businessObj.salesByProvider.push({
+          provider: ProviderEnum.Munchi,
+          products: munchiAnalyticsData,
+        });
+
+        //Analyze orders sold by other provider
+        if (business.provider.length !== 0) {
+          await Promise.all(
+            business.provider.map(async (provider: Provider) => {
+              //Analyzer order by provider
+              const providerOrderArgs = Prisma.validator<Prisma.OrderFindManyArgs>()({
+                where: {
+                  orderingBusinessId: orderingBusinessId,
+                  provider: provider.name,
+                  status: OrderStatusEnum.DELIVERED,
+                  createdAt: {
+                    gte: startDate,
+                    lte: endDate,
+                  },
+                },
+                include: WoltOrderPrismaSelectArgs,
+                orderBy: {
+                  orderNumber: 'desc',
+                },
+              });
+
+              const providerOrder = await this.orderService.getManyOrderByArgs(providerOrderArgs);
+
+              const providerAnalyticsData = await this.financialAnalyticsService.analyzeProductData(
+                providerOrder,
+              );
+
+              businessObj.salesByProvider.push({
+                provider: provider.name,
+                products: providerAnalyticsData,
+              });
+            }),
+          );
+        }
+
+        result.push(businessObj);
       }),
     );
-
-    //   [ // Array of Restaurant Objects
-    //   {
-    //     "restaurantId": 1,
-    //     "restaurantName": "Pizza Place",
-    //     "salesByProvider": [  // Array of sales data per provider
-    //       {
-    //         "provider": "Wolt",
-    //         "products": [
-    //           {
-    //             "productName": "Margherita Pizza",
-    //             "quantitySold": 10
-    //           },
-    //           // ...
-    //         ]
-    //       },
-    //       {
-    //         "provider": "Uber Eats",
-    //         "products": [
-    //           {
-    //             "productName": "Margherita Pizza",
-    //             "quantitySold": 5
-    //           },
-    //           // ...
-    //         ]
-    //       }
-    //       // ...
-    //     ]
-    //   },
-    //   // ... other restaurants
-    // ]
     return result;
   }
 }
