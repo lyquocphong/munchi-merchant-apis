@@ -705,7 +705,9 @@ export class OrderingService implements ProviderService {
       comment: mappedOrderingOrder.comment,
       type: mappedOrderingOrder.type,
       orderNumber: mappedOrderingOrder.orderNumber,
-      preparedIn: mappedOrderingOrder.preparedIn.toString(),
+      preparedIn: mappedOrderingOrder.preparedIn
+        ? mappedOrderingOrder.preparedIn.toString()
+        : undefined,
       preorder: mappedOrderingOrder.preorder
         ? {
             update: {
