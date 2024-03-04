@@ -18,6 +18,7 @@ import { WebhookModule } from 'src/webhook/webhook.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { HistoryModule } from 'src/history/history.module';
+import { MenuModule } from 'src/menu/menu.module';
 
 @Module({
   imports: [
@@ -34,7 +35,9 @@ import { HistoryModule } from 'src/history/history.module';
         },
       },
     }),
+    ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
+    MenuModule,
     CmsModule,
     BusinessModule,
     ProviderModule,
@@ -45,7 +48,6 @@ import { HistoryModule } from 'src/history/history.module';
     AuthModule,
     ReportModule,
     HistoryModule,
-    ScheduleModule.forRoot(),
     NotificationModule,
     CustomScheduleModule,
   ],
