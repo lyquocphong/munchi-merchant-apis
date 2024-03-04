@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Prisma, Provider } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import axios from 'axios';
 import moment from 'moment';
 import {
@@ -54,18 +54,42 @@ export class WoltService implements ProviderService {
     return orders;
   }
 
-  async getApiKeybyVenueId(venueId: string): Promise<string> {
-    const businessProvider = await this.prismaService.provider.findUnique({
+  async getApiKeyByOrderingUserId(orderingUserId: number): Promise<string> {
+    const user = await this.prismaService.user.findUnique({
       where: {
-        providerId: venueId,
+        orderingUserId: orderingUserId,
+      },
+      include: {
+        providerCredentials: true,
       },
     });
 
-    if (!businessProvider) {
-      throw new NotFoundException('No provider found associated with this venue ID.');
+    if (!user.providerCredentialsId || !user.providerCredentials) {
+      throw new NotFoundException('No provider found associated with user.');
     }
 
-    return businessProvider.apiKey;
+    return user.providerCredentials.apiKey;
+  }
+
+  async getApiKeyByVenueId(venueId: string): Promise<string> {
+    const provider = await this.prismaService.provider.findUnique({
+      where: {
+        providerId: venueId,
+      },
+      include: {
+        business: {
+          include: {
+            providerCredentials: true,
+          },
+        },
+      },
+    });
+
+    if (!provider || !provider.business.providerCredentialsId) {
+      throw new NotFoundException('No provider found associated with user.');
+    }
+
+    return provider.business.providerCredentials.apiKey;
   }
 
   public async getAllOrder() {
@@ -97,20 +121,19 @@ export class WoltService implements ProviderService {
    *
    * @return  {Promise<WoltOrder>}              A promise that resolves with the Wolt order data from the Wolt server.
    */
-  public async getOrderById(woltOrdeId: string, venueId: string): Promise<WoltOrder> {
-    const woltVenueApiKey = await this.getApiKeybyVenueId(venueId);
-
+  public async getOrderById(woltApiKey: string, woltOrdeId: string): Promise<WoltOrder> {
     try {
       const response = await axios.request({
         method: 'GET',
         baseURL: `${this.woltApiUrl}/orders/${woltOrdeId}`,
         headers: {
-          'WOLT-API-KEY': woltVenueApiKey,
+          'WOLT-API-KEY': woltApiKey,
         },
       });
 
       return response.data;
     } catch (error) {
+      console.log('🚀 ~ WoltService ~ getOrderById ~ error:', error);
       this.utilsService.logError(error);
     }
   }
@@ -119,14 +142,16 @@ export class WoltService implements ProviderService {
     woltOrderId: string,
     endpoint: string,
     orderType: WoltOrderType,
-    provider: Provider,
+    orderingUserId: number,
     updateData?: Omit<OrderData, 'provider'>,
   ) {
+    const woltApiKey = await this.getApiKeyByOrderingUserId(orderingUserId);
+
     const option = {
       method: 'PUT',
       baseURL: `${this.woltApiUrl}/orders/${woltOrderId}/${endpoint}`,
       headers: {
-        'WOLT-API-KEY': provider.apiKey,
+        'WOLT-API-KEY': woltApiKey,
       },
       data:
         endpoint === 'reject'
@@ -148,7 +173,7 @@ export class WoltService implements ProviderService {
       this.logger.log(
         `Error when updating wolt Order with order id:${woltOrderId}. Error: ${error}`,
       );
-      await this.syncWoltOrder(woltOrderId, provider.providerId);
+      await this.syncWoltOrder(woltOrderId, orderingUserId, 'orderingUserId');
       throw new ForbiddenException(error);
     }
   }
@@ -166,17 +191,14 @@ export class WoltService implements ProviderService {
    * @throws {Error} If any issues occur during the retrieval, validation, or update process.
    */
   public async updateOrder(
-    accessToken: string,
+    orderingUserId: number,
     woltOrderId: string,
     { orderStatus, preparedIn }: Omit<OrderData, 'provider'>,
   ): Promise<any> {
-    const order = await this.getOrderByIdFromDb(woltOrderId);
+    // Get wolt api ley from database
+    const woltApiKey = await this.getApiKeyByOrderingUserId(orderingUserId);
 
-    const businessProvider = await this.prismaService.provider.findUnique({
-      where: {
-        orderingBusinessId: order.orderingBusinessId,
-      },
-    });
+    const order = await this.getOrderByIdFromDb(woltOrderId);
 
     const updateEndPoint = this.generateWoltUpdateEndPoint(orderStatus, order as any);
 
@@ -193,7 +215,7 @@ export class WoltService implements ProviderService {
         order.orderId,
         updateEndPoint,
         order.type as WoltOrderType,
-        businessProvider,
+        orderingUserId,
         {
           orderStatus: OrderStatusEnum.IN_PROGRESS,
           preparedIn: adjustedPickupTime,
@@ -206,7 +228,7 @@ export class WoltService implements ProviderService {
       ) {
         const maxRetries = 10;
         const retryInterval = 500;
-        const syncPickUpTime = await this.getOrderById(order.orderId, businessProvider.providerId);
+        const syncPickUpTime = await this.getOrderById(woltApiKey, order.orderId);
         const formattedSyncOrder = await this.mapOrderToOrderResponse(syncPickUpTime);
 
         const woltOrderMoment = moment(formattedSyncOrder.pickupEta);
@@ -221,7 +243,7 @@ export class WoltService implements ProviderService {
         }
 
         if (hasPickupTimeUpdated) {
-          await this.syncWoltOrder(order.orderId, businessProvider.providerId);
+          await this.syncWoltOrder(order.orderId, orderingUserId, 'orderingUserId');
         }
       }
 
@@ -270,23 +292,19 @@ export class WoltService implements ProviderService {
   }
 
   public async rejectOrder(
-    orderingToken: string,
+    orderingUserId: number,
     orderId: string,
     orderRejectData: {
       reason: string;
     },
   ) {
     const order = await this.getOrderByIdFromDb(orderId);
-    const businessProvider = await this.prismaService.provider.findUnique({
-      where: {
-        orderingBusinessId: order.orderingBusinessId,
-      },
-    });
+
     await this.sendWoltUpdateRequest(
       order.orderId,
       'reject',
       order.type as WoltOrderType,
-      businessProvider,
+      orderingUserId,
       {
         reason: orderRejectData.reason,
         orderStatus: OrderStatusEnum.REJECTED,
@@ -306,8 +324,8 @@ export class WoltService implements ProviderService {
     return updatedOrder;
   }
 
-  async getWoltBusinessById(woltVenueId: string) {
-    const woltVenueApiKey = await this.getApiKeybyVenueId(woltVenueId);
+  async getWoltBusinessById(woltVenueId: string, orderingUserId: number) {
+    const woltVenueApiKey = await this.getApiKeyByOrderingUserId(orderingUserId);
 
     const option = {
       method: 'GET',
@@ -327,8 +345,13 @@ export class WoltService implements ProviderService {
   }
 
   // TODO: Get api key by business
-  async setWoltVenueStatus(woltVenueId: string, status: boolean, time?: string) {
-    const woltVenueApiKey = await this.getApiKeybyVenueId(woltVenueId);
+  async setWoltVenueStatus(
+    woltVenueId: string,
+    orderingUserId: number,
+    status: boolean,
+    time?: string,
+  ) {
+    const woltVenueApiKey = await this.getApiKeyByOrderingUserId(orderingUserId);
 
     const option = {
       method: 'PATCH',
@@ -544,21 +567,24 @@ export class WoltService implements ProviderService {
    *
    * @return  {[string]}               [return void]
    */
-  async syncWoltOrder(woltOrderId: string, venueId: string): Promise<any> {
-    const order = await this.prismaService.order.findUnique({
-      where: {
-        orderId: woltOrderId,
-      },
-    });
+  async syncWoltOrder(
+    woltOrderId: string,
+    keyLookupValue: string | number,
+    lookupType: 'orderingUserId' | 'venueId',
+  ): Promise<any> {
+    let woltApiKey: string; // API Keys are typically strings
 
-    if (!order) {
-      return 'No order found in the database';
+    if (lookupType === 'orderingUserId' && typeof keyLookupValue === 'number') {
+      woltApiKey = await this.getApiKeyByOrderingUserId(keyLookupValue);
+    } else if (lookupType === 'venueId' && typeof keyLookupValue === 'string') {
+      woltApiKey = await this.getApiKeyByVenueId(keyLookupValue);
+    } else {
+      throw new Error('Invalid lookupType or  keyLookupValue type provided');
     }
-    //Get order from wolt
-    const woltOrder = await this.getOrderById(woltOrderId, venueId);
-    // Mapp to general order response
+
+    const woltOrder = await this.getOrderById(woltApiKey, woltOrderId);
     const mappedWoltOrder = await this.mapOrderToOrderResponse(woltOrder);
-    //Init prisma validator
+
     const orderUpdateInputAgrs = Prisma.validator<Prisma.OrderUpdateInput>()({
       orderId: mappedWoltOrder.id,
       provider: mappedWoltOrder.provider,

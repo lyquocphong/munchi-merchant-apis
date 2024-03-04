@@ -1,14 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { BusinessService } from 'src/business/business.service';
-import { OrderingService } from 'src/provider/ordering/ordering.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { ProviderManagmentService } from 'src/provider/provider-management.service';
 import { OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
 import { AvailableOrderStatus, OrderStatusEnum } from './dto/order.dto';
 import { OrderRejectData } from './validation/order.validation';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { Prisma } from '@prisma/client';
-import { WoltOrderPrismaSelectArgs } from 'src/provider/wolt/wolt.type';
 
 @Injectable()
 export class OrderService {
@@ -60,19 +58,14 @@ export class OrderService {
   }
 
   async getOrderbyId(orderingUserId: number, orderId: string) {
-    const accessToken = await this.utils.getOrderingAccessToken(orderingUserId);
     try {
-      return await this.providerManagementService.getOrderById(orderId, {
-        orderingToken: accessToken,
-      });
+      return await this.providerManagementService.getOrderById(orderId, orderingUserId);
     } catch (error) {
       this.utils.logError(error);
     }
   }
 
   async updateOrder(orderingUserId: number, orderId: string, orderData: OrderData) {
-    const accessToken = await this.utils.getOrderingAccessToken(orderingUserId);
-
     if (!orderData || Object.values(orderData).some((value) => value === null)) {
       throw new NotFoundException('Not enough data');
     }
@@ -87,13 +80,11 @@ export class OrderService {
       //Update order base on provider
       const order = await this.providerManagementService.updateOrder(
         orderData.provider,
+        orderingUserId,
         orderId,
         {
           orderStatus: orderData.orderStatus,
           preparedIn: orderData.preparedIn,
-        },
-        {
-          orderingToken: accessToken,
         },
       );
 
@@ -104,17 +95,13 @@ export class OrderService {
   }
 
   async rejectOrder(orderingUserId: number, orderId: string, orderRejectData: OrderRejectData) {
-    const accessToken = await this.utils.getOrderingAccessToken(orderingUserId);
-
     try {
       return await this.providerManagementService.rejectOrder(
         orderRejectData.provider,
         orderId,
+        orderingUserId,
         {
           reason: orderRejectData.reason,
-        },
-        {
-          orderingToken: accessToken,
         },
       );
     } catch (error) {

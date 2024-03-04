@@ -6,11 +6,13 @@ import { OrderingOrder } from './ordering/ordering.type';
 import { AvailableProvider, ProviderEnum } from './provider.type';
 import { WoltService } from './wolt/wolt.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { UtilsService } from 'src/utils/utils.service';
 
 @Injectable()
 export class ProviderManagmentService {
   constructor(
     private woltService: WoltService,
+    private utilService: UtilsService,
     private orderingService: OrderingService,
     private eventEmitter: EventEmitter2,
   ) {}
@@ -43,6 +45,7 @@ export class ProviderManagmentService {
       }),
     );
 
+    // TODO: Map provider enum to an array then use that array to map to get order from the database. Filter out "Munchi" first as it is not stored in our database
     //If wolt provider included in the body data
     if (provider.includes(ProviderEnum.Wolt)) {
       const orderBy = Prisma.validator<Prisma.OrderOrderByWithRelationInput>()({
@@ -69,11 +72,13 @@ export class ProviderManagmentService {
     return formattedOrderingOrders;
   }
 
-  async getOrderById(orderId: string, { orderingToken }: { orderingToken: string }) {
+  async getOrderById(orderId: string, orderingUserId: number) {
+    // TODO: Need to be refactored so can work with other provider in the future
     const woltOrder = await this.woltService.getOrderByIdFromDb(orderId);
 
     if (!woltOrder) {
-      const orderingOrder = await this.orderingService.getOrderById(orderingToken, orderId);
+      const accessToken = await this.utilService.getOrderingAccessToken(orderingUserId);
+      const orderingOrder = await this.orderingService.getOrderById(accessToken, orderId);
       const mapToOrderResponse = await this.orderingService.mapOrderToOrderResponse(orderingOrder);
       return mapToOrderResponse;
     }
@@ -83,18 +88,18 @@ export class ProviderManagmentService {
 
   async updateOrder(
     provider: AvailableProvider,
+    orderingUserId: number,
     orderId: string,
     updateData: {
       orderStatus: AvailableOrderStatus;
       preparedIn: string;
     },
-    { orderingToken }: { orderingToken: string },
   ) {
     if (provider === ProviderEnum.Wolt) {
-      return await this.woltService.updateOrder(orderingToken, orderId, updateData);
+      return await this.woltService.updateOrder(orderingUserId, orderId, updateData);
     } else if (provider === ProviderEnum.Munchi) {
       const orderingOrder = await this.orderingService.updateOrder(
-        orderingToken,
+        orderingUserId,
         orderId,
         updateData,
       );
@@ -105,16 +110,16 @@ export class ProviderManagmentService {
   async rejectOrder(
     provider: AvailableProvider,
     orderId: string,
+    orderingUserId: number,
     orderRejectData: {
       reason: string;
     },
-    { orderingToken }: { orderingToken: string },
   ) {
     let order: any;
     if (provider === ProviderEnum.Wolt) {
-      order = await this.woltService.rejectOrder(orderingToken, orderId, orderRejectData);
+      order = await this.woltService.rejectOrder(orderingUserId, orderId, orderRejectData);
     } else if (provider === ProviderEnum.Munchi) {
-      const orderingOrder = await this.orderingService.rejectOrder(orderingToken, orderId);
+      const orderingOrder = await this.orderingService.rejectOrder(orderingUserId, orderId);
       order = await this.orderingService.mapOrderToOrderResponse(orderingOrder);
     }
 

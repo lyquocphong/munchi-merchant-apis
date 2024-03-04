@@ -84,6 +84,7 @@ export class WebhookService implements OnModuleInit {
   async newOrderNotification(order: OrderingOrder) {
     const formattedOrder = await this.orderingService.mapOrderToOrderResponse(order);
 
+    //Save order data from ordering webhook
     await this.orderingService.saveOrderingOrder(formattedOrder);
     try {
       this.logger.log(`Emit order register to business ${order.business.name}`);
@@ -115,7 +116,11 @@ export class WebhookService implements OnModuleInit {
 
   async woltOrderNotification(woltWebhookdata: WoltOrderNotification) {
     const venueId = woltWebhookdata.order.venue_id;
-    let woltOrder = await this.woltService.getOrderById(woltWebhookdata.order.id, venueId);
+    // Get apiKey by venue id
+    const woltApiKey = await this.woltService.getApiKeyByVenueId(venueId);
+    let woltOrder = await this.woltService.getOrderById(woltApiKey, woltWebhookdata.order.id);
+
+    // Find business to get business id for socket to emit
     const business = await this.businessService.findBusinessByWoltVenueid(venueId);
 
     if (woltOrder.delivery.type === 'homedelivery') {
@@ -145,7 +150,7 @@ export class WebhookService implements OnModuleInit {
 
     // Sync order again
 
-    await this.woltService.syncWoltOrder(woltWebhookdata.order.id, venueId);
+    await this.woltService.syncWoltOrder(woltWebhookdata.order.id, venueId, 'venueId');
 
     //Log the last order
     if (woltWebhookdata.order.status === 'DELIVERED') {

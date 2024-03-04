@@ -93,7 +93,7 @@ export class OrderingService implements ProviderService {
   }
 
   async getOrderById(
-    accessToken: string,
+    orderingAccessToken: string,
     orderId: string,
     apiKey?: string,
   ): Promise<OrderingOrder> {
@@ -102,7 +102,7 @@ export class OrderingService implements ProviderService {
       url: `${this.utilService.getEnvUrl('orders', orderId)}?mode=dashboard`,
       headers: {
         accept: 'application/json',
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${orderingAccessToken}`,
       },
     };
 
@@ -310,10 +310,12 @@ export class OrderingService implements ProviderService {
   }
 
   async updateOrder(
-    accessToken: string,
+    orderingUserId: number,
     orderId: string,
     orderData: Omit<OrderData, 'provider'>,
   ): Promise<OrderingOrder> {
+    const accessToken = await this.utilService.getOrderingAccessToken(orderingUserId);
+
     const orderingOrder = await this.getOrderById(accessToken, orderId);
 
     const defaultStatus = {
@@ -358,7 +360,9 @@ export class OrderingService implements ProviderService {
 
   // }
 
-  async rejectOrder(accessToken: string, orderId: string): Promise<OrderingOrder> {
+  async rejectOrder(orderingUserId: number, orderId: string): Promise<OrderingOrder> {
+    const accessToken = await this.utilService.getOrderingAccessToken(orderingUserId);
+
     const options = {
       method: 'PUT',
       url: `${this.utilService.getEnvUrl('orders', orderId)}`,
@@ -484,9 +488,7 @@ export class OrderingService implements ProviderService {
 
     // Assuming the input time is in UTC, convert to local time
 
-    const deliveryDatetime = orderingOrder.delivery_datetime
-      ? this.utilService.convertTimeToTimeZone(orderingOrder.delivery_datetime, business.timeZone)
-      : null;
+    const deliveryDatetime = orderingOrder.delivery_datetime;
 
     const createdAt = orderingOrder.created_at
       ? moment.utc(orderingOrder.created_at, inputFormat).local().toISOString(true)

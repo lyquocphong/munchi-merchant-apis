@@ -9,7 +9,7 @@ import { ProviderOrder } from './provider.type';
 export abstract class ProviderService {
   abstract getAllOrder(accessToken: string, id: string): Promise<any>;
 
-  abstract getOrderById(accessToken: string, id: string): Promise<ProviderOrder>;
+  abstract getOrderById(credentials: string, id: string): Promise<ProviderOrder>;
 
   //Need business ids here as we need to get order from multiple businesses at a time
   abstract getOrderByStatus(
@@ -19,7 +19,7 @@ export abstract class ProviderService {
   ): Promise<OrderResponse[] | OrderingOrder[]>;
 
   abstract updateOrder(
-    accessToken: string,
+    orderingUserId: number,
     orderId: string,
     orderData: OrderData,
   ): Promise<Order | OrderResponse>;
