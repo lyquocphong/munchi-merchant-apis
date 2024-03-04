@@ -24,6 +24,8 @@ import { AvailableProvider, ProviderEnum } from 'src/provider/provider.type';
 import { WoltService } from 'src/provider/wolt/wolt.service';
 import { BusinessInfoSelectBase } from './business.type';
 import { ProviderDto } from './validation';
+import { ApiKeyService } from 'src/auth/apiKey.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class BusinessService {
@@ -31,8 +33,10 @@ export class BusinessService {
   constructor(
     private utils: UtilsService,
     private sessionService: SessionService,
+    private readonly apiKeyService: ApiKeyService,
     private readonly prismaService: PrismaService,
     private readonly userService: UserService,
+    private readonly configService: ConfigService,
     private woltService: WoltService,
     @Inject(forwardRef(() => QueueService)) private queueService: QueueService,
     @Inject(forwardRef(() => OrderingService)) private orderingService: OrderingService,
@@ -47,7 +51,10 @@ export class BusinessService {
     });
 
     if (!orderingApiKey) {
-      throw new NotFoundException('No key found');
+      const orderingApiKey = await this.configService.get('ORDERING_API_KEY');
+      this.apiKeyService.createApiKey('ORDERING_API_KEY', orderingApiKey);
+      this.syncBusinessFromOrdering();
+      return;
     }
 
     const orderingBusiness = await this.orderingService.getAllBusinessForAdmin(
@@ -226,6 +233,7 @@ export class BusinessService {
     duration: number = undefined,
   ) {
     const user = await this.userService.getUserByPublicId(userPublicId);
+
     const business = await this.getOrderingBusiness(user.orderingUserId, businessPublicId);
     const providerInfo = await this.prismaService.provider.findFirst({
       where: {
@@ -286,7 +294,11 @@ export class BusinessService {
         },
       });
 
-      await this.woltService.setWoltVenueStatus(providerInfo.providerId, status);
+      await this.woltService.setWoltVenueStatus(
+        providerInfo.providerId,
+        user.orderingUserId,
+        status,
+      );
       //send request to wolt venue\
 
       return {
