@@ -1,40 +1,31 @@
-import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import axios from 'axios';
 import { plainToInstance } from 'class-transformer';
-import moment from 'moment';
 import { Business } from 'ordering-api-sdk';
-import { OfferDto } from 'src/order/dto/offer.dto';
-import {
-  AvailableOrderStatus,
-  OrderResponse,
-  OrderResponsePreOrderStatusEnum,
-  OrderStatusEnum,
-} from 'src/order/dto/order.dto';
-import { ProductDto } from 'src/order/dto/product.dto';
+import { AvailableOrderStatus, OrderStatusEnum } from 'src/order/dto/order.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AuthCredentials, OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
 import { ProviderService } from '../provider.service';
-import { ProviderEnum } from '../provider.type';
-import { WoltOrderPrismaSelectArgs, WoltOrderType } from '../wolt/wolt.type';
+import { WoltOrderPrismaSelectArgs } from '../wolt/wolt.type';
+import { OrderingOrderMapperService } from './ordering-order-mapper';
 import {
   OrderingDeliveryType,
   OrderingOrder,
   OrderingOrderStatus,
   OrderingUser,
-  completedStatus,
-  deliveredStatus,
-  inProgressStatus,
-  pendingStatus,
-  rejectedStatus,
 } from './ordering.type';
-import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class OrderingService implements ProviderService {
   private readonly logger = new Logger(OrderingService.name);
 
-  constructor(private utilService: UtilsService, private readonly prismaService: PrismaService) {}
+  constructor(
+    private utilService: UtilsService,
+    private readonly prismaService: PrismaService,
+    private readonly orderingOrderMapperService: OrderingOrderMapperService,
+  ) {}
   getAllOrder(accessToken: string, id: string): Promise<any> {
     throw new Error('Method not implemented.');
   }
@@ -44,7 +35,10 @@ export class OrderingService implements ProviderService {
     businessOrderingIds: string[],
   ): Promise<OrderingOrder[]> {
     //Map from order status to ordering stus
-    const orderStatus = this.mapOrderingStatusToOrderStatus(undefined, status) as number[];
+    const orderStatus = this.orderingOrderMapperService.mapOrderingStatusToOrderStatus(
+      undefined,
+      status,
+    ) as number[];
 
     // Convert order status from number array to a string
     const mappedOrderStatusString = orderStatus.map((el: number) => el.toString()).join(',');
@@ -356,10 +350,6 @@ export class OrderingService implements ProviderService {
     }
   }
 
-  // async updateOrderInDb(){
-
-  // }
-
   async rejectOrder(orderingUserId: number, orderId: string): Promise<OrderingOrder> {
     const accessToken = await this.utilService.getOrderingAccessToken(orderingUserId);
 
@@ -463,219 +453,6 @@ export class OrderingService implements ProviderService {
     }
   }
 
-  //Transform ordering response to order resposne
-  async mapOrderToOrderResponse(orderingOrder: OrderingOrder): Promise<OrderResponse> {
-    const preorder: boolean = orderingOrder.reporting_data.at.hasOwnProperty(`status:13`);
-    const productDto = plainToInstance(ProductDto, orderingOrder.products);
-    const offers = plainToInstance(OfferDto, orderingOrder.offers);
-    const orderStatus = this.mapOrderingStatusToOrderStatus(orderingOrder.status) as string;
-    const business = await this.validateOrderingBusiness(orderingOrder.business_id.toString());
-    const inputFormat = 'YYYY-MM-DD HH:mm:ss';
-    let lastModified: string | null = null;
-    //Calculate total amount without delivery fee and including the discount
-    const total = (
-      orderingOrder.summary.total -
-      orderingOrder.summary.delivery_price -
-      orderingOrder.summary.driver_tip
-    ).toFixed(2);
-
-    if ('history' in orderingOrder && orderingOrder.history.length !== 0) {
-      lastModified = moment
-        .utc(orderingOrder.history[orderingOrder.history.length - 1].updated_at, inputFormat)
-        .local()
-        .toISOString(true);
-    }
-
-    // Assuming the input time is in UTC, convert to local time
-
-    const deliveryDatetime = orderingOrder.delivery_datetime;
-
-    const createdAt = orderingOrder.created_at
-      ? moment.utc(orderingOrder.created_at, inputFormat).local().toISOString(true)
-      : null;
-
-    return {
-      id: orderingOrder.id.toString(),
-      orderId: orderingOrder.id.toString(),
-      orderNumber: orderingOrder.id.toString(),
-      business: {
-        logo: business.logo,
-        name: business.name,
-        publicId: business.publicId,
-        address: business.address,
-        email: business.email,
-      },
-      table: orderingOrder.spot_number,
-      payMethodId: orderingOrder.paymethod_id,
-      type: preorder ? WoltOrderType.PreOrder : WoltOrderType.Instant,
-      deliveryType: orderingOrder.delivery_type,
-      comment: orderingOrder.comment,
-      summary: {
-        total: total.toString(), // This should be equal to subtotal as we don't need delivery fee
-      },
-      customer: {
-        name: `${orderingOrder.customer.name} ${orderingOrder.customer.lastname}`,
-        phone: orderingOrder.customer.cellphone,
-      },
-      deliveryEta: deliveryDatetime,
-      pickupEta: null,
-      lastModified: lastModified,
-      provider: ProviderEnum.Munchi,
-      status: orderStatus,
-      createdAt: createdAt,
-      preparedIn: orderingOrder.prepared_in,
-      preorder: preorder
-        ? {
-            status:
-              !orderingOrder.prepared_in && orderingOrder.status === OrderingOrderStatus.Preorder
-                ? OrderResponsePreOrderStatusEnum.Waiting
-                : OrderResponsePreOrderStatusEnum.Confirm,
-            preorderTime: deliveryDatetime,
-          }
-        : null,
-      products: productDto,
-      offers: offers,
-    };
-  }
-
-  async validateOrderingBusiness(orderingBusinessId: string) {
-    const business = await this.prismaService.business.findUnique({
-      where: {
-        orderingBusinessId: orderingBusinessId,
-      },
-    });
-    if (!business) {
-      throw new NotFoundException('No business found');
-    }
-
-    return business;
-  }
-
-  async saveOrderingOrderToDb(mappedOrderingOrder: OrderResponse) {
-    const orderData: Prisma.OrderCreateArgs = {
-      data: {
-        orderId: mappedOrderingOrder.id,
-        provider: mappedOrderingOrder.provider,
-        business: {
-          connect: {
-            publicId: mappedOrderingOrder.business.publicId,
-          },
-        },
-        customer: {
-          create: {
-            name: mappedOrderingOrder.customer.name,
-            phone: mappedOrderingOrder.customer.phone,
-          },
-        },
-        summary: {
-          create: {
-            total: mappedOrderingOrder.summary.total,
-          },
-        },
-        orderNumber: mappedOrderingOrder.orderNumber,
-        table: mappedOrderingOrder.table,
-        deliveryEta: mappedOrderingOrder.deliveryEta,
-        pickupEta: mappedOrderingOrder.pickupEta,
-        preparedIn: mappedOrderingOrder.preparedIn,
-        lastModified: mappedOrderingOrder.lastModified,
-        type: mappedOrderingOrder.type,
-        payMethodId: mappedOrderingOrder.payMethodId,
-        status: mappedOrderingOrder.status,
-        deliveryType: mappedOrderingOrder.deliveryType,
-        createdAt: mappedOrderingOrder.createdAt,
-        comment: mappedOrderingOrder.comment || undefined,
-        preorder: mappedOrderingOrder.preorder
-          ? {
-              create: {
-                preorderTime: mappedOrderingOrder.preorder.preorderTime,
-                status: mappedOrderingOrder.preorder.status,
-              },
-            }
-          : undefined,
-      },
-      include: {
-        products: true,
-      },
-    };
-
-    // Save order to database
-    const order = await this.prismaService.order.create(orderData);
-
-    await Promise.all(
-      mappedOrderingOrder.products.map(async (product) => {
-        const data: Prisma.ProductCreateInput = {
-          productId: product.id,
-          name: product.name,
-          comment: product.comment || undefined,
-          price: product.price,
-          quantity: product.quantity,
-          order: {
-            connect: {
-              orderId: order.orderId,
-            },
-          },
-        };
-        const productSaved = await this.prismaService.product.create({
-          data,
-        });
-        // Save product options to database
-        await Promise.all(
-          product.options.map(async (option) => {
-            const subOptions: Prisma.SubOptionCreateManyOptionInput[] = option.subOptions.map(
-              (subOption) => ({
-                subOptionId: subOption.id.toString(),
-                name: subOption.name,
-                price: subOption.price.toString(),
-                quantity: subOption.quantity,
-                image: subOption.image,
-                position: 0,
-              }),
-            );
-            const optionData: Prisma.OptionUncheckedCreateInput = {
-              optionId: option.id.toString(),
-              name: option.name,
-              productId: productSaved.id,
-              image: option.image,
-              price: option.price,
-              subOption: {
-                createMany: {
-                  data: subOptions,
-                  skipDuplicates: true,
-                },
-              },
-            };
-
-            await this.prismaService.option.create({
-              data: optionData,
-            });
-          }),
-        );
-      }),
-    );
-
-    return 'Save data successfully';
-  }
-
-  async saveOrderingOrder(formattedOrderingOrder: OrderResponse) {
-    await this.validateOrderingOrder(formattedOrderingOrder.id);
-
-    //Save order to database
-    await this.saveOrderingOrderToDb(formattedOrderingOrder);
-
-    return formattedOrderingOrder;
-  }
-
-  private async validateOrderingOrder(orderingOrderid: string) {
-    const order = await this.prismaService.order.findUnique({
-      where: {
-        orderId: orderingOrderid,
-      },
-    });
-    if (order) {
-      throw new ForbiddenException('Order existed');
-    }
-  }
-
   async syncOrderingOrder(orderingOrderId: string) {
     const orderingApiKey = await this.prismaService.apiKey.findFirst({
       where: {
@@ -696,7 +473,9 @@ export class OrderingService implements ProviderService {
     }
 
     const orderingOrder = await this.getOrderById('', orderingOrderId, orderingApiKey.value);
-    const mappedOrderingOrder = await this.mapOrderToOrderResponse(orderingOrder);
+    const mappedOrderingOrder = await this.orderingOrderMapperService.mapOrderToOrderResponse(
+      orderingOrder,
+    );
 
     const orderUpdateInputAgrs = Prisma.validator<Prisma.OrderUpdateInput>()({
       orderId: mappedOrderingOrder.id,
@@ -732,46 +511,5 @@ export class OrderingService implements ProviderService {
       data: orderUpdateInputAgrs,
       include: WoltOrderPrismaSelectArgs,
     });
-  }
-
-  mapOrderingStatusToOrderStatus(
-    orderingStatus?: number,
-    orderStatus?: AvailableOrderStatus[],
-  ): string | number[] {
-    if (orderingStatus !== undefined) {
-      const status = {
-        [OrderingOrderStatus.Preorder]: OrderStatusEnum.PREORDER,
-        [OrderingOrderStatus.Pending]: OrderStatusEnum.PENDING,
-        [OrderingOrderStatus.AcceptedByBusiness]: OrderStatusEnum.IN_PROGRESS,
-        [OrderingOrderStatus.AcceptedByDriver]: OrderStatusEnum.DRIVER_FOUND,
-        [OrderingOrderStatus.PreparationCompleted]: OrderStatusEnum.COMPLETED,
-        [OrderingOrderStatus.PickUpCompletedByDriver]: OrderStatusEnum.PICK_UP_COMPLETED_BY_DRIVER,
-        [OrderingOrderStatus.DeliveryCompletedByDriver]: OrderStatusEnum.DELIVERED,
-        [OrderingOrderStatus.PickupCompletedByCustomer]: OrderStatusEnum.DELIVERED,
-      };
-
-      if (rejectedStatus.includes(orderingStatus)) {
-        return OrderStatusEnum.REJECTED;
-      }
-
-      return status[orderingStatus];
-    }
-
-    if (orderStatus !== undefined && orderStatus.length > 0) {
-      if (orderStatus.includes(OrderStatusEnum.PENDING)) {
-        return pendingStatus as number[];
-      } else if (
-        orderStatus.includes(OrderStatusEnum.IN_PROGRESS) ||
-        orderStatus.includes(OrderStatusEnum.DRIVER_FOUND)
-      ) {
-        return inProgressStatus as number[];
-      } else if (orderStatus.includes(OrderStatusEnum.COMPLETED)) {
-        return completedStatus as number[];
-      } else if (orderStatus.includes(OrderStatusEnum.DELIVERED)) {
-        return deliveredStatus as number[];
-      } else {
-        return rejectedStatus as number[];
-      }
-    }
   }
 }
