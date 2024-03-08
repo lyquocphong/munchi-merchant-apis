@@ -4,9 +4,13 @@ import { PreorderQueue } from '@prisma/client';
 import { Server } from 'socket.io';
 import { BusinessService } from 'src/business/business.service';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { OrderingOrderMapperService } from 'src/provider/ordering/ordering-order-mapper';
+import { OrderingRepositoryService } from 'src/provider/ordering/ordering-repository';
 import { OrderingService } from 'src/provider/ordering/ordering.service';
 import { OrderingOrder, OrderingOrderStatus } from 'src/provider/ordering/ordering.type';
 import { ProviderEnum } from 'src/provider/provider.type';
+import { WoltOrderMapperService } from 'src/provider/wolt/wolt-order-mapper';
+import { WoltRepositoryService } from 'src/provider/wolt/wolt-repository';
 import { WoltService } from 'src/provider/wolt/wolt.service';
 import { WoltOrderNotification } from 'src/provider/wolt/wolt.type';
 import { UtilsService } from 'src/utils/utils.service';
@@ -32,7 +36,11 @@ export class WebhookService implements OnModuleInit {
     private notificationService: NotificationService,
     private woltService: WoltService,
     private orderingService: OrderingService,
+    private orderingOrderMapperService: OrderingOrderMapperService,
+    private orderingRepositoryService: OrderingRepositoryService,
     private prismaService: PrismaService,
+    private woltOrderMapperService: WoltOrderMapperService,
+    private woltRepositoryService: WoltRepositoryService,
   ) {}
 
   onModuleInit() {
@@ -82,10 +90,10 @@ export class WebhookService implements OnModuleInit {
   }
 
   async newOrderNotification(order: OrderingOrder) {
-    const formattedOrder = await this.orderingService.mapOrderToOrderResponse(order);
+    const formattedOrder = await this.orderingOrderMapperService.mapOrderToOrderResponse(order);
 
     //Save order data from ordering webhook
-    await this.orderingService.saveOrderingOrder(formattedOrder);
+    await this.orderingRepositoryService.saveOrderingOrder(formattedOrder);
     try {
       this.logger.log(`Emit order register to business ${order.business.name}`);
       this.server.to(order.business_id.toString()).emit('orders_register', formattedOrder);
@@ -98,7 +106,7 @@ export class WebhookService implements OnModuleInit {
   }
 
   async changeOrderNotification(order: OrderingOrder) {
-    const formattedOrder = await this.orderingService.mapOrderToOrderResponse(order);
+    const formattedOrder = await this.orderingOrderMapperService.mapOrderToOrderResponse(order);
     if (
       order.status === OrderingOrderStatus.Pending &&
       order.reporting_data.at.hasOwnProperty(`status:${OrderingOrderStatus.Preorder}`)
@@ -136,13 +144,13 @@ export class WebhookService implements OnModuleInit {
         }
       }
     }
-    const formattedWoltOrder = await this.woltService.mapOrderToOrderResponse(woltOrder);
+    const formattedWoltOrder = await this.woltOrderMapperService.mapOrderToOrderResponse(woltOrder);
     // Common processing for CREATED orders
     if (
       woltWebhookdata.order.status === 'CREATED' &&
       woltWebhookdata.type === 'order.notification'
     ) {
-      await this.woltService.saveWoltOrder(formattedWoltOrder);
+      await this.woltRepositoryService.saveWoltOrder(formattedWoltOrder);
       this.server.to(business.orderingBusinessId).emit('orders_register', formattedWoltOrder);
       this.notificationService.sendNewOrderNotification(business.orderingBusinessId);
       return 'Order sent';
@@ -150,7 +158,7 @@ export class WebhookService implements OnModuleInit {
 
     // Sync order again
 
-    await this.woltService.syncWoltOrder(woltWebhookdata.order.id, venueId, 'venueId');
+    await this.woltService.syncWoltOrder(woltApiKey, woltWebhookdata.order.id);
 
     //Log the last order
     if (woltWebhookdata.order.status === 'DELIVERED') {
@@ -178,14 +186,14 @@ export class WebhookService implements OnModuleInit {
 
     let order: any;
     if (provider === ProviderEnum.Wolt) {
-      order = await this.woltService.getOrderByIdFromDb(orderId.toString());
+      order = await this.woltRepositoryService.getOrderByIdFromDb(orderId.toString());
     } else {
       const orderingOrder = await this.orderingService.getOrderById(
         '',
         orderId.toString(),
         orderingApiKey.value,
       );
-      order = await this.orderingService.mapOrderToOrderResponse(orderingOrder);
+      order = await this.orderingOrderMapperService.mapOrderToOrderResponse(orderingOrder);
     }
     const message = `It's time for you to prepare order ${order.orderNumber}`;
     this.server.to(business.orderingBusinessId).emit('preorder', {

@@ -7,13 +7,17 @@ import { AvailableProvider, ProviderEnum } from './provider.type';
 import { WoltService } from './wolt/wolt.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UtilsService } from 'src/utils/utils.service';
+import { WoltRepositoryService } from './wolt/wolt-repository';
+import { OrderingOrderMapperService } from './ordering/ordering-order-mapper';
 
 @Injectable()
 export class ProviderManagmentService {
   constructor(
     private woltService: WoltService,
+    private woltRepositoryService: WoltRepositoryService,
     private utilService: UtilsService,
     private orderingService: OrderingService,
+    private orderingOrderMapperService: OrderingOrderMapperService,
     private eventEmitter: EventEmitter2,
   ) {}
   private readonly logger = new Logger(ProviderManagmentService.name);
@@ -41,7 +45,7 @@ export class ProviderManagmentService {
         this.logger.log(
           `Success in retrieving order for ${order.business.name} with status ${order.status}`,
         );
-        return await this.orderingService.mapOrderToOrderResponse(order);
+        return await this.orderingOrderMapperService.mapOrderToOrderResponse(order);
       }),
     );
 
@@ -74,12 +78,14 @@ export class ProviderManagmentService {
 
   async getOrderById(orderId: string, orderingUserId: number) {
     // TODO: Need to be refactored so can work with other provider in the future
-    const woltOrder = await this.woltService.getOrderByIdFromDb(orderId);
+    const woltOrder = await this.woltRepositoryService.getOrderByIdFromDb(orderId);
 
     if (!woltOrder) {
       const accessToken = await this.utilService.getOrderingAccessToken(orderingUserId);
       const orderingOrder = await this.orderingService.getOrderById(accessToken, orderId);
-      const mapToOrderResponse = await this.orderingService.mapOrderToOrderResponse(orderingOrder);
+      const mapToOrderResponse = await this.orderingOrderMapperService.mapOrderToOrderResponse(
+        orderingOrder,
+      );
       return mapToOrderResponse;
     }
 
@@ -103,7 +109,7 @@ export class ProviderManagmentService {
         orderId,
         updateData,
       );
-      return await this.orderingService.mapOrderToOrderResponse(orderingOrder);
+      return await this.orderingOrderMapperService.mapOrderToOrderResponse(orderingOrder);
     }
   }
 
@@ -120,7 +126,7 @@ export class ProviderManagmentService {
       order = await this.woltService.rejectOrder(orderingUserId, orderId, orderRejectData);
     } else if (provider === ProviderEnum.Munchi) {
       const orderingOrder = await this.orderingService.rejectOrder(orderingUserId, orderId);
-      order = await this.orderingService.mapOrderToOrderResponse(orderingOrder);
+      order = await this.orderingOrderMapperService.mapOrderToOrderResponse(orderingOrder);
     }
 
     // Validating preoder queue in case preorder been rejected after confirmed
