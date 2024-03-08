@@ -24,5 +24,5 @@ export abstract class ProviderService {
     orderData: OrderData,
   ): Promise<Order | OrderResponse>;
 
-  abstract mapOrderToOrderResponse(order: ProviderOrder): Promise<OrderResponse>;
+  // abstract mapOrderToOrderResponse(order: ProviderOrder): Promise<OrderResponse>;
 }
