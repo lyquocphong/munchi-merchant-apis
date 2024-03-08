@@ -9,14 +9,16 @@ import {
   OrderResponsePreOrderStatusEnum,
   OrderStatusEnum,
 } from 'src/order/dto/order.dto';
-import { ProductDto } from 'src/order/dto/product.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
 import { OrderingDeliveryType } from '../ordering/ordering.type';
 import { ProviderService } from '../provider.service';
 import { ProviderEnum } from '../provider.type';
-import { WoltItem, WoltOrder, WoltOrderPrismaSelectArgs, WoltOrderType } from './wolt.type';
+import { WoltOrderMapperService } from './wolt-order-mapper';
+import { WoltOrder, WoltOrderPrismaSelectArgs, WoltOrderType } from './wolt.type';
+import { WoltRepositoryService } from './wolt-repository';
+import { WoltSyncService } from './wolt-sync';
 
 @Injectable()
 export class WoltService implements ProviderService {
@@ -27,6 +29,9 @@ export class WoltService implements ProviderService {
     private configService: ConfigService,
     private prismaService: PrismaService,
     private utilsService: UtilsService,
+    private woltOrderMapperService: WoltOrderMapperService,
+    private woltRepositoryService: WoltRepositoryService,
+    private woltSyncService: WoltSyncService,
   ) {
     this.woltApiUrl = this.configService.get('WOLT_API_URL');
   }
@@ -52,6 +57,20 @@ export class WoltService implements ProviderService {
     });
 
     return orders;
+  }
+
+  async getWoltApiKey(keyLookupValue: string | number, lookupType: 'orderingUserId' | 'venueId') {
+    let woltApiKey: string; // API Keys are typically strings
+
+    if (lookupType === 'orderingUserId' && typeof keyLookupValue === 'number') {
+      woltApiKey = await this.getApiKeyByOrderingUserId(keyLookupValue);
+    } else if (lookupType === 'venueId' && typeof keyLookupValue === 'string') {
+      woltApiKey = await this.getApiKeyByVenueId(keyLookupValue);
+    } else {
+      throw new Error('Invalid lookupType or  keyLookupValue type provided');
+    }
+
+    return woltApiKey;
   }
 
   async getApiKeyByOrderingUserId(orderingUserId: number): Promise<string> {
@@ -133,7 +152,6 @@ export class WoltService implements ProviderService {
 
       return response.data;
     } catch (error) {
-      console.log('🚀 ~ WoltService ~ getOrderById ~ error:', error);
       this.utilsService.logError(error);
     }
   }
@@ -145,7 +163,7 @@ export class WoltService implements ProviderService {
     orderingUserId: number,
     updateData?: Omit<OrderData, 'provider'>,
   ) {
-    const woltApiKey = await this.getApiKeyByOrderingUserId(orderingUserId);
+    const woltApiKey = await this.getWoltApiKey(orderingUserId, 'orderingUserId');
 
     const option = {
       method: 'PUT',
@@ -173,7 +191,8 @@ export class WoltService implements ProviderService {
       this.logger.log(
         `Error when updating wolt Order with order id:${woltOrderId}. Error: ${error}`,
       );
-      await this.syncWoltOrder(woltOrderId, orderingUserId, 'orderingUserId');
+
+      await this.syncWoltOrder(woltApiKey, woltOrderId);
       throw new ForbiddenException(error);
     }
   }
@@ -196,9 +215,9 @@ export class WoltService implements ProviderService {
     { orderStatus, preparedIn }: Omit<OrderData, 'provider'>,
   ): Promise<any> {
     // Get wolt api ley from database
-    const woltApiKey = await this.getApiKeyByOrderingUserId(orderingUserId);
+    const woltApiKey = await this.getWoltApiKey(orderingUserId, 'orderingUserId');
 
-    const order = await this.getOrderByIdFromDb(woltOrderId);
+    const order = await this.woltRepositoryService.getOrderByIdFromDb(woltOrderId);
 
     const updateEndPoint = this.generateWoltUpdateEndPoint(orderStatus, order as any);
 
@@ -229,7 +248,9 @@ export class WoltService implements ProviderService {
         const maxRetries = 10;
         const retryInterval = 500;
         const syncPickUpTime = await this.getOrderById(woltApiKey, order.orderId);
-        const formattedSyncOrder = await this.mapOrderToOrderResponse(syncPickUpTime);
+        const formattedSyncOrder = await this.woltOrderMapperService.mapOrderToOrderResponse(
+          syncPickUpTime,
+        );
 
         const woltOrderMoment = moment(formattedSyncOrder.pickupEta);
         const formattedSyncOrderMoment = moment(order.pickupEta);
@@ -243,7 +264,7 @@ export class WoltService implements ProviderService {
         }
 
         if (hasPickupTimeUpdated) {
-          await this.syncWoltOrder(order.orderId, orderingUserId, 'orderingUserId');
+          await this.syncWoltOrder(woltApiKey, order.orderId);
         }
       }
 
@@ -298,7 +319,7 @@ export class WoltService implements ProviderService {
       reason: string;
     },
   ) {
-    const order = await this.getOrderByIdFromDb(orderId);
+    const order = await this.woltRepositoryService.getOrderByIdFromDb(orderId);
 
     await this.sendWoltUpdateRequest(
       order.orderId,
@@ -322,6 +343,13 @@ export class WoltService implements ProviderService {
       include: WoltOrderPrismaSelectArgs,
     });
     return updatedOrder;
+  }
+
+  async syncWoltOrder(woltApiKey: string, woltOrderId: string) {
+    const woltOrder = await this.getOrderById(woltApiKey, woltOrderId);
+    const mappedWoltOrder = await this.woltOrderMapperService.mapOrderToOrderResponse(woltOrder);
+
+    await this.woltSyncService.syncWoltOrder(mappedWoltOrder);
   }
 
   async getWoltBusinessById(woltVenueId: string, orderingUserId: number) {
@@ -373,374 +401,6 @@ export class WoltService implements ProviderService {
       // await this.syncWoltBusiness(woltOrderId);
       throw new ForbiddenException(error);
     }
-  }
-
-  public mapWoltItemToProductDto(woltItems: WoltItem[]): ProductDto[] {
-    return woltItems.map((product) => ({
-      id: product.id,
-      name: product.name,
-      quantity: product.count,
-      comment: null,
-      price: (product.total_price.amount / 100).toFixed(1), // Convert from cents to euros and round to 1 decimal place
-      options: product.options.map((option) => ({
-        id: this.utilsService.generatePublicId(),
-        name: option.name,
-        image: null,
-        price: null,
-        subOptions: [
-          {
-            id: option.id,
-            image: null,
-            position: 0,
-            name: option.value,
-            price: (option.price.amount / 100).toFixed(1),
-            quantity: option.count,
-          },
-        ],
-      })),
-    }));
-  }
-
-  public async mapOrderToOrderResponse(woltOrder: WoltOrder): Promise<OrderResponse> {
-    let deliverytype: number;
-
-    //Find business by venue id
-    const businessData = await this.validateBusinessByVenueId(woltOrder.venue.id);
-
-    woltOrder.delivery.type === 'eatin'
-      ? (deliverytype = OrderingDeliveryType.EatIn)
-      : woltOrder.delivery.type === 'homedelivery'
-      ? (deliverytype = OrderingDeliveryType.Delivery)
-      : (deliverytype = OrderingDeliveryType.PickUp);
-
-    const products = this.mapWoltItemToProductDto(woltOrder.items);
-
-    const orderStatusMapping = {
-      received:
-        woltOrder.type === WoltOrderType.Instant
-          ? OrderStatusEnum.PENDING
-          : OrderStatusEnum.PREORDER,
-      fetched:
-        woltOrder.type === WoltOrderType.Instant
-          ? OrderStatusEnum.PENDING
-          : OrderStatusEnum.PREORDER,
-      acknowledged:
-        woltOrder.type === WoltOrderType.Instant
-          ? OrderStatusEnum.PENDING
-          : OrderStatusEnum.PREORDER,
-      production: OrderStatusEnum.IN_PROGRESS,
-      ready: OrderStatusEnum.COMPLETED,
-      delivered: OrderStatusEnum.DELIVERED,
-      rejected: OrderStatusEnum.REJECTED,
-    };
-
-    const createdAt = this.utilsService.convertTimeToTimeZone(
-      woltOrder.created_at,
-      businessData.business.timeZone,
-    );
-
-    const modifiedAt = this.utilsService.convertTimeToTimeZone(
-      woltOrder.modified_at,
-      businessData.business.timeZone,
-    );
-
-    const pickupEta = this.utilsService.convertTimeToTimeZone(
-      woltOrder.pickup_eta,
-      businessData.business.timeZone,
-    );
-
-    const preOrderTime =
-      woltOrder.type === WoltOrderType.PreOrder && woltOrder.pre_order !== null
-        ? this.utilsService.convertTimeToTimeZone(
-            woltOrder.pre_order.preorder_time,
-            businessData.business.timeZone,
-          )
-        : null;
-
-    const deliveryTime = woltOrder.delivery.time
-      ? this.utilsService.convertTimeToTimeZone(
-          woltOrder.pickup_eta,
-          businessData.business.timeZone,
-        )
-      : null;
-
-    return {
-      id: woltOrder.id,
-      orderNumber: woltOrder.order_number,
-      orderId: woltOrder.id,
-      business: {
-        logo: businessData.business.logo,
-        name: businessData.business.name,
-        publicId: businessData.business.publicId,
-        address: businessData.business.address,
-        email: businessData.business.email,
-      },
-      table: null,
-      payMethodId: null,
-      customer: {
-        name: woltOrder.consumer_name,
-        phone: woltOrder.consumer_phone_number,
-      },
-      lastModified: modifiedAt,
-      type: woltOrder.type,
-      deliveryType: deliverytype,
-      comment: woltOrder.consumer_comment,
-      summary: {
-        total: (woltOrder.price.amount / 100).toFixed(2),
-      },
-      pickupEta: pickupEta,
-      deliveryEta: deliveryTime,
-      preparedIn: null,
-      provider: ProviderEnum.Wolt,
-      status: orderStatusMapping[woltOrder.order_status],
-      createdAt: createdAt,
-      preorder: woltOrder.pre_order
-        ? {
-            status: woltOrder.pre_order.pre_order_status,
-            preorderTime: preOrderTime,
-          }
-        : null,
-      products: products,
-      offers: [],
-    };
-  }
-
-  /**
-   * Retrieves order data from the Wolt server based on the provided webhook data
-   * and saves it to the local database.
-   *
-   * @param   {WoltOrderNotification<OrderResponse>}  woltWebhookdata  The webhook data containing order information from Wolt.
-   *
-   * @return  {Promise<OrderResponse>}                                 A promise that resolves with the order response after saving to the database.
-   */
-  async saveWoltOrder(formattedWoltOrder: OrderResponse): Promise<OrderResponse> {
-    //Validate if this wolt order was saved before or not
-    await this.validateWoltOrder(formattedWoltOrder.id);
-
-    //Save order to database
-    await this.saveWoltOrdertoDb(formattedWoltOrder);
-
-    return formattedWoltOrder;
-  }
-
-  private async validateBusinessByVenueId(woltVenueId: string) {
-    const business = await this.prismaService.provider.findUnique({
-      where: {
-        providerId: woltVenueId,
-      },
-      select: {
-        business: true,
-      },
-    });
-
-    if (!business) {
-      throw new NotFoundException('No business is associated with this id');
-    }
-
-    return business;
-  }
-
-  public async getOrderByIdFromDb(woltOrderId: string) {
-    const order = await this.prismaService.order.findUnique({
-      where: {
-        id: parseInt(woltOrderId),
-      },
-      include: WoltOrderPrismaSelectArgs,
-    });
-
-    if (!order) {
-      return null;
-    }
-    // const syncOrder = await this.syncWoltOrder(order.orderId);
-
-    return order;
-  }
-
-  /**
-   * Synchronizes order data from the Wolt server and updates our local database.
-   * This function retrieves order information from the Wolt server and ensures that our
-   * local database reflects the latest data. It is responsible for handling the synchronization
-   * process, updating order details, and maintaining consistency between the external Wolt
-   * server and our internal database.
-   *
-   * @param   {string}  woltOrderId  [It will need wolt order id to retreieve data]
-   *
-   * @return  {[string]}               [return void]
-   */
-  async syncWoltOrder(
-    woltOrderId: string,
-    keyLookupValue: string | number,
-    lookupType: 'orderingUserId' | 'venueId',
-  ): Promise<any> {
-    let woltApiKey: string; // API Keys are typically strings
-
-    if (lookupType === 'orderingUserId' && typeof keyLookupValue === 'number') {
-      woltApiKey = await this.getApiKeyByOrderingUserId(keyLookupValue);
-    } else if (lookupType === 'venueId' && typeof keyLookupValue === 'string') {
-      woltApiKey = await this.getApiKeyByVenueId(keyLookupValue);
-    } else {
-      throw new Error('Invalid lookupType or  keyLookupValue type provided');
-    }
-
-    const woltOrder = await this.getOrderById(woltApiKey, woltOrderId);
-    const mappedWoltOrder = await this.mapOrderToOrderResponse(woltOrder);
-
-    const orderUpdateInputAgrs = Prisma.validator<Prisma.OrderUpdateInput>()({
-      orderId: mappedWoltOrder.id,
-      provider: mappedWoltOrder.provider,
-      status: mappedWoltOrder.status,
-      deliveryType: mappedWoltOrder.deliveryType,
-      createdAt: mappedWoltOrder.createdAt,
-      comment: mappedWoltOrder.comment,
-      type: mappedWoltOrder.type,
-      orderNumber: mappedWoltOrder.orderNumber,
-      preorder: mappedWoltOrder.preorder
-        ? {
-            update: {
-              status: mappedWoltOrder.preorder.status,
-              preorderTime: mappedWoltOrder.preorder.preorderTime,
-            },
-          }
-        : undefined,
-
-      lastModified: mappedWoltOrder.lastModified,
-      deliveryEta: mappedWoltOrder.deliveryEta,
-      pickupEta: mappedWoltOrder.pickupEta,
-      payMethodId: mappedWoltOrder.payMethodId,
-    });
-
-    //Update order in database
-    return await this.prismaService.order.update({
-      where: {
-        orderId: woltOrderId,
-      },
-      data: orderUpdateInputAgrs,
-      include: WoltOrderPrismaSelectArgs,
-    });
-  }
-
-  private async validateWoltOrder(woltOrderId: string) {
-    const order = await this.prismaService.order.findUnique({
-      where: {
-        orderId: woltOrderId,
-      },
-    });
-    if (order) {
-      throw new ForbiddenException('Order existed');
-    }
-  }
-
-  /**
-   * Saves a Wolt order to the database using Prisma.
-   *
-   * @param {OrderResponse} mappedWoltOrder - The Wolt order data mapped to a general response model.
-   *
-   * @return  {<string>}           A promise that resolves with a string indicating the result of the save operation.
-   */
-  async saveWoltOrdertoDb(mappedWoltOrder: OrderResponse): Promise<string> {
-    const orderData: Prisma.OrderCreateArgs = {
-      data: {
-        orderId: mappedWoltOrder.id,
-        provider: mappedWoltOrder.provider,
-        business: {
-          connect: {
-            publicId: mappedWoltOrder.business.publicId,
-          },
-        },
-        customer: {
-          create: {
-            name: mappedWoltOrder.customer.name,
-            phone: mappedWoltOrder.customer.phone,
-          },
-        },
-        summary: {
-          create: {
-            total: mappedWoltOrder.summary.total,
-          },
-        },
-        orderNumber: mappedWoltOrder.orderNumber,
-        table: mappedWoltOrder.table,
-        deliveryEta: mappedWoltOrder.deliveryEta,
-        pickupEta: mappedWoltOrder.pickupEta,
-        preparedIn: mappedWoltOrder.preparedIn,
-        lastModified: mappedWoltOrder.lastModified,
-        type: mappedWoltOrder.type,
-        payMethodId: mappedWoltOrder.payMethodId,
-        status: mappedWoltOrder.status,
-        deliveryType: mappedWoltOrder.deliveryType,
-        createdAt: mappedWoltOrder.createdAt,
-        comment: mappedWoltOrder.comment || undefined,
-        preorder: mappedWoltOrder.preorder
-          ? {
-              create: {
-                preorderTime: mappedWoltOrder.preorder.preorderTime,
-                status: mappedWoltOrder.preorder.status,
-              },
-            }
-          : undefined,
-      },
-      include: {
-        products: true,
-      },
-    };
-
-    // Save order to database
-    const order = await this.prismaService.order.create(orderData);
-
-    // Save products to database
-    await Promise.all(
-      mappedWoltOrder.products.map(async (product) => {
-        const data: Prisma.ProductCreateInput = {
-          productId: product.id,
-          name: product.name,
-          comment: product.comment || undefined,
-          price: product.price,
-          quantity: product.quantity,
-          order: {
-            connect: {
-              orderId: order.orderId,
-            },
-          },
-        };
-        const productSaved = await this.prismaService.product.create({
-          data,
-        });
-        // Save product options to database
-        await Promise.all(
-          product.options.map(async (option) => {
-            const subOptions: Prisma.SubOptionCreateManyOptionInput[] = option.subOptions.map(
-              (subOption) => ({
-                subOptionId: subOption.id,
-                name: subOption.name,
-                price: subOption.price,
-                quantity: subOption.quantity,
-                image: subOption.image,
-                position: subOption.position,
-              }),
-            );
-            const optionData: Prisma.OptionUncheckedCreateInput = {
-              optionId: option.id,
-              name: option.name,
-              productId: productSaved.id,
-              image: option.image,
-              price: option.price,
-              subOption: {
-                createMany: {
-                  data: subOptions,
-                  skipDuplicates: true,
-                },
-              },
-            };
-
-            await this.prismaService.option.create({
-              data: optionData,
-            });
-          }),
-        );
-      }),
-    );
-
-    return 'Save data successfully';
   }
 
   generateWoltUpdateEndPoint(orderStatus: AvailableOrderStatus, woltOrderFromDb: OrderResponse) {
