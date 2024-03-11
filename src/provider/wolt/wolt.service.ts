@@ -16,9 +16,9 @@ import { OrderingDeliveryType } from '../ordering/ordering.type';
 import { ProviderService } from '../provider.service';
 import { ProviderEnum } from '../provider.type';
 import { WoltOrderMapperService } from './wolt-order-mapper';
-import { WoltOrder, WoltOrderPrismaSelectArgs, WoltOrderType } from './wolt.type';
 import { WoltRepositoryService } from './wolt-repository';
 import { WoltSyncService } from './wolt-sync';
+import { WoltOrder, WoltOrderPrismaSelectArgs, WoltOrderType } from './wolt.type';
 
 @Injectable()
 export class WoltService implements ProviderService {
@@ -98,17 +98,31 @@ export class WoltService implements ProviderService {
       include: {
         business: {
           include: {
-            providerCredentials: true,
+            owners: {
+              include: {
+                providerCredentials: true,
+              },
+            },
           },
         },
       },
     });
 
-    if (!provider || !provider.business.providerCredentialsId) {
+    const providerCredentialsId = provider.business.owners.map(
+      (owner) => owner.providerCredentials.id,
+    );
+
+    const providerCredentials = await this.prismaService.providerCredential.findUnique({
+      where: {
+        id: providerCredentialsId[0],
+      },
+    });
+
+    if (!providerCredentials) {
       throw new NotFoundException('No provider found associated with user.');
     }
 
-    return provider.business.providerCredentials.apiKey;
+    return providerCredentials.apiKey;
   }
 
   /**
@@ -198,6 +212,10 @@ export class WoltService implements ProviderService {
     const order = await this.woltRepositoryService.getOrderByIdFromDb(woltOrderId);
 
     const updateEndPoint = this.generateWoltUpdateEndPoint(orderStatus, order as any);
+
+    if (order.status === OrderStatusEnum.DELIVERED) {
+      return;
+    }
 
     if (orderStatus === OrderStatusEnum.PICK_UP_COMPLETED_BY_DRIVER) {
       return this.updateAndReturn(order, null, orderStatus);
@@ -326,6 +344,19 @@ export class WoltService implements ProviderService {
   async syncWoltOrder(woltApiKey: string, woltOrderId: string) {
     const woltOrder = await this.getOrderById(woltApiKey, woltOrderId);
     const mappedWoltOrder = await this.woltOrderMapperService.mapOrderToOrderResponse(woltOrder);
+
+    const order = await this.prismaService.order.findUnique({
+      where: {
+        orderId: woltOrderId,
+      },
+    });
+
+    if (
+      order.status === OrderStatusEnum.PICK_UP_COMPLETED_BY_DRIVER &&
+      mappedWoltOrder.status === OrderStatusEnum.COMPLETED
+    ) {
+      return;
+    }
 
     await this.woltSyncService.syncWoltOrder(mappedWoltOrder);
   }

@@ -125,12 +125,13 @@ export class WebhookService implements OnModuleInit {
   async woltOrderNotification(woltWebhookdata: WoltOrderNotification) {
     const venueId = woltWebhookdata.order.venue_id;
     // Get apiKey by venue id
-    const woltApiKey = await this.woltService.getApiKeyByVenueId(venueId);
+    const woltApiKey = await this.woltService.getWoltApiKey(venueId, 'venueId');
     let woltOrder = await this.woltService.getOrderById(woltApiKey, woltWebhookdata.order.id);
 
     // Find business to get business id for socket to emit
     const business = await this.businessService.findBusinessByWoltVenueid(venueId);
 
+    // Update pick up time. Sometime Wolt hasn't fully update pick up time
     if (woltOrder.delivery.type === 'homedelivery') {
       const maxRetries = 10;
       const retryInterval = 500;
