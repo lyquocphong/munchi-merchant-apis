@@ -111,28 +111,6 @@ export class WoltService implements ProviderService {
     return provider.business.providerCredentials.apiKey;
   }
 
-  public async getAllOrder() {
-    return await this.prismaService.order.findMany({
-      orderBy: {
-        id: 'desc',
-      },
-      include: {
-        business: true,
-        offers: true,
-        preorder: true,
-        products: {
-          include: {
-            option: {
-              include: {
-                subOption: true,
-              },
-            },
-          },
-        },
-      },
-    });
-  }
-
   /**
    * Asynchronously retrieves Wolt order data from the Wolt server.
    *
@@ -318,7 +296,7 @@ export class WoltService implements ProviderService {
     orderRejectData: {
       reason: string;
     },
-  ) {
+  ): Promise<any> {
     const order = await this.woltRepositoryService.getOrderByIdFromDb(orderId);
 
     await this.sendWoltUpdateRequest(
@@ -353,7 +331,7 @@ export class WoltService implements ProviderService {
   }
 
   async getWoltBusinessById(woltVenueId: string, orderingUserId: number) {
-    const woltVenueApiKey = await this.getApiKeyByOrderingUserId(orderingUserId);
+    const woltVenueApiKey = await this.getWoltApiKey(orderingUserId, 'orderingUserId');
 
     const option = {
       method: 'GET',
@@ -372,14 +350,13 @@ export class WoltService implements ProviderService {
     }
   }
 
-  // TODO: Get api key by business
   async setWoltVenueStatus(
     woltVenueId: string,
     orderingUserId: number,
     status: boolean,
     time?: string,
   ) {
-    const woltVenueApiKey = await this.getApiKeyByOrderingUserId(orderingUserId);
+    const woltVenueApiKey = await this.getWoltApiKey(orderingUserId, 'orderingUserId');
 
     const option = {
       method: 'PATCH',

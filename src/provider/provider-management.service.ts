@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { AvailableOrderStatus } from '../order/dto/order.dto';
+import { AvailableOrderStatus, OrderResponse } from '../order/dto/order.dto';
 import { OrderingService } from './ordering/ordering.service';
 import { OrderingOrder } from './ordering/ordering.type';
 import { AvailableProvider, ProviderEnum } from './provider.type';
@@ -9,6 +9,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UtilsService } from 'src/utils/utils.service';
 import { WoltRepositoryService } from './wolt/wolt-repository';
 import { OrderingOrderMapperService } from './ordering/ordering-order-mapper';
+import { ProviderService } from './provider.service';
 
 @Injectable()
 export class ProviderManagmentService {
@@ -21,10 +22,6 @@ export class ProviderManagmentService {
     private eventEmitter: EventEmitter2,
   ) {}
   private readonly logger = new Logger(ProviderManagmentService.name);
-  async getAllOrder(provider: string[], { orderingToken }: { orderingToken: string }) {
-    const woltOrder = this.woltService.getAllOrder();
-    return woltOrder;
-  }
 
   async getOrderByStatus(
     provider: string[],
@@ -77,7 +74,7 @@ export class ProviderManagmentService {
   }
 
   async getOrderById(orderId: string, orderingUserId: number) {
-    // TODO: Need to be refactored so can work with other provider in the future
+    // TODO: Need to be refactored so can work with other providers in the future
     const woltOrder = await this.woltRepositoryService.getOrderByIdFromDb(orderId);
 
     if (!woltOrder) {
@@ -92,6 +89,7 @@ export class ProviderManagmentService {
     return woltOrder;
   }
 
+  // TODO: Test update order and reject order after refactor
   async updateOrder(
     provider: AvailableProvider,
     orderingUserId: number,
@@ -101,16 +99,9 @@ export class ProviderManagmentService {
       preparedIn: string;
     },
   ) {
-    if (provider === ProviderEnum.Wolt) {
-      return await this.woltService.updateOrder(orderingUserId, orderId, updateData);
-    } else if (provider === ProviderEnum.Munchi) {
-      const orderingOrder = await this.orderingService.updateOrder(
-        orderingUserId,
-        orderId,
-        updateData,
-      );
-      return await this.orderingOrderMapperService.mapOrderToOrderResponse(orderingOrder);
-    }
+    const providerService = this.mapProviderToService(provider);
+
+    return providerService.updateOrder(orderingUserId, orderId, updateData);
   }
 
   async rejectOrder(
@@ -121,18 +112,20 @@ export class ProviderManagmentService {
       reason: string;
     },
   ) {
-    let order: any;
-    if (provider === ProviderEnum.Wolt) {
-      order = await this.woltService.rejectOrder(orderingUserId, orderId, orderRejectData);
-    } else if (provider === ProviderEnum.Munchi) {
-      const orderingOrder = await this.orderingService.rejectOrder(orderingUserId, orderId);
-      order = await this.orderingOrderMapperService.mapOrderToOrderResponse(orderingOrder);
+    let order: OrderingOrder | OrderResponse;
+    const providerService = this.mapProviderToService(provider);
+
+    order = await providerService.rejectOrder(orderingUserId, orderId, orderRejectData);
+
+    // Map from ordering order to order response
+    if (provider === ProviderEnum.Munchi) {
+      order = await this.orderingOrderMapperService.mapOrderToOrderResponse(order as OrderingOrder);
     }
 
     // Validating preoder queue in case preorder been rejected after confirmed
     this.eventEmitter.emit('preorderQueue.validate', parseInt(orderId));
 
-    return order;
+    return order as OrderResponse;
   }
 
   async validateProvider(providers: string[] | string): Promise<boolean> {
@@ -145,5 +138,15 @@ export class ProviderManagmentService {
     return (
       Array.isArray(providers) && providers.every((provider) => providerArray.includes(provider))
     );
+  }
+
+  // Retrieves the appropriate ProviderService based on the provided 'provider'.
+  // Returns null if no matching service is configured.
+  mapProviderToService(provider: AvailableProvider): ProviderService | null {
+    const providerServiceMap: Record<AvailableProvider, ProviderService> = {
+      [ProviderEnum.Munchi]: this.orderingService,
+      [ProviderEnum.Wolt]: this.woltService,
+    };
+    return providerServiceMap[provider] || null;
   }
 }
