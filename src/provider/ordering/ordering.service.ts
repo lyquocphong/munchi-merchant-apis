@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import { plainToInstance } from 'class-transformer';
 import { Business } from 'ordering-api-sdk';
-import { AvailableOrderStatus, OrderStatusEnum } from 'src/order/dto/order.dto';
+import { AvailableOrderStatus, OrderResponse, OrderStatusEnum } from 'src/order/dto/order.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AuthCredentials, OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
@@ -280,7 +280,7 @@ export class OrderingService implements ProviderService {
     orderingUserId: number,
     orderId: string,
     orderData: Omit<OrderData, 'provider'>,
-  ): Promise<OrderingOrder> {
+  ): Promise<OrderResponse> {
     const accessToken = await this.utilService.getOrderingAccessToken(orderingUserId);
 
     const orderingOrder = await this.getOrderById(accessToken, orderId);
@@ -317,7 +317,11 @@ export class OrderingService implements ProviderService {
 
     try {
       const response = await axios.request(options);
-      return response.data.result;
+
+      const formattedOrder = await this.orderingOrderMapperService.mapOrderToOrderResponse(
+        response.data.result,
+      );
+      return formattedOrder;
     } catch (error) {
       this.utilService.logError(error);
     }
@@ -329,7 +333,7 @@ export class OrderingService implements ProviderService {
     orderRejectData: {
       reason: string;
     },
-  ): Promise<OrderingOrder> {
+  ): Promise<OrderResponse> {
     const accessToken = await this.utilService.getOrderingAccessToken(orderingUserId);
 
     const options = {
@@ -345,7 +349,12 @@ export class OrderingService implements ProviderService {
     };
     try {
       const response = await axios.request(options);
-      return response.data.result;
+
+      const formattedOrder = await this.orderingOrderMapperService.mapOrderToOrderResponse(
+        response.data.result,
+      );
+
+      return formattedOrder;
     } catch (error) {
       this.utilService.logError(error);
     }
