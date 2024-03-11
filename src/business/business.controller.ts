@@ -102,12 +102,11 @@ export class BusinessController {
   @UseGuards(ApiKeyGuard)
   @Post('add-provider')
   async setExtraConfig(@Body(new ValidationPipe()) body: ProviderDto) {
-    const { name, id: businessPublicId, providerId, apiKey } = body;
+    const { name, id: businessPublicId, providerId } = body;
 
     return this.businessService.addBusinessProvider(businessPublicId, {
       name: name,
       providerId: providerId,
-      apiKey: apiKey,
     });
   }
 }

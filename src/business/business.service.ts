@@ -406,7 +406,6 @@ export class BusinessService {
     const dataUpsert = Prisma.validator<Prisma.ProviderUncheckedCreateInput>()({
       name: data.name,
       providerId: data.providerId,
-      apiKey: data.apiKey,
       orderingBusinessId: business.orderingBusinessId,
     });
 
