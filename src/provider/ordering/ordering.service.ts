@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import axios from 'axios';
 import { plainToInstance } from 'class-transformer';
 import { Business } from 'ordering-api-sdk';
@@ -8,8 +7,8 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { AuthCredentials, OrderData } from 'src/type';
 import { UtilsService } from 'src/utils/utils.service';
 import { ProviderService } from '../provider.service';
-import { WoltOrderPrismaSelectArgs } from '../wolt/wolt.type';
 import { OrderingOrderMapperService } from './ordering-order-mapper';
+import { OrderingSyncService } from './ordering-sync';
 import {
   OrderingDeliveryType,
   OrderingOrder,
@@ -25,10 +24,9 @@ export class OrderingService implements ProviderService {
     private utilService: UtilsService,
     private readonly prismaService: PrismaService,
     private readonly orderingOrderMapperService: OrderingOrderMapperService,
+    private readonly orderingSyncService: OrderingSyncService,
   ) {}
-  getAllOrder(accessToken: string, id: string): Promise<any> {
-    throw new Error('Method not implemented.');
-  }
+
   async getOrderByStatus(
     accessToken: string,
     status: AvailableOrderStatus[],
@@ -259,31 +257,6 @@ export class OrderingService implements ProviderService {
     }
   }
 
-  async getFilteredOrders(
-    accessToken: string,
-    businessId: string,
-    query: string,
-    paramsQuery: string[],
-  ) {
-    const options = {
-      method: 'GET',
-      url: `${this.utilService.getEnvUrl(
-        'orders',
-      )}?mode=dashboard&where={${query},"business_id":${businessId}}&params=${paramsQuery}`,
-      headers: {
-        accept: 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-      },
-    };
-
-    try {
-      const response = await axios.request(options);
-      return response.data.result;
-    } catch (error) {
-      this.utilService.logError(error);
-    }
-  }
-
   async getUserKey(accessToken: string, userId: number) {
     const options = {
       method: 'GET',
@@ -350,7 +323,13 @@ export class OrderingService implements ProviderService {
     }
   }
 
-  async rejectOrder(orderingUserId: number, orderId: string): Promise<OrderingOrder> {
+  async rejectOrder(
+    orderingUserId: number,
+    orderId: string,
+    orderRejectData: {
+      reason: string;
+    },
+  ): Promise<OrderingOrder> {
     const accessToken = await this.utilService.getOrderingAccessToken(orderingUserId);
 
     const options = {
@@ -477,39 +456,24 @@ export class OrderingService implements ProviderService {
       orderingOrder,
     );
 
-    const orderUpdateInputAgrs = Prisma.validator<Prisma.OrderUpdateInput>()({
-      orderId: mappedOrderingOrder.id,
-      provider: mappedOrderingOrder.provider,
-      status: mappedOrderingOrder.status,
-      deliveryType: mappedOrderingOrder.deliveryType,
-      createdAt: mappedOrderingOrder.createdAt,
-      comment: mappedOrderingOrder.comment,
-      type: mappedOrderingOrder.type,
-      orderNumber: mappedOrderingOrder.orderNumber,
-      preparedIn: mappedOrderingOrder.preparedIn
-        ? mappedOrderingOrder.preparedIn.toString()
-        : undefined,
-      preorder: mappedOrderingOrder.preorder
-        ? {
-            update: {
-              status: mappedOrderingOrder.preorder.status,
-              preorderTime: mappedOrderingOrder.preorder.preorderTime,
-            },
-          }
-        : undefined,
+    return this.orderingSyncService.syncOrderingOrder(mappedOrderingOrder);
+  }
 
-      lastModified: mappedOrderingOrder.lastModified,
-      deliveryEta: mappedOrderingOrder.deliveryEta,
-      pickupEta: mappedOrderingOrder.pickupEta,
-      payMethodId: mappedOrderingOrder.payMethodId,
-    });
-
-    return await this.prismaService.order.update({
-      where: {
-        orderId: orderingOrderId,
+  async getMenuCategory(orderingAccessToken: string, orderingBusinessId: string) {
+    const options = {
+      method: 'GET',
+      url: this.utilService.getEnvUrl('business', `${orderingBusinessId}/categories`),
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${orderingAccessToken}`,
       },
-      data: orderUpdateInputAgrs,
-      include: WoltOrderPrismaSelectArgs,
-    });
+    };
+
+    try {
+      const response = await axios.request(options);
+      return response.data.result;
+    } catch (error) {
+      this.utilService.logError(error);
+    }
   }
 }

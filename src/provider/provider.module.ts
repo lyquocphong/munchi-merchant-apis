@@ -7,6 +7,7 @@ import { WoltRepositoryService } from './wolt/wolt-repository';
 import { WoltSyncService } from './wolt/wolt-sync';
 import { OrderingOrderMapperService } from './ordering/ordering-order-mapper';
 import { OrderingRepositoryService } from './ordering/ordering-repository';
+import { OrderingSyncService } from './ordering/ordering-sync';
 
 @Module({
   providers: [
@@ -15,6 +16,7 @@ import { OrderingRepositoryService } from './ordering/ordering-repository';
     OrderingService,
     OrderingOrderMapperService,
     OrderingRepositoryService,
+    OrderingSyncService,
     // Wolt Services
     WoltService,
     WoltOrderMapperService,
