@@ -30,12 +30,11 @@ model ApiKey {
 }
 
 model ProviderCredential {
-  id       Int        @unique @default(autoincrement())
+  id       Int     @unique @default(autoincrement())
   username String?
   password String?
   apiKey   String?
-  user     User[]     @relation("User-provider")
-  business Business[] @relation("Business-ProviderCredentials")
+  user     User[]  @relation("User-provider")
 }
 
 model User {
@@ -52,30 +51,28 @@ model User {
   sessions                     Session[]
   businesses                   Business[]          @relation("MyUserBusinessTable")
   providerCredentials          ProviderCredential? @relation("User-provider", fields: [providerCredentialsId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  providerCredentialsId        Int?                 @unique
+  providerCredentialsId        Int?
 
   @@map("user")
 }
 
 model Business {
-  id                    Int                 @id @default(autoincrement())
-  orderingBusinessId    String              @unique
-  publicId              String              @unique @default(uuid())
-  name                  String
-  owners                User[]              @relation("MyUserBusinessTable")
-  sessions              Session[]           @relation("BusinessSessionTable")
-  logo                  String?
-  email                 String?
-  phone                 String?
-  address               String?
-  description           String?
-  timeZone              String              @default("Europe/Helsinki")
-  orders                Order[]             @relation("BusinessOrder")
-  enabled               Boolean             @default(true)
-  open                  Boolean             @default(true)
-  provider              Provider[]          @relation("Provider")
-  providerCredentials   ProviderCredential? @relation("Business-ProviderCredentials", fields: [providerCredentialsId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  providerCredentialsId Int?                @unique
+  id                 Int        @id @default(autoincrement())
+  orderingBusinessId String     @unique
+  publicId           String     @unique @default(uuid())
+  name               String
+  owners             User[]     @relation("MyUserBusinessTable")
+  sessions           Session[]  @relation("BusinessSessionTable")
+  logo               String?
+  email              String?
+  phone              String?
+  address            String?
+  description        String?
+  timeZone           String     @default("Europe/Helsinki")
+  orders             Order[]    @relation("BusinessOrder")
+  enabled            Boolean    @default(true)
+  open               Boolean    @default(true)
+  provider           Provider[] @relation("Provider")
 
   @@map("business")
 }
@@ -86,7 +83,6 @@ model Provider {
   business           Business @relation("Provider", fields: [orderingBusinessId], references: [orderingBusinessId], onDelete: Cascade, onUpdate: Cascade)
   name               String
   providerId         String   @unique
-  apiKey             String   @default("")
   open               Boolean  @default(true)
   enabled            Boolean  @default(true)
   ipadFree           Boolean?
