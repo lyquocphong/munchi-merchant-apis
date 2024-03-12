@@ -79,9 +79,9 @@ export class WoltService implements ProviderService {
         preorder: true,
         products: {
           include: {
-            option: {
+            options: {
               include: {
-                subOption: true,
+                subOptions: true,
               },
             },
           },
@@ -682,7 +682,7 @@ export class WoltService implements ProviderService {
         // Save product options to database
         await Promise.all(
           product.options.map(async (option) => {
-            const subOptions: Prisma.SubOptionCreateManyOptionInput[] = option.subOptions.map(
+            const subOptions: Prisma.SubOptionCreateManyOptionsInput[] = option.subOptions.map(
               (subOption) => ({
                 subOptionId: subOption.id,
                 name: subOption.name,
@@ -698,7 +698,7 @@ export class WoltService implements ProviderService {
               productId: productSaved.id,
               image: option.image,
               price: option.price,
-              subOption: {
+              subOptions: {
                 createMany: {
                   data: subOptions,
                   skipDuplicates: true,

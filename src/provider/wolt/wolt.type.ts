@@ -181,13 +181,13 @@ export const WoltOrderPrismaSelectArgs = Prisma.validator<Prisma.OrderInclude>()
       productId: true,
       comment: true,
       name: true,
-      option: {
+      options: {
         select: {
           optionId: true,
           image: true,
           price: true,
           name: true,
-          subOption: {
+          subOptions: {
             select: {
               subOptionId: true,
               name: true,
