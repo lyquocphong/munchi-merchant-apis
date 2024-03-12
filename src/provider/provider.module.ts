@@ -9,6 +9,7 @@ import { WoltOrderMapperService } from './wolt/wolt-order-mapper';
 import { WoltRepositoryService } from './wolt/wolt-repository';
 import { WoltSyncService } from './wolt/wolt-sync';
 import { WoltService } from './wolt/wolt.service';
+import { OrderingMenuMapperService } from './ordering/ordering-menu-mapper';
 
 @Module({
   providers: [
@@ -17,6 +18,7 @@ import { WoltService } from './wolt/wolt.service';
     OrderingService,
     OrderingOrderMapperService,
     OrderingRepositoryService,
+    OrderingMenuMapperService,
     OrderingSyncService,
     // Wolt Services
     WoltService,
@@ -36,6 +38,7 @@ import { WoltService } from './wolt/wolt.service';
     OrderingService,
     OrderingOrderMapperService,
     OrderingRepositoryService,
+    OrderingMenuMapperService,
     WoltService,
     ProviderManagmentService,
     WoltOrderMapperService,
