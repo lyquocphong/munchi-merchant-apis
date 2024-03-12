@@ -7,9 +7,9 @@ export class MenuController {
   constructor(private menuService: MenuService) {}
 
   @UseGuards(JwtGuard)
-  @Get()
-  getMenu(@Req() request: any) {
+  @Get('category')
+  getMenuCategory(@Req() request: any) {
     const { orderingUserId } = request.user;
-    return this.menuService.getMenu(orderingUserId);
+    return this.menuService.getMenuCategory(orderingUserId);
   }
 }
