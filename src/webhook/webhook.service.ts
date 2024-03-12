@@ -131,7 +131,7 @@ export class WebhookService implements OnModuleInit {
     // Find business to get business id for socket to emit
     const business = await this.businessService.findBusinessByWoltVenueid(venueId);
 
-    // Update pick up time. Sometime Wolt hasn't fully update pick up time
+    // Update pick up time. Sometimes Wolt hasn't fully update pick up time
     if (woltOrder.delivery.type === 'homedelivery') {
       const maxRetries = 10;
       const retryInterval = 500;
