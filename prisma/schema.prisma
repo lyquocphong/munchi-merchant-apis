@@ -155,7 +155,7 @@ model Product {
   comment   String?
   orderId   String
   order     Order    @relation("order-product", fields: [orderId], references: [orderId], onDelete: Cascade, onUpdate: Cascade)
-  option    Option[] @relation("product-option")
+  options    Option[] @relation("product-option")
 }
 
 model Option {
@@ -166,7 +166,7 @@ model Option {
   price     String? // Replace with the appropriate type for your use case
   productId Int
   product   Product     @relation("product-option", fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  subOption SubOption[] @relation("option-suboption")
+  subOptions SubOption[] @relation("option-suboption")
 }
 
 model SubOption {
@@ -178,7 +178,7 @@ model SubOption {
   position    Int?
   quantity    Int
   optionId    Int
-  option      Option  @relation("option-suboption", fields: [optionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  options      Option  @relation("option-suboption", fields: [optionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 //Order summary price
