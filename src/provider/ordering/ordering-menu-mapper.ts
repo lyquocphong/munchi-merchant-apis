@@ -1,25 +1,102 @@
 import { Injectable } from '@nestjs/common';
-import { OrderingCategory, OrderingCategoryProduct } from 'src/menu/dto/menu.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { WoltCategory, WoltOptionValue, WoltProductItem, WoltProductOption } from '../wolt/dto/wolt-menu.dto';
+import {
+  OrderingCategoryProduct,
+  OrderingCategoryProductExtraOption,
+  OrderingCategoryProductExtraSubOption,
+  OrderingMenuCategory
+} from './dto/ordering-menu.dto';
 
 @Injectable()
 export class OrderingMenuMapperService {
   constructor(private prismaService: PrismaService) {}
 
-  mapToWoltCategory(orderingCategory: OrderingCategory) {
+  mapToWoltCategory(orderingCategory: OrderingMenuCategory): WoltCategory {
     const woltProducts = this.mapToWoltItem(orderingCategory.products);
-
     return {
-      id: orderingCategory.id,
-      name: orderingCategory.name,
-      description: orderingCategory.description,
+      id: orderingCategory.id.toString(),
+      name: [
+        {
+          lang: 'en',
+          value: orderingCategory.name,
+        },
+      ],
+      description: [
+        {
+          lang: 'en',
+          value: orderingCategory.description
+            ? orderingCategory.description
+            : 'Testing category description',
+        },
+      ],
       items: woltProducts,
     };
   }
 
-  mapToWoltItem(orderingCategoryProducts: OrderingCategoryProduct[]) {
-    // orderingCategoryProducts.map((orderingCategoryproduct: OrderingCategoryProduct) => {
-    //     const WoltOption = orderingCategoryproduct.extras.
-    // })
+  //Map from product to wolt items
+  mapToWoltItem(orderingCategoryProducts: OrderingCategoryProduct[]): WoltProductItem[] {
+    // TODO: Check if there is no product in the category
+
+    return orderingCategoryProducts.map(
+      (categoryProduct: OrderingCategoryProduct): WoltProductItem => ({
+        name: [
+          {
+            lang: 'en',
+            value: categoryProduct.name,
+          },
+        ],
+        description: [
+          {
+            lang: 'en',
+            value: categoryProduct.description
+              ? categoryProduct.description
+              : 'Testing for syncing',
+          },
+        ],
+        delivery_methods: ['takeaway', 'homedelivery', 'eatin'],
+        price: categoryProduct.price,
+        image_url: categoryProduct.images ? categoryProduct.images : '',
+        external_data: categoryProduct.id.toString(),
+        quantity: 100,
+        enabled: true,
+        options:
+          categoryProduct.extras.length !== 0
+            ? this.mapToWoltOptionFromOrdering(categoryProduct.extras[0].options)
+            : undefined,
+      }),
+    );
+  }
+
+  // Map from ordering option and suboption to wolt option
+  mapToWoltOptionFromOrdering(
+    orderingProductExtras: OrderingCategoryProductExtraOption[],
+  ): WoltProductOption[] {
+    return orderingProductExtras.map((productOption: OrderingCategoryProductExtraOption) => ({
+      external_data: productOption.id.toString(),
+      name: [
+        {
+          lang: 'en',
+          value: productOption.name,
+        },
+      ],
+      type: productOption.max > 2 ? 'MultiChoice' : 'SingleChoice',
+      values: productOption.suboptions.length
+        ? productOption.suboptions.map(
+            (subOption: OrderingCategoryProductExtraSubOption, index: number): WoltOptionValue => ({
+              price: subOption.price,
+              external_data: subOption.id.toString(),
+              enabled: true,
+              default: true,
+              name: [
+                {
+                  lang: 'en',
+                  value: subOption.name,
+                },
+              ],
+            }),
+          )
+        : [],
+    }));
   }
 }
