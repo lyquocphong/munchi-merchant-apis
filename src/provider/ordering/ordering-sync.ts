@@ -2,8 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { OrderingOrderMapperService } from './ordering-order-mapper';
 import { Prisma } from '@prisma/client';
-import { WoltOrderPrismaSelectArgs } from '../wolt/wolt.type';
+
 import { OrderResponse } from 'src/order/dto/order.dto';
+import { WoltOrderPrismaSelectArgs } from '../wolt/dto/wolt-order.dto';
 
 @Injectable()
 export class OrderingSyncService {

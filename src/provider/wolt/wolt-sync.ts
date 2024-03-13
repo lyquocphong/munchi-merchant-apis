@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { OrderResponse } from 'src/order/dto/order.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { WoltOrderPrismaSelectArgs } from './wolt.type';
+import { WoltOrderPrismaSelectArgs } from './dto/wolt-order.dto'
 
 @Injectable()
 export class WoltSyncService {

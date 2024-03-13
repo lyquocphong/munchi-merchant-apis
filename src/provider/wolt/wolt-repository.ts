@@ -2,7 +2,8 @@ import { ForbiddenException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { OrderResponse } from 'src/order/dto/order.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { WoltOrderPrismaSelectArgs } from './wolt.type';
+import { WoltOrderPrismaSelectArgs } from './dto/wolt-order.dto';
+
 
 @Injectable()
 export class WoltRepositoryService {
@@ -115,7 +116,7 @@ export class WoltRepositoryService {
         // Save product options to database
         await Promise.all(
           product.options.map(async (option) => {
-            const subOptions: Prisma.SubOptionCreateManyOptionInput[] = option.subOptions.map(
+            const subOptions: Prisma.SubOptionCreateManyOptionsInput[] = option.subOptions.map(
               (subOption) => ({
                 subOptionId: subOption.id,
                 name: subOption.name,
@@ -131,7 +132,7 @@ export class WoltRepositoryService {
               productId: productSaved.id,
               image: option.image,
               price: option.price,
-              subOption: {
+              subOptions: {
                 createMany: {
                   data: subOptions,
                   skipDuplicates: true,

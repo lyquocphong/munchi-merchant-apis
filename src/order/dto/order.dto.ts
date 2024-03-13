@@ -5,7 +5,8 @@ import { SummaryDto } from './summary.dto';
 import { HistoryDto } from './history.dto';
 import { BusinessDto } from 'src/business/dto/business.dto';
 import { OfferDto } from 'src/order/dto/offer.dto';
-import { WoltOrderType } from 'src/provider/wolt/wolt.type';
+import { WoltOrderType } from 'src/provider/wolt/dto/wolt-order.dto';
+
 
 class ReportingData {
   @Expose()

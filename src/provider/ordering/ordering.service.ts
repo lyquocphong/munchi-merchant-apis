@@ -11,10 +11,10 @@ import { OrderingOrderMapperService } from './ordering-order-mapper';
 import { OrderingSyncService } from './ordering-sync';
 import {
   OrderingDeliveryType,
-  OrderingOrder,
   OrderingOrderStatus,
   OrderingUser,
 } from './ordering.type';
+import { OrderingOrder } from './dto/ordering-order.dto';
 
 @Injectable()
 export class OrderingService implements ProviderService {

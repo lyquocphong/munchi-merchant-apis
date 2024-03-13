@@ -1,15 +1,5 @@
-import { OrderingOrder } from './ordering/ordering.type';
-import { WoltOrder } from './wolt/wolt.type';
-
-export interface Provider {
-  getAllOrder(): Promise<void>;
-
-  getOrderById<T>(orderId: string): Promise<T>;
-
-  updateOrder<T>(orderId: string, action: WOLT_ACTIONS): Promise<T>;
-
-  mapToOrderResponse(order: WoltOrder | OrderingOrder): Promise<any>;
-}
+import { OrderingOrder } from './ordering/dto/ordering-order.dto';
+import { WoltOrder } from './wolt/dto/wolt-order.dto';
 
 /**
  * This wolt actions take from wolt develop document to make it dynamic

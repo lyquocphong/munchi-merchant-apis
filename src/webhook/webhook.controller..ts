@@ -1,8 +1,9 @@
 import { Body, Controller, Post, Req } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
-import { WoltOrderNotification } from 'src/provider/wolt/wolt.type';
+
 import { WebhookService } from './webhook.service';
+import { WoltOrderNotification } from 'src/provider/wolt/dto/wolt-order.dto';
 
 @Controller('webhook')
 @ApiTags('Webhook')

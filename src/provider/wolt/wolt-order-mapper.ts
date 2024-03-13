@@ -1,11 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { WoltItem, WoltOrder, WoltOrderType } from './wolt.type';
+
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ProductDto } from 'src/order/dto/product.dto';
 import { OrderResponse, OrderStatusEnum } from 'src/order/dto/order.dto';
 import { OrderingDeliveryType } from '../ordering/ordering.type';
 import { UtilsService } from 'src/utils/utils.service';
 import { ProviderEnum } from '../provider.type';
+import { WoltItem, WoltOrder, WoltOrderType } from './dto/wolt-order.dto';
 
 @Injectable()
 export class WoltOrderMapperService {

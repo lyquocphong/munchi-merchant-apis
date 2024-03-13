@@ -6,9 +6,10 @@ import { FinancialAnalyticsService } from 'src/financial-analytics/financial-ana
 import { OrderStatusEnum } from 'src/order/dto/order.dto';
 import { OrderService } from 'src/order/order.service';
 import { ProviderEnum } from 'src/provider/provider.type';
-import { WoltOrderPrismaSelectArgs } from 'src/provider/wolt/wolt.type';
+
 import { Historyquery } from './dto/history,dto';
 import { mapToDate } from './utils/getTimeRange';
+import { WoltOrderPrismaSelectArgs } from 'src/provider/wolt/dto/wolt-order.dto';
 
 @Injectable()
 export class HistoryService {

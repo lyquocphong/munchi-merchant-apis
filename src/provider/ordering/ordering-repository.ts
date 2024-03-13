@@ -77,7 +77,7 @@ export class OrderingRepositoryService {
         // Save product options to database
         await Promise.all(
           product.options.map(async (option) => {
-            const subOptions: Prisma.SubOptionCreateManyOptionInput[] = option.subOptions.map(
+            const subOptions: Prisma.SubOptionCreateManyOptionsInput[] = option.subOptions.map(
               (subOption) => ({
                 subOptionId: subOption.id.toString(),
                 name: subOption.name,
@@ -93,7 +93,7 @@ export class OrderingRepositoryService {
               productId: productSaved.id,
               image: option.image,
               price: option.price,
-              subOption: {
+              subOptions: {
                 createMany: {
                   data: subOptions,
                   skipDuplicates: true,

@@ -7,14 +7,16 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { OrderingOrderMapperService } from 'src/provider/ordering/ordering-order-mapper';
 import { OrderingRepositoryService } from 'src/provider/ordering/ordering-repository';
 import { OrderingService } from 'src/provider/ordering/ordering.service';
-import { OrderingOrder, OrderingOrderStatus } from 'src/provider/ordering/ordering.type';
+import { OrderingOrderStatus } from 'src/provider/ordering/ordering.type';
 import { ProviderEnum } from 'src/provider/provider.type';
 import { WoltOrderMapperService } from 'src/provider/wolt/wolt-order-mapper';
 import { WoltRepositoryService } from 'src/provider/wolt/wolt-repository';
 import { WoltService } from 'src/provider/wolt/wolt.service';
-import { WoltOrderNotification } from 'src/provider/wolt/wolt.type';
+
 import { UtilsService } from 'src/utils/utils.service';
 import { NotificationService } from './../notification/notification.service';
+import { WoltOrderNotification } from 'src/provider/wolt/dto/wolt-order.dto';
+import { OrderingOrder } from 'src/provider/ordering/dto/ordering-order.dto';
 
 @WebSocketGateway({
   cors: {
@@ -125,8 +127,11 @@ export class WebhookService implements OnModuleInit {
   async woltOrderNotification(woltWebhookdata: WoltOrderNotification) {
     const venueId = woltWebhookdata.order.venue_id;
     // Get apiKey by venue id
-    const woltApiKey = await this.woltService.getWoltApiKey(venueId, 'venueId');
-    let woltOrder = await this.woltService.getOrderById(woltApiKey, woltWebhookdata.order.id);
+    const woltCredentals = await this.woltService.getWoltCredentials(venueId, 'venueId');
+    let woltOrder = await this.woltService.getOrderById(
+      woltCredentals.apiKey,
+      woltWebhookdata.order.id,
+    );
 
     // Find business to get business id for socket to emit
     const business = await this.businessService.findBusinessByWoltVenueid(venueId);
@@ -159,7 +164,7 @@ export class WebhookService implements OnModuleInit {
 
     // Sync order again
 
-    await this.woltService.syncWoltOrder(woltApiKey, woltWebhookdata.order.id);
+    await this.woltService.syncWoltOrder(woltCredentals.apiKey, woltWebhookdata.order.id);
 
     //Log the last order
     if (woltWebhookdata.order.status === 'DELIVERED') {

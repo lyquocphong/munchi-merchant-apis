@@ -6,10 +6,11 @@ import { UtilsService } from 'src/utils/utils.service';
 import { AvailableOrderStatus } from '../order/dto/order.dto';
 import { OrderingOrderMapperService } from './ordering/ordering-order-mapper';
 import { OrderingService } from './ordering/ordering.service';
-import { OrderingOrder } from './ordering/ordering.type';
+
 import { AvailableProvider, ProviderEnum } from './provider.type';
 import { WoltRepositoryService } from './wolt/wolt-repository';
 import { WoltService } from './wolt/wolt.service';
+import { OrderingOrder } from './ordering/dto/ordering-order.dto';
 
 @Injectable()
 export class ProviderManagmentService {

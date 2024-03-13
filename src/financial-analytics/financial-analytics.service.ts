@@ -1,17 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { Option, Order, Prisma, Product, SubOption } from '@prisma/client';
+import { Option, Prisma, Product, SubOption } from '@prisma/client';
 import { OrderStatusEnum } from 'src/order/dto/order.dto';
-import { ProductDto } from 'src/order/dto/product.dto';
 import { OrderService } from 'src/order/order.service';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { WoltOrderPrismaSelectArgs } from 'src/provider/wolt/wolt.type';
+import { WoltOrderPrismaSelectArgs } from 'src/provider/wolt/dto/wolt-order.dto';
 
-interface QuantityResult {
-  product: string;
-  option?: string;
-  suboption?: string;
-  quantity: number;
-}
 
 interface AnalysisResult {
   product: {
@@ -33,7 +25,7 @@ interface AnalysisResult {
 
 @Injectable()
 export class FinancialAnalyticsService {
-  constructor(private prismaService: PrismaService, private orderService: OrderService) {}
+  constructor(private orderService: OrderService) {}
   async analyzeOrderData(orderingBusinessIds: string[], startDate: string, endDate: string) {
     // Initialize base query
     const baseOrderArgs = Prisma.validator<Prisma.OrderFindManyArgs>()({

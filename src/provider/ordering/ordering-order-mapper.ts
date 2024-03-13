@@ -6,7 +6,6 @@ import {
   OrderStatusEnum,
 } from 'src/order/dto/order.dto';
 import {
-  OrderingOrder,
   OrderingOrderStatus,
   completedStatus,
   deliveredStatus,
@@ -15,12 +14,14 @@ import {
   rejectedStatus,
 } from './ordering.type';
 import { ProviderEnum } from '../provider.type';
-import { WoltOrderType } from '../wolt/wolt.type';
+
 import moment from 'moment';
 import { plainToInstance } from 'class-transformer';
 import { ProductDto } from 'src/order/dto/product.dto';
 import { OfferDto } from 'src/order/dto/offer.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { WoltOrderType } from '../wolt/dto/wolt-order.dto';
+import { OrderingOrder } from './dto/ordering-order.dto';
 
 @Injectable()
 export class OrderingOrderMapperService {
