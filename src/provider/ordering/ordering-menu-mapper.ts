@@ -1,11 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { WoltCategory, WoltOptionValue, WoltProductItem, WoltProductOption } from '../wolt/dto/wolt-menu.dto';
+import {
+  WoltCategory,
+  WoltOptionValue,
+  WoltProductItem,
+  WoltProductOption,
+} from '../wolt/dto/wolt-menu.dto';
 import {
   OrderingCategoryProduct,
   OrderingCategoryProductExtraOption,
   OrderingCategoryProductExtraSubOption,
-  OrderingMenuCategory
+  OrderingMenuCategory,
 } from './dto/ordering-menu.dto';
 
 @Injectable()
@@ -14,6 +19,7 @@ export class OrderingMenuMapperService {
 
   mapToWoltCategory(orderingCategory: OrderingMenuCategory): WoltCategory {
     const woltProducts = this.mapToWoltItem(orderingCategory.products);
+
     return {
       id: orderingCategory.id.toString(),
       name: [
@@ -58,7 +64,6 @@ export class OrderingMenuMapperService {
         price: categoryProduct.price,
         image_url: categoryProduct.images ? categoryProduct.images : '',
         external_data: categoryProduct.id.toString(),
-        quantity: 100,
         enabled: true,
         options:
           categoryProduct.extras.length !== 0
