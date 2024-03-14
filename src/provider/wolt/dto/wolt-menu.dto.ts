@@ -79,7 +79,7 @@ export interface WoltProductItem {
   sales_tax_percentage?: number;
   alcohol_percentage?: number;
   enabled: boolean;
-  quantity: number;
+  quantity?: number;
   external_data: string;
   caffeine_content?: {
     serving_size: string;
