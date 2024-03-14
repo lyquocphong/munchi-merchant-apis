@@ -1,4 +1,4 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
 import { MenuService } from './menu.service';
 import { JwtGuard } from 'src/auth/guard/jwt.guard';
 
@@ -8,8 +8,8 @@ export class MenuController {
 
   @UseGuards(JwtGuard)
   @Get('category')
-  getMenuCategory(@Req() request: any) {
+  getMenuCategory(@Req() request: any, @Query('businessPublicId') businessPublicId: string) {
     const { orderingUserId } = request.user;
-    return this.menuService.getMenuCategory(orderingUserId);
+    return this.menuService.getMenuCategory(orderingUserId, businessPublicId);
   }
 }
