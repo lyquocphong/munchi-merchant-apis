@@ -116,6 +116,11 @@ export class WoltService implements ProviderService {
       },
     });
 
+    if (!provider) {
+      throw new NotFoundException('No provider found associated with venue.');
+    }
+
+
     const providerCredentialsId = provider.business.owners.map(
       (owner) => owner.providerCredentials.id,
     );
