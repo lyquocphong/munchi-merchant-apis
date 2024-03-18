@@ -3,13 +3,13 @@ import { Business, Prisma, Provider } from '@prisma/client';
 import { SessionService } from 'src/auth/session.service';
 import { BusinessService } from 'src/business/business.service';
 import { FinancialAnalyticsService } from 'src/financial-analytics/financial-analytics.service';
-import { OrderStatusEnum } from 'src/order/dto/order.dto';
+import { OrderResponse, OrderStatusEnum } from 'src/order/dto/order.dto';
 import { OrderService } from 'src/order/order.service';
 import { ProviderEnum } from 'src/provider/provider.type';
 
-import { Historyquery } from './dto/history,dto';
 import { mapToDate } from './utils/getTimeRange';
 import { WoltOrderPrismaSelectArgs } from 'src/provider/wolt/dto/wolt-order.dto';
+import { HistoryFilterQuery, HistoryQuery } from './dto/history,dto';
 
 @Injectable()
 export class HistoryService {
@@ -20,7 +20,11 @@ export class HistoryService {
     private financialAnalyticsService: FinancialAnalyticsService,
   ) {}
 
-  async getOrderHistory(sessionPublicId: string, { date, page, rowPerPage }: Historyquery) {
+  async getOrderHistory(
+    sessionPublicId: string,
+    { date, page, rowPerPage }: HistoryQuery,
+    filterQuery?: HistoryFilterQuery,
+  ) {
     const sessionArgs = {
       include: {
         businesses: true,
@@ -34,7 +38,7 @@ export class HistoryService {
       (business: Business) => business.orderingBusinessId,
     );
 
-    //Map to date base on date value
+    //Map to date base on date pm
     const [startDate, endDate] = mapToDate(date);
 
     const rowPerPageInNumber = parseInt(rowPerPage);
@@ -47,7 +51,21 @@ export class HistoryService {
           in: orderingBusinessIds,
         },
         status: {
-          in: [OrderStatusEnum.DELIVERED, OrderStatusEnum.REJECTED],
+          in: filterQuery.orderStatus
+            ? filterQuery.orderStatus
+            : [OrderStatusEnum.DELIVERED, OrderStatusEnum.REJECTED],
+        },
+        provider: {
+          in: filterQuery.provider
+            ? filterQuery.provider
+            : [ProviderEnum.Munchi, ProviderEnum.Wolt],
+        },
+        payMethodId: {
+          in: filterQuery.payMethod
+            ? filterQuery?.payMethod.map((e: any) => {
+                return e === 'Cash' ? 1 : e; // Return 1 for 'Cash', otherwise the original value
+              })
+            : [],
         },
         createdAt: {
           gte: startDate,
@@ -62,13 +80,9 @@ export class HistoryService {
       skip: (pageInNumber - 1) * rowPerPageInNumber,
     });
 
-    const order = await this.orderService.getManyOrderByArgs(orderArgs);
+    const order: OrderResponse[] = await this.orderService.getManyOrderByArgs(orderArgs);
 
-    const analyticsData = await this.financialAnalyticsService.analyzeOrderData(
-      orderingBusinessIds,
-      startDate,
-      endDate,
-    );
+    const analyticsData = await this.financialAnalyticsService.analyzeOrderData(order);
 
     return {
       ...analyticsData,
@@ -76,7 +90,7 @@ export class HistoryService {
     };
   }
 
-  async getProductHistory(sessionPublicId: string, { date, page, rowPerPage }: Historyquery) {
+  async getProductHistory(sessionPublicId: string, { date, page, rowPerPage }: HistoryQuery) {
     const sessionArgs = {
       include: {
         businesses: true,
