@@ -28,8 +28,6 @@ export class FinancialAnalyticsService {
 
     const deliveredOrders = orders.filter((order) => order.status === OrderStatusEnum.DELIVERED);
 
-    const totalOrderCount = rejectedOrders.length + deliveredOrders.length;
-
     const totalRejections = rejectedOrders.length;
 
     const totalRejectionValue = rejectedOrders.reduce(
@@ -43,7 +41,6 @@ export class FinancialAnalyticsService {
     );
 
     return {
-      totalOrders: totalOrderCount,
       totalSales,
       totalRejections,
       totalRejectionValue,
