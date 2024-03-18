@@ -121,18 +121,12 @@ export class OrderService {
     return order as any[];
   }
 
-  async countTotalOrderByDate(orderingBusinessIds: string[], startDate: string, endDate: string) {
-    const orderFindManyArgs = Prisma.validator<Prisma.OrderCountArgs>()({
-      where: {
-        orderingBusinessId: {
-          in: orderingBusinessIds,
-        },
-        createdAt: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-    });
-    return await this.prismaService.order.count(orderFindManyArgs);
+  async countTotalOrderByArgs(orderArgs: Prisma.OrderFindManyArgs) {
+    // Remove properties not needed for counting
+    const orderCountArgs: Prisma.OrderCountArgs = {
+      where: orderArgs.where,
+    };
+
+    return await this.prismaService.order.count(orderCountArgs);
   }
 }

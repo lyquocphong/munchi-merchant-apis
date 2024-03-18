@@ -80,12 +80,15 @@ export class HistoryService {
       skip: (pageInNumber - 1) * rowPerPageInNumber,
     });
 
+    const totalOrders = await this.orderService.countTotalOrderByArgs(orderArgs);
+
     const order: OrderResponse[] = await this.orderService.getManyOrderByArgs(orderArgs);
 
     const analyticsData = await this.financialAnalyticsService.analyzeOrderData(order);
 
     return {
       ...analyticsData,
+      totalOrders: totalOrders,
       orders: order,
     };
   }
