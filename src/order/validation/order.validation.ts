@@ -12,7 +12,7 @@ export class OrderStatusFilter {
       return value;
     }
   })
-  providers: string[];
+  providers: AvailableProvider[];
 
   @IsArray()
   @Transform(({ value }) => {
