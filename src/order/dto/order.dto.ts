@@ -7,7 +7,6 @@ import { BusinessDto } from 'src/business/dto/business.dto';
 import { OfferDto } from 'src/order/dto/offer.dto';
 import { WoltOrderType } from 'src/provider/wolt/dto/wolt-order.dto';
 
-
 class ReportingData {
   @Expose()
   at: Array<Record<string, string>>;
@@ -142,6 +141,12 @@ export enum OrderStatusEnum {
   DELIVERED = 'delivered',
   PICK_UP_COMPLETED_BY_DRIVER = 'pick_up_completed_by_driver',
 }
+
+export enum PayMethodEnum {
+  Cash = 1,
+}
+
+export type AvailablePayMethod = PayMethodEnum.Cash;
 
 export type AvailableOrderStatus =
   | OrderStatusEnum.PENDING
