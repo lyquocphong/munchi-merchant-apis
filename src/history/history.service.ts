@@ -65,7 +65,7 @@ export class HistoryService {
             ? filterQuery?.payMethod.map((e: any) => {
                 return e === 'Cash' ? 1 : e; // Return 1 for 'Cash', otherwise the original value
               })
-            : [],
+            : undefined,
         },
         createdAt: {
           gte: startDate,
