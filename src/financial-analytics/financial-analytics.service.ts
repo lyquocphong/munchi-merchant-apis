@@ -1,9 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { Option, Prisma, Product, SubOption } from '@prisma/client';
-import { OrderStatusEnum } from 'src/order/dto/order.dto';
+import { Option, Product, SubOption } from '@prisma/client';
+import { OrderResponse, OrderStatusEnum } from 'src/order/dto/order.dto';
 import { OrderService } from 'src/order/order.service';
-import { WoltOrderPrismaSelectArgs } from 'src/provider/wolt/dto/wolt-order.dto';
-
 
 interface AnalysisResult {
   product: {
@@ -25,33 +23,10 @@ interface AnalysisResult {
 
 @Injectable()
 export class FinancialAnalyticsService {
-  constructor(private orderService: OrderService) {}
-  async analyzeOrderData(orderingBusinessIds: string[], startDate: string, endDate: string) {
-    // Initialize base query
-    const baseOrderArgs = Prisma.validator<Prisma.OrderFindManyArgs>()({
-      where: {
-        orderingBusinessId: { in: orderingBusinessIds },
-        createdAt: { gte: startDate, lte: endDate },
-      },
-      include: WoltOrderPrismaSelectArgs,
-      orderBy: { orderNumber: 'desc' },
-    });
+  async analyzeOrderData(orders: OrderResponse[]) {
+    const rejectedOrders = orders.filter((order) => order.status === OrderStatusEnum.REJECTED);
 
-    // Initialize reject order query extend base query
-    const rejectOrderArgs = Prisma.validator<Prisma.OrderFindManyArgs>()({
-      ...baseOrderArgs,
-      where: { ...baseOrderArgs.where, status: OrderStatusEnum.REJECTED },
-    });
-
-    // Initialize delivered order query extend base query
-    const deliveredOrderArgs = Prisma.validator<Prisma.OrderFindManyArgs>()({
-      ...baseOrderArgs,
-      where: { ...baseOrderArgs.where, status: OrderStatusEnum.DELIVERED },
-    });
-
-    const rejectedOrders = await this.orderService.getManyOrderByArgs(rejectOrderArgs);
-
-    const deliveredOrders = await this.orderService.getManyOrderByArgs(deliveredOrderArgs);
+    const deliveredOrders = orders.filter((order) => order.status === OrderStatusEnum.DELIVERED);
 
     const totalOrderCount = rejectedOrders.length + deliveredOrders.length;
 
