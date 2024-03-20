@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import { plainToInstance } from 'class-transformer';
 import { Business } from 'ordering-api-sdk';
@@ -15,17 +15,24 @@ import {
   OrderingUser,
 } from './ordering.type';
 import { OrderingOrder } from './dto/ordering-order.dto';
+import { WoltService } from '../wolt/wolt.service';
+import { WoltMenuData } from '../wolt/dto/wolt-menu.dto';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class OrderingService implements ProviderService {
   private readonly logger = new Logger(OrderingService.name);
-
+  private woltApiUrl: string;
   constructor(
+    private configService: ConfigService,
     private utilService: UtilsService,
     private readonly prismaService: PrismaService,
     private readonly orderingOrderMapperService: OrderingOrderMapperService,
     private readonly orderingSyncService: OrderingSyncService,
-  ) {}
+    private readonly woltService: WoltService,
+  ) {
+    this.woltApiUrl = this.configService.get('WOLT_API_URL');
+  }
 
   async getOrderByStatus(
     accessToken: string,
@@ -483,6 +490,28 @@ export class OrderingService implements ProviderService {
       return response.data.result;
     } catch (error) {
       this.utilService.logError(error);
+    }
+  }
+
+  async syncMenu(woltVenueId: string, orderingUserId: number, woltMenuData: WoltMenuData) {
+    const woltCredentials = await this.woltService.getWoltCredentials(orderingUserId, 'orderingUserId');
+
+    try {
+      const response = await axios.post(
+        `${this.woltApiUrl}/v1/restaurants/${woltVenueId}/menu`,
+        woltMenuData,
+        {
+          auth: {
+            username: woltCredentials.username,
+            password: woltCredentials.password,
+          },
+        },
+      );
+
+      return response.data;
+    } catch (error: any) {
+      // await this.syncWoltBusiness(woltOrderId);
+      throw new ForbiddenException(error.response ? error.response.data : error.message);
     }
   }
 }
