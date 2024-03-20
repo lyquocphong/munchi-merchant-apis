@@ -67,7 +67,7 @@ export class OrderingMenuMapperService {
         enabled: true,
         options:
           categoryProduct.extras.length !== 0
-            ? this.mapToWoltOptionFromOrdering(categoryProduct.extras[0].options)
+            ? this.mapToWoltOptionFromOrdering(categoryProduct.extras[0].options).filter(Boolean)
             : undefined,
       }),
     );
@@ -77,31 +77,33 @@ export class OrderingMenuMapperService {
   mapToWoltOptionFromOrdering(
     orderingProductExtras: OrderingCategoryProductExtraOption[],
   ): WoltProductOption[] {
-    return orderingProductExtras.map((productOption: OrderingCategoryProductExtraOption) => ({
-      external_data: productOption.id.toString(),
-      name: [
-        {
-          lang: 'en',
-          value: productOption.name,
-        },
-      ],
-      type: productOption.max > 2 ? 'MultiChoice' : 'SingleChoice',
-      values: productOption.suboptions.length
-        ? productOption.suboptions.map(
-            (subOption: OrderingCategoryProductExtraSubOption, index: number): WoltOptionValue => ({
-              price: subOption.price,
-              external_data: subOption.id.toString(),
-              enabled: true,
-              default: true,
-              name: [
-                {
-                  lang: 'en',
-                  value: subOption.name,
-                },
-              ],
-            }),
-          )
-        : [],
-    }));
+    return orderingProductExtras.map((productOption: OrderingCategoryProductExtraOption) => {
+      if (productOption.suboptions.length === 0) return undefined;
+
+      return {
+        external_data: productOption.id.toString(),
+        name: [
+          {
+            lang: 'en',
+            value: productOption.name,
+          },
+        ],
+        type: productOption.max > 2 ? 'MultiChoice' : 'SingleChoice',
+        values: productOption.suboptions.map(
+          (subOption: OrderingCategoryProductExtraSubOption, index: number): WoltOptionValue => ({
+            price: subOption.price,
+            external_data: subOption.id.toString(),
+            enabled: true,
+            default: true,
+            name: [
+              {
+                lang: 'en',
+                value: subOption.name,
+              },
+            ],
+          }),
+        ),
+      };
+    });
   }
 }

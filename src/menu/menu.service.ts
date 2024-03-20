@@ -23,12 +23,12 @@ export class MenuService {
     const orderingAccessToken = await this.utilService.getOrderingAccessToken(orderingUserId);
 
     //Get business by public id
-
     const business = await this.businessService.findBusinessByPublicId(publicBusinessId);
 
     const woltVenue = business.provider.filter(
       (provider: Provider) => provider.name === ProviderEnum.Wolt,
     );
+    
     const menu = await this.orderingService.getMenuCategory(
       orderingAccessToken,
       business.orderingBusinessId,
