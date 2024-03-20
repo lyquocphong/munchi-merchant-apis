@@ -28,7 +28,7 @@ export class MenuService {
     const woltVenue = business.provider.filter(
       (provider: Provider) => provider.name === ProviderEnum.Wolt,
     );
-    
+
     const menu = await this.orderingService.getMenuCategory(
       orderingAccessToken,
       business.orderingBusinessId,
@@ -52,8 +52,57 @@ export class MenuService {
     };
 
     //Sync order to Wolt
-    await this.woltService.syncMenu(woltVenue[0].providerId, orderingUserId, woltMenuData);
+    await this.orderingService.syncMenu(woltVenue[0].providerId, orderingUserId, woltMenuData);
 
     return woltMenuData;
+  }
+
+  async getWoltMenuCategory(orderingUserId: number, publicBusinessId: string) {
+    //Get business by public id
+    const business = await this.businessService.findBusinessByPublicId(publicBusinessId);
+
+    const woltVenue = business.provider.filter(
+      (provider: Provider) => provider.name === ProviderEnum.Wolt,
+    );
+
+    const woltMenuData = await this.woltService.getMenuCategory(
+      orderingUserId,
+      woltVenue[0].providerId,
+    );
+   
+    
+
+    // Sync data from wolt to ordering
+
+
+    return woltMenuData
+  }
+
+  async getMatchingService(
+    sourceProvider: string,
+    destinationProvider: string,
+    menuCategory: any,
+  ): Promise<string | null> {
+    switch (sourceProvider) {
+      case 'Ordering':
+        // if (destinationProvider === 'Wolt') {
+        //   return syncMenuOrderingToWolt(option);
+        // } else if (destinationProvider === 'UberEats') {
+        //   return syncMenuOrderingToUberEats(option);
+        // }
+        break;
+      case 'Wolt':
+        // ... Add logic for Wolt as source
+        break;
+      case 'UberEats':
+        // ... Add logic for UberEats as source
+        break;
+      default:
+        console.error('Unsupported provider:', sourceProvider);
+        return null;
+    }
+
+    // If provider and direction are supported, but no option match is found:
+    return null;
   }
 }

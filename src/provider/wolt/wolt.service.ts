@@ -16,14 +16,11 @@ import { OrderingDeliveryType } from '../ordering/ordering.type';
 import { ProviderService } from '../provider.service';
 import { ProviderEnum } from '../provider.type';
 import { WoltMenuData } from './dto/wolt-menu.dto';
-import {
-  WoltOrder,
-  WoltOrderPrismaSelectArgs,
-  WoltOrderType
-} from './dto/wolt-order.dto';
+import { WoltOrder, WoltOrderPrismaSelectArgs, WoltOrderType } from './dto/wolt-order.dto';
 import { WoltOrderMapperService } from './wolt-order-mapper';
 import { WoltRepositoryService } from './wolt-repository';
 import { WoltSyncService } from './wolt-sync';
+import { OrderingMenuCategory } from '../ordering/dto/ordering-menu.dto';
 
 @Injectable()
 export class WoltService implements ProviderService {
@@ -68,17 +65,17 @@ export class WoltService implements ProviderService {
     keyLookupValue: string | number,
     lookupType: 'orderingUserId' | 'venueId',
   ) {
-    let woltCredentals: ProviderCredential; // API Keys are typically strings
+    let woltCredentials: ProviderCredential; // API Keys are typically strings
 
     if (lookupType === 'orderingUserId' && typeof keyLookupValue === 'number') {
-      woltCredentals = await this.getApiKeyByOrderingUserId(keyLookupValue);
+      woltCredentials = await this.getApiKeyByOrderingUserId(keyLookupValue);
     } else if (lookupType === 'venueId' && typeof keyLookupValue === 'string') {
-      woltCredentals = await this.getApiKeyByVenueId(keyLookupValue);
+      woltCredentials = await this.getApiKeyByVenueId(keyLookupValue);
     } else {
       throw new Error('Invalid lookupType or  keyLookupValue type provided');
     }
 
-    return woltCredentals;
+    return woltCredentials;
   }
 
   async getApiKeyByOrderingUserId(orderingUserId: number): Promise<ProviderCredential> {
@@ -119,7 +116,6 @@ export class WoltService implements ProviderService {
     if (!provider) {
       throw new NotFoundException('No provider found associated with venue.');
     }
-
 
     const providerCredentialsId = provider.business.owners.map(
       (owner) => owner.providerCredentials.id,
@@ -168,13 +164,13 @@ export class WoltService implements ProviderService {
     orderingUserId: number,
     updateData?: Omit<OrderData, 'provider'>,
   ) {
-    const woltCredentals = await this.getWoltCredentials(orderingUserId, 'orderingUserId');
+    const woltCredentials = await this.getWoltCredentials(orderingUserId, 'orderingUserId');
 
     const option = {
       method: 'PUT',
       baseURL: `${this.woltApiUrl}/orders/${woltOrderId}/${endpoint}`,
       headers: {
-        'WOLT-API-KEY': woltCredentals.apiKey,
+        'WOLT-API-KEY': woltCredentials.apiKey,
       },
       data:
         endpoint === 'reject'
@@ -197,7 +193,7 @@ export class WoltService implements ProviderService {
         `Error when updating wolt Order with order id:${woltOrderId}. Error: ${error}`,
       );
 
-      await this.syncWoltOrder(woltCredentals.apiKey, woltOrderId);
+      await this.syncWoltOrder(woltCredentials.apiKey, woltOrderId);
       throw new ForbiddenException(error);
     }
   }
@@ -374,41 +370,6 @@ export class WoltService implements ProviderService {
     await this.woltSyncService.syncWoltOrder(mappedWoltOrder);
   }
 
-  async syncMenu(woltVenueId: string, orderingUserId: number, woltMenuData: WoltMenuData) {
-    const woltCredentals = await this.getWoltCredentials(orderingUserId, 'orderingUserId');
-
-    const option = {
-      method: 'POST',
-      baseURL: `${this.woltApiUrl}/v1/restaurants/${woltVenueId}/menu`,
-      data: woltMenuData,
-      headers: {
-        Authorization: `Basic {{${woltCredentals.username}:${woltCredentals.password}}}`,
-      },
-    };
-
-    try {
-      const response = await axios.post(
-        `${this.woltApiUrl}/v1/restaurants/${woltVenueId}/menu`,
-        woltMenuData,
-        {
-          auth: {
-            username: woltCredentals.username,
-            password: woltCredentals.password,
-          },
-        },
-      );
-
-      return response.data;
-    } catch (error: any) {
-      console.log(
-        '🚀 ~ WoltService ~ syncMenu ~ error:',
-        error.response ? error.response.data : error.message,
-      );
-      // await this.syncWoltBusiness(woltOrderId);
-      throw new ForbiddenException(error.response ? error.response.data : error.message);
-    }
-  }
-
   async getWoltBusinessById(woltVenueId: string, orderingUserId: number) {
     const woltCredentals = await this.getWoltCredentials(orderingUserId, 'orderingUserId');
 
@@ -435,13 +396,13 @@ export class WoltService implements ProviderService {
     status: boolean,
     time?: string,
   ) {
-    const woltCredentals = await this.getWoltCredentials(orderingUserId, 'orderingUserId');
+    const woltCredentials = await this.getWoltCredentials(orderingUserId, 'orderingUserId');
 
     const option = {
       method: 'PATCH',
       baseURL: `${this.woltApiUrl}/venues/${woltVenueId}/online`,
       headers: {
-        'WOLT-API-KEY': woltCredentals.apiKey,
+        'WOLT-API-KEY': woltCredentials.apiKey,
       },
       data: {
         status: status ? 'ONLINE' : 'OFFLINE',
@@ -454,8 +415,60 @@ export class WoltService implements ProviderService {
 
       return response.data;
     } catch (error: any) {
-      // await this.syncWoltBusiness(woltOrderId);
       throw new ForbiddenException(error);
+    }
+  }
+
+  async getMenuCategory(orderingUserId: number, woltVenueId: string) {
+    const woltCredentials = await this.getWoltCredentials(orderingUserId, 'orderingUserId');
+
+    try {
+      const response = await axios.get(`${this.woltApiUrl}/v2/venues/${woltVenueId}/menu`, {
+        auth: {
+          username: woltCredentials.username,
+          password: woltCredentials.password,
+        },
+      });
+
+      const {resource_url} = response.data
+      console.log("🚀 ~ WoltService ~ getMenuCategory ~ resource_url:", resource_url)
+      
+      await new Promise(resolve => setTimeout(resolve, 1000)); // 1000ms = 1 second
+
+      const response2 = await axios.get(resource_url)
+     
+      return  response2.data
+    } catch (error: any) {
+      console.log("🚀 ~ WoltService ~ getMenuCategory ~ error:", error)
+      // console.log(
+      //   '🚀 ~ WoltService ~ syncMenu ~ error:',
+      //   error.response ? error.response.data : error.message,
+      // );
+      return {
+        error:  error.response ? error.response.data : error.message,
+        statusCode: error.response.status
+      }
+    }
+  }
+
+  async syncMenu(orderingUserId: number, orderingBusinessId: string,orderingMenuData: any) {
+    const orderingAccessToken = await this.utilsService.getOrderingAccessToken(orderingUserId);
+
+    const options = {
+      method: 'POST',
+      url: this.utilsService.getEnvUrl('business', `${orderingBusinessId}/categories`),
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${orderingAccessToken}`,
+      },
+    };
+   
+    try {
+      const response = await axios.request(options);
+      return response.data.result;
+      
+    } catch (error) {
+      this.utilsService.logError(error);
     }
   }
 

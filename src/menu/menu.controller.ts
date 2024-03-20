@@ -12,4 +12,11 @@ export class MenuController {
     const { orderingUserId } = request.user;
     return this.menuService.getMenuCategory(orderingUserId, businessPublicId);
   }
+
+  @UseGuards(JwtGuard)
+  @Get('category/wolt')
+  getWoltMenuCategory(@Req() request: any, @Query('businessPublicId') businessPublicId: string) {
+    const { orderingUserId } = request.user;
+    return this.menuService.getWoltMenuCategory(orderingUserId, businessPublicId);
+  }
 }
