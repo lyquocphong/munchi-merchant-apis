@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
 import {
   WoltCategory,
   WoltOptionValue,
@@ -15,8 +14,6 @@ import {
 
 @Injectable()
 export class OrderingMenuMapperService {
-  constructor(private prismaService: PrismaService) {}
-
   mapToWoltCategory(orderingCategory: OrderingMenuCategory): WoltCategory {
     const woltProducts = this.mapToWoltItem(orderingCategory.products);
 
