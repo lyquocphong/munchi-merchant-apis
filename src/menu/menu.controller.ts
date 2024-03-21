@@ -19,4 +19,11 @@ export class MenuController {
     const { orderingUserId } = request.user;
     return this.menuService.getWoltMenuCategory(orderingUserId, businessPublicId);
   }
+
+  @UseGuards(JwtGuard)
+  @Get('product')
+  getBusinessProduct(@Req() request: any, @Query('businessPublicId') businessPublicId: string) {
+    const { orderingUserId } = request.user;
+    return this.menuService.getBusinessProduct(orderingUserId, businessPublicId);
+  }
 }
