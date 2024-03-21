@@ -430,28 +430,28 @@ export class WoltService implements ProviderService {
         },
       });
 
-      const {resource_url} = response.data
-      console.log("🚀 ~ WoltService ~ getMenuCategory ~ resource_url:", resource_url)
-      
-      await new Promise(resolve => setTimeout(resolve, 1000)); // 1000ms = 1 second
+      const { resource_url } = response.data;
+      console.log('🚀 ~ WoltService ~ getMenuCategory ~ resource_url:', resource_url);
 
-      const response2 = await axios.get(resource_url)
-     
-      return  response2.data
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // 1000ms = 1 second
+
+      const response2 = await axios.get(resource_url);
+
+      return response2.data;
     } catch (error: any) {
-      console.log("🚀 ~ WoltService ~ getMenuCategory ~ error:", error)
+      console.log('🚀 ~ WoltService ~ getMenuCategory ~ error:', error);
       // console.log(
       //   '🚀 ~ WoltService ~ syncMenu ~ error:',
       //   error.response ? error.response.data : error.message,
       // );
       return {
-        error:  error.response ? error.response.data : error.message,
-        statusCode: error.response.status
-      }
+        error: error.response ? error.response.data : error.message,
+        statusCode: error.response.status,
+      };
     }
   }
 
-  async syncMenu(orderingUserId: number, orderingBusinessId: string,orderingMenuData: any) {
+  async syncMenu(orderingUserId: number, orderingBusinessId: string, orderingMenuData: any) {
     const orderingAccessToken = await this.utilsService.getOrderingAccessToken(orderingUserId);
 
     const options = {
@@ -462,11 +462,10 @@ export class WoltService implements ProviderService {
         Authorization: `Bearer ${orderingAccessToken}`,
       },
     };
-   
+
     try {
       const response = await axios.request(options);
       return response.data.result;
-      
     } catch (error) {
       this.utilsService.logError(error);
     }

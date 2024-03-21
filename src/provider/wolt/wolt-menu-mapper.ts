@@ -6,7 +6,7 @@ import { WoltCategory as WoltMenuCategory } from './dto/wolt-menu.dto';
 export class WoltMenuMapperService {
   constructor() {}
 
-  mapToOrderingCategory(woltCategory: WoltMenuCategory): OrderingMenuCategory{
-    return
+  mapToOrderingCategory(woltCategory: WoltMenuCategory): OrderingMenuCategory {
+    return;
   }
 }

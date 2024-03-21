@@ -9,11 +9,7 @@ import { UtilsService } from 'src/utils/utils.service';
 import { ProviderService } from '../provider.service';
 import { OrderingOrderMapperService } from './ordering-order-mapper';
 import { OrderingSyncService } from './ordering-sync';
-import {
-  OrderingDeliveryType,
-  OrderingOrderStatus,
-  OrderingUser,
-} from './ordering.type';
+import { OrderingDeliveryType, OrderingOrderStatus, OrderingUser } from './ordering.type';
 import { OrderingOrder } from './dto/ordering-order.dto';
 import { WoltService } from '../wolt/wolt.service';
 import { WoltMenuData } from '../wolt/dto/wolt-menu.dto';
@@ -334,13 +330,7 @@ export class OrderingService implements ProviderService {
     }
   }
 
-  async rejectOrder(
-    orderingUserId: number,
-    orderId: string,
-    orderRejectData: {
-      reason: string;
-    },
-  ): Promise<OrderResponse> {
+  async rejectOrder(orderingUserId: number, orderId: string): Promise<OrderResponse> {
     const accessToken = await this.utilService.getOrderingAccessToken(orderingUserId);
 
     const options = {
@@ -494,7 +484,10 @@ export class OrderingService implements ProviderService {
   }
 
   async syncMenu(woltVenueId: string, orderingUserId: number, woltMenuData: WoltMenuData) {
-    const woltCredentials = await this.woltService.getWoltCredentials(orderingUserId, 'orderingUserId');
+    const woltCredentials = await this.woltService.getWoltCredentials(
+      orderingUserId,
+      'orderingUserId',
+    );
 
     try {
       const response = await axios.post(

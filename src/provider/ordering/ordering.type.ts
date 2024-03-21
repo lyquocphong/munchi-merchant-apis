@@ -198,4 +198,3 @@ export class OrderingUser {
   session: Session;
   //dropdown_option: any | null;
 }
-

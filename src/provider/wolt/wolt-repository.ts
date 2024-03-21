@@ -4,7 +4,6 @@ import { OrderResponse } from 'src/order/dto/order.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { WoltOrderPrismaSelectArgs } from './dto/wolt-order.dto';
 
-
 @Injectable()
 export class WoltRepositoryService {
   constructor(private readonly prismaService: PrismaService) {}

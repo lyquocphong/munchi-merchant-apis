@@ -13,7 +13,6 @@ export class HistoryController {
     @Query(new ValidationPipe()) filterQuery: HistoryFilterQuery,
     @Request() request: any,
   ) {
-
     const { sessionPublicId } = request.user;
     return this.historyService.getOrderHistory(sessionPublicId, dateQuery, filterQuery);
   }
