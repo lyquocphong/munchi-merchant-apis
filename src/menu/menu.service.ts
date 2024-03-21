@@ -69,13 +69,10 @@ export class MenuService {
       orderingUserId,
       woltVenue[0].providerId,
     );
-   
-    
 
     // Sync data from wolt to ordering
 
-
-    return woltMenuData
+    return woltMenuData;
   }
 
   async getMatchingService(
@@ -104,5 +101,22 @@ export class MenuService {
 
     // If provider and direction are supported, but no option match is found:
     return null;
+  }
+
+  async getBusinessProduct(orderingUserId: number, publicBusinessId: string) {
+    // Get access token
+    const orderingAccessToken = await this.utilService.getOrderingAccessToken(orderingUserId);
+
+    const business = await this.businessService.findBusinessByPublicId(publicBusinessId);
+
+    const categoryData = await this.orderingService.getMenuCategory(
+      orderingAccessToken,
+      business.orderingBusinessId,
+    );
+    console.log('🚀 ~ MenuService ~ getBusinessProduct ~ categoryData:', categoryData);
+
+    //Format category data to product data
+
+    return categoryData;
   }
 }
