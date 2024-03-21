@@ -1,3 +1,5 @@
+import { Exclude, Expose } from 'class-transformer';
+
 export interface OrderingProductCategory {
   id: number;
   business_id: number;
@@ -23,3 +25,25 @@ export interface OrderingCategoryExtraOptionSubOption {
   preselected: boolean;
 }
 
+@Exclude()
+export class MenuProductDto {
+  @Expose()
+  id: number;
+
+  @Expose({ name: 'category_id' })
+  categoryId: number;
+
+  @Expose({ name: 'name' })
+  name: string;
+
+  // @Expose({ name: 'category_id' })
+  // categoryId: number;
+
+  // @Expose({ name: 'category_id' })
+  // categoryId: number;
+
+  // @Expose({ name: 'category_id' })
+  // categoryId: number;
+  // @Expose({ name: 'category_id' })
+  // categoryId: number;
+}

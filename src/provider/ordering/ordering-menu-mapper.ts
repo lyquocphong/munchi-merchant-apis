@@ -11,6 +11,7 @@ import {
   OrderingCategoryProductExtraSubOption,
   OrderingMenuCategory,
 } from './dto/ordering-menu.dto';
+import { MenuProductDto } from 'src/menu/dto/menu.dto';
 
 @Injectable()
 export class OrderingMenuMapperService {
@@ -102,5 +103,9 @@ export class OrderingMenuMapperService {
         ),
       };
     });
+  }
+
+  mapCategoryToProduct(orderingCategory: OrderingCategoryProduct): MenuProductDto[] {
+    return;
   }
 }
