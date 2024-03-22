@@ -14,6 +14,7 @@ import { OrderingOrder } from './dto/ordering-order.dto';
 import { WoltService } from '../wolt/wolt.service';
 import { WoltMenuData } from '../wolt/dto/wolt-menu.dto';
 import { ConfigService } from '@nestjs/config';
+import { OrderingMenuCategory } from './dto/ordering-menu.dto';
 
 @Injectable()
 export class OrderingService implements ProviderService {
@@ -465,7 +466,7 @@ export class OrderingService implements ProviderService {
     return this.orderingSyncService.syncOrderingOrder(mappedOrderingOrder);
   }
 
-  async getMenuCategory(orderingAccessToken: string, orderingBusinessId: string) {
+  async getMenuCategory(orderingAccessToken: string, orderingBusinessId: string): Promise<OrderingMenuCategory[]> {
     const options = {
       method: 'GET',
       url: this.utilService.getEnvUrl('business', `${orderingBusinessId}/categories`),
