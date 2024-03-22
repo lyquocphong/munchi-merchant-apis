@@ -1,4 +1,4 @@
-import { Exclude, Expose } from 'class-transformer';
+import { Exclude, Expose, Type } from 'class-transformer';
 
 export interface OrderingProductCategory {
   id: number;
@@ -26,24 +26,32 @@ export interface OrderingCategoryExtraOptionSubOption {
 }
 
 @Exclude()
+export class MenuCategoryDto {
+  @Expose()
+  id: number;
+
+  @Expose()
+  name: string;
+
+  @Expose()
+  @Type(() => MenuProductDto)
+  products: MenuProductDto[];
+}
+
+@Exclude()
 export class MenuProductDto {
   @Expose()
   id: number;
 
-  @Expose({ name: 'category_id' })
-  categoryId: number;
-
-  @Expose({ name: 'name' })
+  @Expose()
   name: string;
 
-  // @Expose({ name: 'category_id' })
-  // categoryId: number;
+  @Expose()
+  images: string;
 
-  // @Expose({ name: 'category_id' })
-  // categoryId: number;
+  @Expose()
+  price: number;
 
-  // @Expose({ name: 'category_id' })
-  // categoryId: number;
-  // @Expose({ name: 'category_id' })
-  // categoryId: number;
+  @Expose()
+  enabled: boolean;
 }
