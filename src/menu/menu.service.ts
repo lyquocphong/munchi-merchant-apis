@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Provider } from '@prisma/client';
+import { plainToInstance } from 'class-transformer';
 import { BusinessService } from 'src/business/business.service';
 import { OrderingMenuCategory } from 'src/provider/ordering/dto/ordering-menu.dto';
 import { OrderingMenuMapperService } from 'src/provider/ordering/ordering-menu-mapper';
@@ -8,6 +9,7 @@ import { ProviderEnum } from 'src/provider/provider.type';
 import { WoltCategory, WoltMenuData } from 'src/provider/wolt/dto/wolt-menu.dto';
 import { WoltService } from 'src/provider/wolt/wolt.service';
 import { UtilsService } from 'src/utils/utils.service';
+import { MenuCategoryDto } from './dto/menu.dto';
 
 @Injectable()
 export class MenuService {
@@ -113,10 +115,10 @@ export class MenuService {
       orderingAccessToken,
       business.orderingBusinessId,
     );
-    console.log('🚀 ~ MenuService ~ getBusinessProduct ~ categoryData:', categoryData);
 
     //Format category data to product data
+    const mappedCategoryData = plainToInstance(MenuCategoryDto, categoryData);
 
-    return categoryData;
+    return mappedCategoryData;
   }
 }
