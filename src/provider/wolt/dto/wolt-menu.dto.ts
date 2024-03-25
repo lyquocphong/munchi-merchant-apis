@@ -122,3 +122,74 @@ export interface WoltMenuData {
   primary_language: string;
   categories: WoltCategory[];
 }
+
+export type ItemBinding = {
+  id: string;
+  item_id:string,
+}
+
+export type OptionBinding = {
+  id: string;
+  option_id:string,
+}
+
+export type MenuItem = {
+  id: string;
+  currency: string;
+  primary_language: string;
+  categories: {
+      id: string;
+      name: TranslatedText[];
+      item_bindings: ItemBinding[];
+  }[];
+  items: {
+      id: string;
+      product: {
+          name: TranslatedText[];
+          information: any;
+          description: { lang: string; value: string }[];
+          external_id: string;
+          alcohol_percentage: number;
+          image_url: string;
+          is_over_the_counter: boolean;
+      };
+      delivery_methods: string[];
+      enabled: { enabled: boolean };
+      option_bindings: OptionBinding[];
+      price: number;
+      vat_percentage: number;
+      sales_tax_percentage: number;
+      bundle_offer: boolean;
+  }[];
+  options: {
+      id: string;
+      name: TranslatedText[];
+      type: string;
+      default_value: string;
+      external_id: string;
+      values: {
+          id: string;
+          product: {
+              name: { lang: string; value: string }[];
+              information: any;
+              external_id: string;
+              is_over_the_counter: boolean;
+          };
+          enabled: { enabled: boolean };
+          price: number;
+          vat_percentage: number;
+          deposit_id: string;
+      }[];
+  }[];
+  weekly_availabilities: any[];
+  deposits: {
+      item_deposits: any[];
+      option_value_deposits: any[];
+  };
+};
+
+export type MenuData = {
+  request_id: string;
+  status: string;
+  menu: MenuItem;
+};
