@@ -15,7 +15,7 @@ import { UtilsService } from 'src/utils/utils.service';
 import { OrderingDeliveryType } from '../ordering/ordering.type';
 import { ProviderService } from '../provider.service';
 import { ProviderEnum } from '../provider.type';
-import { WoltMenuData } from './dto/wolt-menu.dto';
+import { MenuData, WoltMenuData } from './dto/wolt-menu.dto';
 import { WoltOrder, WoltOrderPrismaSelectArgs, WoltOrderType } from './dto/wolt-order.dto';
 import { WoltOrderMapperService } from './wolt-order-mapper';
 import { WoltRepositoryService } from './wolt-repository';
@@ -431,19 +431,13 @@ export class WoltService implements ProviderService {
       });
 
       const { resource_url } = response.data;
-      console.log('🚀 ~ WoltService ~ getMenuCategory ~ resource_url:', resource_url);
 
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // 1000ms = 1 second
+      await new Promise((resolve) => setTimeout(resolve, 1500)); // 1000ms = 1 second
 
-      const response2 = await axios.get(resource_url);
+      const menuResponse = await axios.get(resource_url);
 
-      return response2.data;
+      return menuResponse.data;
     } catch (error: any) {
-      console.log('🚀 ~ WoltService ~ getMenuCategory ~ error:', error);
-      // console.log(
-      //   '🚀 ~ WoltService ~ syncMenu ~ error:',
-      //   error.response ? error.response.data : error.message,
-      // );
       return {
         error: error.response ? error.response.data : error.message,
         statusCode: error.response.status,
