@@ -466,7 +466,10 @@ export class OrderingService implements ProviderService {
     return this.orderingSyncService.syncOrderingOrder(mappedOrderingOrder);
   }
 
-  async getMenuCategory(orderingAccessToken: string, orderingBusinessId: string): Promise<OrderingMenuCategory[]> {
+  async getMenuCategory(
+    orderingAccessToken: string,
+    orderingBusinessId: string,
+  ): Promise<OrderingMenuCategory[]> {
     const options = {
       method: 'GET',
       url: this.utilService.getEnvUrl('business', `${orderingBusinessId}/categories`),
@@ -506,6 +509,247 @@ export class OrderingService implements ProviderService {
     } catch (error: any) {
       // await this.syncWoltBusiness(woltOrderId);
       throw new ForbiddenException(error.response ? error.response.data : error.message);
+    }
+  }
+
+  async createCategory(orderingAccessToken: string, orderingBusinessId: string, categoryData: any) {
+    const options = {
+      method: 'POST',
+      url: this.utilService.getEnvUrl('business', `${orderingBusinessId}/categories`),
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${orderingAccessToken}`,
+      },
+      data: {
+        name: categoryData.name,
+        enabled: categoryData.enabled,
+      },
+    };
+
+    try {
+      const response = await axios.request(options);
+      return response.data.result;
+    } catch (error) {
+      this.utilService.logError(error);
+    }
+  }
+
+  async createProducts(
+    orderingAccessToken: string,
+    orderingBusinessId: string,
+    categoryId: string,
+    productData: any,
+  ) {
+    const options = {
+      method: 'POST',
+      url: this.utilService.getEnvUrl(
+        'business',
+        `${orderingBusinessId}/categories/${categoryId}/products`,
+      ),
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${orderingAccessToken}`,
+      },
+      data: {
+        name: productData.product.name,
+        price: productData.price,
+        description: productData.product.description ?? null,
+        images: productData.product.image_url ?? null,
+        enabled: productData.enabled.enabled,
+      },
+    };
+
+    try {
+      const response = await axios.request(options);
+      return response.data.result;
+    } catch (error) {
+      this.utilService.logError(error);
+    }
+  }
+
+  async createProductsExtraField(orderingAccessToken: string, orderingBusinessId: string) {
+    const options = {
+      method: 'POST',
+      url: this.utilService.getEnvUrl('business', `${orderingBusinessId}/extras`),
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${orderingAccessToken}`,
+      },
+      data: {
+        name: 'Extra',
+        enabled: true,
+      },
+    };
+
+    try {
+      const response = await axios.request(options);
+      return response.data.result;
+    } catch (error) {
+      this.utilService.logError(error);
+    }
+  }
+
+  async createProductOptions(
+    orderingAccessToken: string,
+    orderingBusinessId: string,
+    extrasId: string,
+    optionData: any,
+  ) {
+    const options = {
+      method: 'POST',
+      url: this.utilService.getEnvUrl(
+        'business',
+        `${orderingBusinessId}/extras/${extrasId}/options`,
+      ),
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${orderingAccessToken}`,
+      },
+      data: {
+        name: optionData.name,
+        conditioned: true,
+        enabled: true,
+      },
+    };
+
+    try {
+      const response = await axios.request(options);
+      return response.data.result;
+    } catch (error) {
+      this.utilService.logError(error);
+    }
+  }
+
+  async editProduct(
+    orderingAccessToken: string,
+    orderingBusinessId: string,
+    categoryId: string,
+    productId: string,
+    data: any,
+  ) {
+    const options = {
+      method: 'POST',
+      url: this.utilService.getEnvUrl(
+        'business',
+        `${orderingBusinessId}/categories/${categoryId}/products/${productId}`,
+      ),
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${orderingAccessToken}`,
+      },
+      data: {
+        extras: data,
+      },
+    };
+
+    try {
+      const response = await axios.request(options);
+      return response.data.result;
+    } catch (error) {
+      this.utilService.logError(error);
+    }
+  }
+
+  async createProductOptionsSuboptions(
+    orderingAccessToken: string,
+    orderingBusinessId: string,
+    extraId: string,
+    optionId: string,
+    data: any,
+  ) {
+    console.log('🚀 ~ OrderingService ~ data:', data);
+    const subOptionName = data.product.name;
+    console.log('🚀 ~ OrderingService ~ subOptionName:', subOptionName);
+    const price = data.price;
+    console.log('🚀 ~ OrderingService ~ price:', price);
+    const enabled = data.enabled.enabled;
+    console.log('🚀 ~ OrderingService ~ enabled:', enabled);
+
+    const options = {
+      method: 'POST',
+      url: this.utilService.getEnvUrl(
+        'business',
+        `${orderingBusinessId}/extras/${extraId}/options/${optionId}/suboptions`,
+      ),
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${orderingAccessToken}`,
+      },
+      data: {
+        name: subOptionName,
+        price: price,
+        enabled: enabled,
+      },
+    };
+    console.log('🚀 ~ OrderingService ~ options:', options);
+
+    try {
+      const response = await axios.request(options);
+      return response.data.result;
+    } catch (error) {
+      this.utilService.logError(error);
+    }
+  }
+
+  async deleteMenuCategory(
+    orderingAccessToken: string,
+    orderingBusinessId: string,
+    categoryId: string,
+  ) {
+    const options = {
+      method: 'DELETE',
+      url: this.utilService.getEnvUrl('business', `${orderingBusinessId}/categories/${categoryId}`),
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${orderingAccessToken}`,
+      },
+    };
+
+    try {
+      const response = await axios.request(options);
+      return response.data.result;
+    } catch (error) {
+      this.utilService.logError(error);
+    }
+  }
+
+  async getProductExtras(orderingAccessToken: string, orderingBusinessId: string) {
+    const options = {
+      method: 'GET',
+      url: this.utilService.getEnvUrl('business', `${orderingBusinessId}/extras`),
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${orderingAccessToken}`,
+      },
+    };
+
+    try {
+      const response = await axios.request(options);
+      return response.data.result;
+    } catch (error) {
+      this.utilService.logError(error);
+    }
+  }
+
+  async deleteProductExtras(
+    orderingAccessToken: string,
+    orderingBusinessId: string,
+    extraId: string,
+  ) {
+    const options = {
+      method: 'DELETE',
+      url: this.utilService.getEnvUrl('business', `${orderingBusinessId}/extras/${extraId}`),
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${orderingAccessToken}`,
+      },
+    };
+
+    try {
+      const response = await axios.request(options);
+      return response.data.result;
+    } catch (error) {
+      this.utilService.logError(error);
     }
   }
 }
