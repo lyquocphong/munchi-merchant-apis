@@ -10,6 +10,7 @@ import { WoltRepositoryService } from './wolt/wolt-repository';
 import { WoltSyncService } from './wolt/wolt-sync';
 import { WoltService } from './wolt/wolt.service';
 import { OrderingMenuMapperService } from './ordering/ordering-menu-mapper';
+import { WoltMenuMapperService } from './wolt/wolt-menu-mapper';
 
 @Module({
   providers: [
@@ -24,6 +25,7 @@ import { OrderingMenuMapperService } from './ordering/ordering-menu-mapper';
     WoltService,
     WoltOrderMapperService,
     WoltRepositoryService,
+    WoltMenuMapperService,
     WoltSyncService,
     {
       provide: `${ProviderEnum.Munchi}Service`,
@@ -42,6 +44,7 @@ import { OrderingMenuMapperService } from './ordering/ordering-menu-mapper';
     WoltService,
     ProviderManagmentService,
     WoltOrderMapperService,
+    WoltMenuMapperService,
     WoltRepositoryService,
     WoltSyncService,
   ],
