@@ -61,6 +61,7 @@ export class MenuService {
     return woltMenuData;
   }
 
+  // TODO: Need checking when option bind is only one
   async getWoltMenuCategory(orderingUserId: number, publicBusinessId: string) {
     const orderingAccessToken = await this.utilService.getOrderingAccessToken(orderingUserId);
 
@@ -69,64 +70,72 @@ export class MenuService {
 
     const orderingBusinessId = business.orderingBusinessId;
 
+    // Get wolt Venue
     const woltVenue = business.provider.filter(
       (provider: Provider) => provider.name === ProviderEnum.Wolt,
     );
 
-    const woltMenuData = await this.woltService.getMenuCategory(
+    // Get wolt Menu data
+    const woltMenuData: MenuData = await this.woltService.getMenuCategory(
       orderingUserId,
       woltVenue[0].providerId,
     );
 
     if (woltMenuData.status === 'READY') {
+      const { options } = woltMenuData.menu;
       const orderingCategoryData = this.woltMenuMapperService.mapToOrderingCategory(woltMenuData);
 
-      const newExtra = await this.orderingService.createProductsExtraField(
+      // Create product extras
+      const extras = await this.orderingService.createProductsExtraField(
         orderingAccessToken,
         orderingBusinessId,
       );
-      const newExtraId = typeof newExtra.id === 'number' ? newExtra.id.toString() : newExtra.id;
+
+      const newExtraId = typeof extras.id === 'number' ? extras.id.toString() : extras.id;
+
+      const extrasParentObj = {
+        id: newExtraId,
+        options: [],
+      };
+
+      // Create option extras
+      options.map(async (option) => {
+        extrasParentObj.options.push(option);
+        const formattedOption = this.woltMenuMapperService.mapToOrderingOption(option);
+        const newOption = await this.orderingService.createProductOptions(
+          orderingAccessToken,
+          orderingBusinessId,
+          newExtraId,
+          formattedOption,
+        );
+        const newOptionId =
+          typeof newOption.id === 'number' ? newOption.id.toString() : newOption.id;
+
+        // Create suboption extras
+        formattedOption.values.map(async (value) => {
+          await this.orderingService.createProductOptionsSuboptions(
+            orderingAccessToken,
+            orderingBusinessId,
+            newExtraId,
+            newOptionId,
+            value,
+          );
+        });
+      });
 
       // Create category
-
       orderingCategoryData.map(async (category: any) => {
         const newCategory = await this.orderingService.createCategory(
           orderingAccessToken,
           orderingBusinessId,
           category,
         );
-        console.log('🚀 ~ MenuService ~ orderingCategoryData.map ~ newCategory:', newCategory);
 
         const newCategoryId =
           typeof newCategory.id === 'number' ? newCategory.id.toString() : newCategory.id;
 
         // Create products
         category.products.map(async (product: any) => {
-          if (product.options.length === 0 || product.option_bindings.length === 0) {
-            return;
-          } else {
-            product.options.map(async (option: any) => {
-              const newOption = await this.orderingService.createProductOptions(
-                orderingAccessToken,
-                orderingBusinessId,
-                newExtraId,
-                option,
-              );
-              const newOptionId =
-                typeof newOption.id === 'number' ? newOption.id.toString() : newOption.id;
-
-              option.values.map(async (value: any) => {
-                const newSubOptions = await this.orderingService.createProductOptionsSuboptions(
-                  orderingAccessToken,
-                  orderingBusinessId,
-                  newExtraId,
-                  newOptionId,
-                  value,
-                );
-              });
-            });
-          }
-
           // Create product
           const newProduct = await this.orderingService.createProducts(
             orderingAccessToken,
@@ -134,43 +143,54 @@ export class MenuService {
             newCategory.id,
             product,
           );
-
+          // Format product id
           const newProductId =
             typeof newProduct.id === 'number' ? newProduct.id.toString() : newProduct.id;
 
-          const extras = await this.orderingService.getProductExtras(
-            orderingAccessToken,
-            orderingBusinessId,
-          );
-          console.log("🚀 ~ MenuService ~ category.products.map ~ extras:", extras)
+          if (product.options.length === 0 || product.option_bindings.length === 0) {
+            return;
+          }
 
-          // Edit product
-          // const updatedProduct = await this.orderingService.editProduct(
-          //   orderingAccessToken,
-          //   orderingBusinessId,
-          //   newCategoryId,
-          //   newProductId,
-          //   { extras: [newExtraId] },
-          // );
+          let hasMatch: boolean = false;
+
+          for (const productOption of product.options) {
+            const hasMatchingOption: boolean = extrasParentObj.options.some(
+              (extrasOption: any) => extrasOption.id === productOption.id,
+            );
+
+            if (hasMatchingOption) {
+              hasMatch = true;
+              break;
+            }
+          }
+          if (hasMatch) {
+            // Edit product (add extras to product)
+            await this.orderingService.editProduct(
+              orderingAccessToken,
+              orderingBusinessId,
+              newCategoryId,
+              newProductId,
+              `[${extrasParentObj.id}]`,
+            );
+          }
+
+          return;
         });
-
-        // Create extra fields
-
-        // Create options
-
-        // Create suboptions
       });
 
       return orderingCategoryData;
     }
 
-    // Need to check  if the order has a any menu or not
-
-    // If no create a menu then use that menu object to add menu category
-    // Then product => options => suboption
-    // Sync data from wolt to ordering
-
     return woltMenuData;
+  }
+
+  deepOptionEquals(option1: any, option2: any): boolean {
+    return this.createOptionKey(option1) === this.createOptionKey(option2);
+  }
+
+  createOptionKey(option: any): string {
+    // Consider using a JSON-based representation for reliable comparison
+    return JSON.stringify(option);
   }
 
   async getMatchingService(
