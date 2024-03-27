@@ -29,6 +29,4 @@ export abstract class ProviderService {
       reason: string;
     },
   ): Promise<OrderingOrder | OrderResponse>;
-
-  // abstract mapOrderToOrderResponse(order: ProviderOrder): Promise<OrderResponse>;
 }
