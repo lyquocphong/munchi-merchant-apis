@@ -552,9 +552,9 @@ export class OrderingService implements ProviderService {
       },
       data: {
         name: productData.product.name,
-        price: productData.price,
-        description: productData.product.description ?? null,
-        images: productData.product.image_url ?? null,
+        price: productData.product.price,
+        description: productData.product.description ?? undefined,
+        images: productData.product.image_url ?? undefined,
         enabled: productData.enabled.enabled,
       },
     };
@@ -608,7 +608,6 @@ export class OrderingService implements ProviderService {
       data: {
         name: optionData.name,
         conditioned: true,
-        enabled: true,
       },
     };
 
@@ -657,14 +656,9 @@ export class OrderingService implements ProviderService {
     optionId: string,
     data: any,
   ) {
-    console.log('🚀 ~ OrderingService ~ data:', data);
     const subOptionName = data.product.name;
-    console.log('🚀 ~ OrderingService ~ subOptionName:', subOptionName);
     const price = data.price;
-    console.log('🚀 ~ OrderingService ~ price:', price);
     const enabled = data.enabled.enabled;
-    console.log('🚀 ~ OrderingService ~ enabled:', enabled);
-
     const options = {
       method: 'POST',
       url: this.utilService.getEnvUrl(
@@ -681,8 +675,6 @@ export class OrderingService implements ProviderService {
         enabled: enabled,
       },
     };
-    console.log('🚀 ~ OrderingService ~ options:', options);
-
     try {
       const response = await axios.request(options);
       return response.data.result;
