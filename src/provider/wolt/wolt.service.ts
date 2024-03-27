@@ -15,12 +15,11 @@ import { UtilsService } from 'src/utils/utils.service';
 import { OrderingDeliveryType } from '../ordering/ordering.type';
 import { ProviderService } from '../provider.service';
 import { ProviderEnum } from '../provider.type';
-import { MenuData, WoltMenuData } from './dto/wolt-menu.dto';
+import { WoltOrderV2 } from './dto/wolt-order-v2.dto';
 import { WoltOrder, WoltOrderPrismaSelectArgs, WoltOrderType } from './dto/wolt-order.dto';
 import { WoltOrderMapperService } from './wolt-order-mapper';
 import { WoltRepositoryService } from './wolt-repository';
 import { WoltSyncService } from './wolt-sync';
-import { OrderingMenuCategory } from '../ordering/dto/ordering-menu.dto';
 
 @Injectable()
 export class WoltService implements ProviderService {
@@ -39,7 +38,7 @@ export class WoltService implements ProviderService {
   }
 
   async getOrderByStatus(
-    accessToken: string,
+    _,
     status: AvailableOrderStatus[],
     businessIds: string[],
     orderBy?: Prisma.OrderOrderByWithRelationInput,
@@ -117,13 +116,13 @@ export class WoltService implements ProviderService {
       throw new NotFoundException('No provider found associated with venue.');
     }
 
-    const providerCredentialsId = provider.business.owners.map(
-      (owner) => owner.providerCredentials.id,
+    const providerCredentialsId = provider.business.owners.filter(
+      (owner) => owner.providerCredentialsId,
     );
-
+   
     const providerCredentials = await this.prismaService.providerCredential.findUnique({
       where: {
-        id: providerCredentialsId[0],
+        id: providerCredentialsId[0].providerCredentialsId,
       },
     });
 
@@ -141,13 +140,14 @@ export class WoltService implements ProviderService {
    *
    * @return  {Promise<WoltOrder>}              A promise that resolves with the Wolt order data from the Wolt server.
    */
-  public async getOrderById(woltApiKey: string, woltOrdeId: string): Promise<WoltOrder> {
+  public async getOrderById(woltApiKey: string, woltOrdeId: string): Promise<WoltOrderV2> {
     try {
       const response = await axios.request({
         method: 'GET',
         baseURL: `${this.woltApiUrl}/orders/${woltOrdeId}`,
         headers: {
           'WOLT-API-KEY': woltApiKey,
+          'Content-Type': 'application/vnd.wolt.order+json;version=2beta1',
         },
       });
 
