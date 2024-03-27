@@ -1,12 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { PrismaService } from 'src/prisma/prisma.service';
-import { ProductDto } from 'src/order/dto/product.dto';
 import { OrderResponse, OrderStatusEnum } from 'src/order/dto/order.dto';
-import { OrderingDeliveryType } from '../ordering/ordering.type';
+import { ProductDto } from 'src/order/dto/product.dto';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { UtilsService } from 'src/utils/utils.service';
+import { OrderingDeliveryType } from '../ordering/ordering.type';
 import { ProviderEnum } from '../provider.type';
-import { WoltItem, WoltOrder, WoltOrderType } from './dto/wolt-order.dto';
+import { WoltItemV2, WoltOrderV2 } from './dto/wolt-order-v2.dto';
+import { WoltOrderType } from './dto/wolt-order.dto';
 
 @Injectable()
 export class WoltOrderMapperService {
@@ -15,13 +16,13 @@ export class WoltOrderMapperService {
     private readonly utilsService: UtilsService,
   ) {}
 
-  public mapWoltItemToProductDto(woltItems: WoltItem[]): ProductDto[] {
+  public mapWoltItemToProductDto(woltItems: WoltItemV2[]): ProductDto[] {
     return woltItems.map((product) => ({
       id: product.id,
       name: product.name,
       quantity: product.count,
       comment: null,
-      price: (product.total_price.amount / 100).toFixed(1), // Convert from cents to euros and round to 1 decimal place
+      price: (product.item_price.total.amount / 100).toFixed(1), // Convert from cents to euros and round to 1 decimal place
       options: product.options.map((option) => ({
         id: this.utilsService.generatePublicId(),
         name: option.name,
@@ -41,7 +42,7 @@ export class WoltOrderMapperService {
     }));
   }
 
-  public async mapOrderToOrderResponse(woltOrder: WoltOrder): Promise<OrderResponse> {
+  public async mapOrderToOrderResponse(woltOrder: WoltOrderV2): Promise<OrderResponse> {
     let deliverytype: number;
 
     //Find business by venue id
@@ -126,7 +127,7 @@ export class WoltOrderMapperService {
       deliveryType: deliverytype,
       comment: woltOrder.consumer_comment,
       summary: {
-        total: (woltOrder.price.amount / 100).toFixed(2),
+        total: (woltOrder.basket_price.total.amount / 100).toFixed(2), //Convert to euro from cent
       },
       pickupEta: pickupEta,
       deliveryEta: deliveryTime,
