@@ -1,4 +1,5 @@
 import { OrderingOrder } from './ordering/dto/ordering-order.dto';
+import { WoltOrderV2 } from './wolt/dto/wolt-order-v2.dto';
 import { WoltOrder } from './wolt/dto/wolt-order.dto';
 
 /**
@@ -21,4 +22,4 @@ export enum ProviderEnum {
 
 export type AvailableProvider = ProviderEnum.Wolt | ProviderEnum.Munchi;
 
-export type ProviderOrder = OrderingOrder | WoltOrder;
+export type ProviderOrder = OrderingOrder | WoltOrder | WoltOrderV2;
