@@ -32,6 +32,7 @@ export class WoltRepositoryService {
         orderId: woltOrderId,
       },
     });
+
     if (order) {
       throw new ForbiddenException('Order existed');
     }
@@ -90,7 +91,7 @@ export class WoltRepositoryService {
         products: true,
       },
     };
-
+   
     // Save order to database
     const order = await this.prismaService.order.create(orderData);
 
