@@ -68,17 +68,17 @@ export class WoltService implements ProviderService {
     let woltCredentials: ProviderCredential; // API Keys are typically strings
 
     if (lookupType === 'orderingUserId' && typeof keyLookupValue === 'number') {
-      woltCredentials = await this.getApiKeyByOrderingUserId(keyLookupValue);
+      woltCredentials = await this.getCredentialByOrderingUserId(keyLookupValue);
     } else if (lookupType === 'venueId' && typeof keyLookupValue === 'string') {
-      woltCredentials = await this.getApiKeyByVenueId(keyLookupValue);
+      woltCredentials = await this.getCredentialByVenueId(keyLookupValue);
     } else {
-      throw new Error('Invalid lookupType or  keyLookupValue type provided');
+      throw new Error('Invalid lookupType or keyLookupValue type provided');
     }
 
     return woltCredentials;
   }
 
-  async getApiKeyByOrderingUserId(orderingUserId: number): Promise<ProviderCredential> {
+  async getCredentialByOrderingUserId(orderingUserId: number): Promise<ProviderCredential> {
     const user = await this.prismaService.user.findUnique({
       where: {
         orderingUserId: orderingUserId,
@@ -95,7 +95,7 @@ export class WoltService implements ProviderService {
     return user.providerCredentials;
   }
 
-  async getApiKeyByVenueId(venueId: string): Promise<ProviderCredential> {
+  async getCredentialByVenueId(venueId: string): Promise<ProviderCredential> {
     const provider = await this.prismaService.provider.findUnique({
       where: {
         providerId: venueId,
