@@ -7,6 +7,8 @@ import {
   MenuItem,
   TranslatedText,
   WoltCategory as WoltMenuCategory,
+  MenuItemOption,
+  MenuItemOptionValue,
 } from './dto/wolt-menu.dto';
 import { WoltLanguageCode } from './wolt.type';
 
@@ -51,7 +53,7 @@ export class WoltMenuMapperService {
                   return {
                     ...values,
                     product: product,
-                    price: (values.price / 100).toFixed(1),
+                    price: values.price / 100,
                   };
                 });
                 const optionObject = {
@@ -78,7 +80,7 @@ export class WoltMenuMapperService {
               ...item.product,
               name: productName,
               description: productDescription,
-              price: (item.price / 100).toFixed(1),
+              price: item.price / 100,
             };
             //Initialize product object
             const productObject = {
@@ -103,5 +105,30 @@ export class WoltMenuMapperService {
         };
       })
       .filter(Boolean);
+  }
+
+  mapToOrderingOption(option: MenuItemOption) {
+    const newOptionName = option.name.filter((name) => name.lang === WoltLanguageCode.English)[0]
+      .value;
+
+    const newValues = option.values.map((value: MenuItemOptionValue) => {
+      const newValueName = value.product.name.filter(
+        (name) => name.lang === WoltLanguageCode.English,
+      )[0].value;
+
+      return {
+        ...value,
+        product: {
+          ...value.product,
+          name: newValueName,
+        },
+      };
+    });
+
+    return {
+      ...option,
+      name: newOptionName,
+      values: newValues,
+    };
   }
 }
